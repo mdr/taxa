@@ -21,7 +21,8 @@ catalog:
   vite-plus: 1.1.0
 overrides:
   vite@*: "catalog:"
-  playwright-core: 1.63.0
+  # One playwright-core for @playwright/test and @axe-core/playwright: keep it at @playwright/test's version.
+  playwright-core: 1.65.1
 peerDependencyRules:
   allowAny:
     - vite
