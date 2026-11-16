@@ -7,14 +7,39 @@ export interface CliRun {
   stderr: string
 }
 
-/** Runs `taxa` in this process against `server`, capturing what it prints. */
-export const runTaxa = async (server: string | undefined, ...argv: string[]): Promise<CliRun> => {
+/** Who runs `taxa`: an API key's holder on a server, as the server's test people and agents are. */
+export interface CliCaller {
+  httpUrl: string
+  secret?: string
+  /** For agents: TAXA_AGENT_CONTEXT. */
+  agentContext?: string
+  clock?: { now: () => number }
+}
+
+export interface CliRunOptions {
+  stdin?: string
+  timeZone?: string
+}
+
+/** Runs `taxa` in this process as `caller`, capturing what it prints. */
+export const runTaxaAs = async (
+  caller: CliCaller,
+  argv: string[],
+  { stdin = "", timeZone = "Europe/London" }: CliRunOptions = {}
+): Promise<CliRun> => {
   let stdout = ""
   let stderr = ""
   const exitCode = await runCli(argv, {
-    env: { TAXA_SERVER: server ?? DEFAULT_SERVER },
+    env: { TAXA_SERVER: caller.httpUrl, TAXA_API_KEY: caller.secret, TAXA_AGENT_CONTEXT: caller.agentContext },
     stdout: (text) => (stdout += text),
-    stderr: (text) => (stderr += text)
+    stderr: (text) => (stderr += text),
+    readStdin: () => Promise.resolve(stdin),
+    now: () => caller.clock?.now() ?? Date.UTC(2026, 0, 5, 9),
+    timeZone
   })
   return { exitCode, stdout, stderr }
 }
+
+/** Runs `taxa` in this process against `server` with no API key. */
+export const runTaxa = (server: string | undefined, ...argv: string[]): Promise<CliRun> =>
+  runTaxaAs({ httpUrl: server ?? DEFAULT_SERVER }, argv)

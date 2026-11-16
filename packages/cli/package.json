@@ -11,7 +11,8 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@taxa/shared": "workspace:*"
+    "@taxa/shared": "workspace:*",
+    "zod": "^4.1.0"
   },
   "devDependencies": {
     "@taxa/server": "workspace:*",

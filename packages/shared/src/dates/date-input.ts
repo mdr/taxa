@@ -26,3 +26,5 @@ export const parseDateInput = (text: string, today: IsoDate): IsoDate | undefine
   if (weekday === undefined) return undefined
   return addDays(today, (weekday - weekdayOf(today) + 7) % 7)
 }
+
+export const DATE_INPUT_HELP = "YYYY-MM-DD, today, tomorrow, yesterday, a weekday (fri), +3d or +2w"

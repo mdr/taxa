@@ -8,6 +8,8 @@ vars:
 
 env:
   DATABASE_URL: "postgres://taxa@localhost:{{.DB_PORT}}/taxa"
+  # Development has no sign-in: callers without an API key are this person.
+  TAXA_DEV_USER: '{{.TAXA_DEV_USER | default "Matt"}}'
 
 tasks:
   default:
