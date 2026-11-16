@@ -1,0 +1,58 @@
+/**
+ * Browser tests against the real API server, in the test's own process (see
+ * InProcessServer): the `taxa` fixture starts one for each test, opens tabs
+ * whose app talks to it, and sets up and checks what the server holds.
+ */
+import { test as base, type Browser } from "@playwright/test"
+import { InProcessServer } from "../../../server/src/test-support/in-process-server.ts"
+import type { Ms } from "@taxa/shared/units"
+import type { Tab } from "../pages/Tab.ts"
+import { newTab } from "./iwft-tab.ts"
+
+export class TestTaxa {
+  readonly server: InProcessServer
+  readonly #browser: Browser
+  readonly #tabs: Tab[] = []
+
+  constructor(server: InProcessServer, browser: Browser) {
+    this.server = server
+    this.#browser = browser
+  }
+
+  /** A new browser tab on the app, which talks to this test's server. */
+  async openTab(label: string): Promise<Tab> {
+    const tab = await newTab(this.#browser, label, this.server.httpUrl)
+    this.#tabs.push(tab)
+    return tab
+  }
+
+  /** Move the server's clock on. */
+  advance(time: Ms): void {
+    this.server.advance(time)
+  }
+
+  async stopDatabase(): Promise<void> {
+    await this.server.stopDatabase()
+  }
+
+  /** Close every tab, failing the test if any asked for something beyond localhost. */
+  async close(): Promise<void> {
+    for (const tab of this.#tabs) {
+      tab.expectNoOutsideRequests()
+      await tab.close()
+    }
+  }
+}
+
+export const test = base.extend<{ taxa: TestTaxa }>({
+  taxa: async ({ browser, baseURL }, use) => {
+    const server = await InProcessServer.start({ corsOrigins: baseURL ? [new URL(baseURL).origin] : [] })
+    const taxa = new TestTaxa(server, browser)
+    try {
+      await use(taxa)
+      await taxa.close()
+    } finally {
+      await server.close()
+    }
+  }
+})

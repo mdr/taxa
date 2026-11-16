@@ -1,0 +1,21 @@
+:root {
+  color-scheme: light dark;
+  --background: #fbfaf7;
+  --text: #1d1d1b;
+  --muted: #5f5d57;
+  font-family: system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #171715;
+    --text: #ecebe6;
+    --muted: #a5a39b;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+}
