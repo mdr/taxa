@@ -5,6 +5,9 @@ export const LOG_CODES = {
   },
   health: {
     databaseDown: "health.databaseDown"
+  },
+  request: {
+    failed: "request.failed"
   }
 } as const
 

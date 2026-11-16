@@ -1,8 +1,12 @@
 import { drizzle } from "drizzle-orm/node-postgres"
+import { migrate } from "drizzle-orm/node-postgres/migrator"
 import pg from "pg"
-import type { Database } from "./database.ts"
+import { MIGRATIONS_FOLDER, type Database } from "./database.ts"
 
-export const connectPostgres = (url: string): Database => {
+/** Connects, and brings the schema up to date. */
+export const connectPostgres = async (url: string): Promise<Database> => {
   const pool = new pg.Pool({ connectionString: url })
-  return { db: drizzle(pool), close: () => pool.end() }
+  const db = drizzle(pool)
+  await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER })
+  return { db, close: () => pool.end() }
 }

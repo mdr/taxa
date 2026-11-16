@@ -371,6 +371,13 @@ export default defineConfig({
         }
       },
       {
+        // Where rows become the app's types and back: Drizzle reads and writes empty columns as null.
+        files: ["packages/server/src/**/*-rows.ts"],
+        rules: {
+          "eslint-js/no-restricted-syntax": ["error", ...noReexports, ...noFunctionExpressionConsts]
+        }
+      },
+      {
         files: ["packages/server/src/**/*.ts", "packages/cli/src/**/*.ts"],
         env: {
           node: true

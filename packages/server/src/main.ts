@@ -17,9 +17,19 @@ const readConfig = (): Config => {
 }
 
 const config = readConfig()
-const database = connectPostgres(config.DATABASE_URL)
-const app = createApp({ database, clock: realClock, build: config.TAXA_BUILD, logEvent: logToStdout })
+const database = await connectPostgres(config.DATABASE_URL)
+const app = await createApp({
+  database,
+  clock: realClock,
+  build: config.TAXA_BUILD,
+  logEvent: logToStdout,
+  devLogin: config.TAXA_DEV_USER ? { name: config.TAXA_DEV_USER, timeZone: config.TAXA_TIME_ZONE } : undefined
+})
 
 serve({ fetch: app.fetch, port: config.PORT }, ({ port }) =>
-  logToStdout(LOG_CODES.server.started, "listening", { port, build: config.TAXA_BUILD })
+  logToStdout(LOG_CODES.server.started, "listening", {
+    port,
+    build: config.TAXA_BUILD,
+    devLogin: config.TAXA_DEV_USER !== undefined
+  })
 )
