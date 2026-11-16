@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The checks only need a dev shell whose every path is in cache.nixos.org;
+# the pnpm store is cached between runs with actions/cache.
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/nix-installer-action@v23
+      - name: Locate pnpm store
+        id: pnpm
+        run: echo "dir=$(nix develop .#ci -c pnpm store path)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm.outputs.dir }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+      - name: Install dependencies
+        run: nix develop .#ci -c pnpm install --frozen-lockfile
+      - name: Typecheck, lint, format, test
+        run: nix develop .#ci -c pnpm check
+      - name: Build web app
+        run: nix develop .#ci -c pnpm build

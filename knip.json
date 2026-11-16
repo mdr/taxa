@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "includeEntryExports": true,
+  "workspaces": {
+    ".": {},
+    "packages/web": {
+      "entry": ["scripts/*.ts", "browser/**/*.{iwft,e2e}.ts"],
+      "playwright": {
+        "config": ["browser/playwright.iwft.config.ts"]
+      }
+    },
+    "packages/server": {
+      "entry": ["src/main.ts", "src/**/*.iwbt.ts"]
+    },
+    "packages/cli": {
+      "entry": ["src/**/*.iwbt.ts"]
+    }
+  }
+}

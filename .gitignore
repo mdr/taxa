@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.direnv/
+.pnpm-store/
+*.log
+.DS_Store
+smoke-out/
+# Claude Code agents' copies of the repo
+.claude/worktrees/
+
+# nix build output
+result
+.vitest/
+
+# generated CSS module declarations
+*.module.css.d.ts
+# left by mutation testing (task mutate) when a test runner is killed
+stryker-setup-*.js
+
+# the local development database (task db:start)
+.data/

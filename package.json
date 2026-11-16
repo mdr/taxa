@@ -1,0 +1,35 @@
+{
+  "name": "taxa",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "engines": {
+    "node": "24.x",
+    "pnpm": "11.x"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter ./packages/web --filter ./packages/server dev",
+    "build": "pnpm -r build",
+    "test": "pnpm css-types && vp test run",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm css-types && vp lint",
+    "lint:fix": "pnpm css-types && vp lint --fix",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "knip": "pnpm css-types && knip",
+    "check": "pnpm css-types && vp check && pnpm -r typecheck && knip && vp test run",
+    "css-types": "pnpm --filter ./packages/web css-types",
+    "mutate": "stryker run stryker.config.ts"
+  },
+  "devDependencies": {
+    "@stryker-mutator/api": "^10.1.1",
+    "@stryker-mutator/core": "^10.1.1",
+    "@stryker-mutator/vitest-runner": "^10.1.1",
+    "@types/node": "^24.0.0",
+    "eslint-plugin-sonarjs": "^4.2.2",
+    "knip": "^6.38.0",
+    "oxlint-plugin-eslint": "1.87.0",
+    "typescript": "^7.0.2",
+    "vite-plus": "catalog:"
+  }
+}

@@ -1,0 +1,89 @@
+# The menu of what can be run in this repository: `task --list`. Run inside
+# `nix develop`, which provides `task`, e.g. `nix develop -c task iwft`.
+version: "3"
+
+vars:
+  DB_DIR: "{{.ROOT_DIR}}/.data/postgres"
+  DB_PORT: '{{.DB_PORT | default "5433"}}'
+
+env:
+  DATABASE_URL: "postgres://taxa@localhost:{{.DB_PORT}}/taxa"
+
+tasks:
+  default:
+    desc: List the tasks
+    silent: true
+    cmds:
+      - task --list
+
+  # ----------------------------------------------------------- developing
+
+  dev:
+    desc: Run the web app (http://localhost:5173) and the API server (:8787), reloading on changes
+    deps: [db:start]
+    cmds:
+      - pnpm dev
+
+  db:start:
+    desc: Start the local Postgres in .data/postgres (on DB_PORT, 5433 by default), creating it the first time
+    status:
+      - pg_ctl -D "{{.DB_DIR}}" status
+    cmds:
+      - |
+        if [ ! -d "{{.DB_DIR}}" ]; then
+          initdb -D "{{.DB_DIR}}" -U taxa --auth=trust --encoding=UTF8 --no-locale > /dev/null
+          created=1
+        fi
+        pg_ctl -D "{{.DB_DIR}}" -l "{{.DB_DIR}}.log" -o "-p {{.DB_PORT}} -k {{.DB_DIR}} -c listen_addresses=localhost" -w start
+        if [ -n "${created:-}" ]; then createdb -h localhost -p {{.DB_PORT}} -U taxa taxa; fi
+
+  db:stop:
+    desc: Stop the local Postgres
+    cmds:
+      - pg_ctl -D "{{.DB_DIR}}" stop
+
+  db:psql:
+    desc: Open psql on the local database
+    interactive: true
+    cmds:
+      - psql "$DATABASE_URL"
+
+  taxa:
+    desc: "Run the CLI against the local server (task taxa -- health --json)"
+    cmds:
+      - packages/cli/src/main.ts {{.CLI_ARGS}}
+
+  # ------------------------------------------------------------- checking
+
+  check:
+    desc: Everything CI checks - formatting, lint, types, unused code and the unit and IWBT tests
+    cmds:
+      - pnpm check
+
+  fix:
+    desc: Format, and apply the lint fixes that can be made automatically
+    cmds:
+      - pnpm format
+      - pnpm lint:fix
+
+  test:
+    desc: The unit tests and IWBTs (task test -- health for those matching a name)
+    cmds:
+      - pnpm test {{.CLI_ARGS}}
+
+  iwft:
+    desc: "The isolated browser tests, *.iwft.ts (task iwft -- home for some)"
+    summary: |
+      Playwright Test starts a Vite dev server of its own on a free port (or
+      WEB_PORT), so runs in other worktrees and a `task dev` are left alone.
+      Each test starts the API server in its own process, on PGlite and a
+      fake clock, so nothing else needs to be up. A request beyond localhost
+      fails the test. Output goes to smoke-out/iwft/, a report to
+      smoke-out/iwft-report/.
+    cmds:
+      - pnpm --filter ./packages/web iwft {{.CLI_ARGS}}
+
+  mutate:
+    desc: "Mutation testing: which small changes to some source the tests miss (task mutate -- 'packages/shared/src/**/*.ts')"
+    cmds:
+      - pnpm mutate --mutate {{.CLI_ARGS}}',!**/*.test.ts,!**/*.test.tsx,!**/*.iwbt.ts'
