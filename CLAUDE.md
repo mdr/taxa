@@ -21,7 +21,7 @@ Taxa is a task manager for people and their agents. What it does and why is in `
 
 ## Packages
 
-- `shared`: types, Zod schemas and pure logic used by the others. No I/O, and it imports none of them.
+- `shared`: types, Zod schemas and pure logic used by the others, and `TaxaClient`, the typed API client, which is its only I/O (through the `fetch` it's given). It imports none of the others.
 - `server`: the Hono API over Postgres (Drizzle). `web`: the React app. `cli`: `taxa`. Each imports only `shared`; tests may start an in-process server through `server/src/test-support/`. Lint enforces both (`lint/boundaries`).
 
 ## Logs

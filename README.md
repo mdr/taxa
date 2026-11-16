@@ -15,8 +15,25 @@ nix develop        # or let direnv load the shell
 pnpm install
 task dev           # starts the local Postgres, then the web app on
                    # http://localhost:5173 and the API server on :8787
-task taxa -- health --json
+taxa health        # the CLI; the dev shell puts bin/ on the PATH
 ```
+
+There's no sign-in yet: `task dev` runs the server with a development
+login, so the web app, and `taxa` without an API key, act as Matt
+(`TAXA_DEV_USER` changes the name). The API is described at
+http://localhost:8787/api/openapi.json.
+
+`taxa --help` lists the commands. To act as an agent rather than as
+yourself, make one and give it a key:
+
+```sh
+taxa add-agent "Claude Code"              # prints its id
+taxa add-key "Claude Code" --agent <id>   # prints the key's secret, once
+```
+
+Agents pass the key as `TAXA_API_KEY`, and can say what they're working
+on with `TAXA_AGENT_CONTEXT`. The Claude Code skill in
+`.claude/skills/taxa` teaches agents to use `taxa`.
 
 `task db:start` creates a Postgres cluster in `.data/postgres` the first time
 (port 5433, override with `DB_PORT`), and `task db:stop` stops it. `task

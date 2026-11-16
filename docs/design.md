@@ -66,6 +66,11 @@ hard security boundary, and the two are kept separate.
 Everything except the title is optional. A quick capture is a title in the
 Inbox.
 
+The **Inbox** is a flag, not a place: a task created without a domain goes
+into your default domain (your first, until settings let you choose) with
+the flag set, and filing it into a domain clears it. So every task always
+has a domain, and so a sharing boundary.
+
 - **In progress** records who is working on the task: a person or an agent.
   For agents it works as a claim, so two agents don't pick up the same task.
   A claim with no activity for a while is flagged as stale.

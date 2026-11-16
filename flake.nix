@@ -41,6 +41,8 @@
           ];
 
           shellHook = ''
+            # `taxa`, the CLI, run from source.
+            export PATH="$PWD/bin:$PATH"
             echo "taxa dev shell: node $(node --version), pnpm $(pnpm --version), postgres $(postgres --version | cut -d' ' -f3) (nix-pinned)"
           '';
         });

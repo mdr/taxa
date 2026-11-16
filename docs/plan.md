@@ -14,7 +14,7 @@ be reviewed on their own.
 - The test harness end to end: unit tests, IWBT (with the CLI in-process), IWFT with the `taxa` fixture
 - This plan and the design doc
 
-## Stage 1: Tasks you can actually use
+## Stage 1: Tasks you can actually use ✅ (awaiting feedback)
 
 - Domains with prefixes, and tasks with all their fields and states
 - Human IDs, operations with versions and `If-Match`, idempotency keys, soft deletes, the activity log
@@ -22,6 +22,10 @@ be reviewed on their own.
 - The API with its OpenAPI spec. The CLI: `add`, `list`, `show`, `edit`, `done`, `--json`, JSON on stdin
 - Web: Inbox, per-domain lists, task detail, quick capture. Notes as plain Markdown
 - Dev-mode login, one person. A Claude Code skill for `taxa`
+
+Also in the CLI: `log` (the activity log), `start`, `wait`, `cancel`,
+`reopen`, `delete`, `restore`, domains, agents and keys. Not yet: key
+scopes (Stage 3), and `taxa` outside this repository's dev shell.
 
 **Feedback checkpoint:** daily use, the CLI, and how agents get on with it.
 

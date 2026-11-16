@@ -53,7 +53,7 @@ tasks:
   taxa:
     desc: "Run the CLI against the local server (task taxa -- health --json)"
     cmds:
-      - packages/cli/src/main.ts {{.CLI_ARGS}}
+      - bin/taxa {{.CLI_ARGS}}
 
   # ------------------------------------------------------------- checking
 
