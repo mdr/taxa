@@ -1,0 +1,40 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  padding: 0.55rem 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.done {
+  width: 1.1rem;
+  height: 1.1rem;
+  align-self: center;
+}
+
+.ref {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-width: 3.5rem;
+}
+
+.title {
+  text-decoration: none;
+}
+
+.title:hover {
+  text-decoration: underline;
+}
+
+.highlights {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.problem {
+  flex-basis: 100%;
+  color: var(--danger);
+  font-size: 0.9rem;
+}

@@ -12,6 +12,12 @@ const migratedTemplate = async (): Promise<PGlite> => {
 // Migrated once per test process; each test gets a copy, which is much quicker than migrating again.
 let template: Promise<PGlite> | undefined
 
+/** Migrates the template the databases are copied from, if it isn't already. */
+export const warmUpDatabases = async (): Promise<void> => {
+  template ??= migratedTemplate()
+  await template
+}
+
 /** A fresh Postgres inside this process, with the schema in place, for one test. */
 export const pgliteDatabase = async (): Promise<Database> => {
   template ??= migratedTemplate()

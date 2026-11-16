@@ -1,3 +1,3 @@
 export const appTestIds = {
-  serverStatus: "App.serverStatus"
+  notFound: "App.notFound"
 }

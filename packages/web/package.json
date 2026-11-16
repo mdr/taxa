@@ -11,9 +11,13 @@
     "css-types": "node scripts/css-module-types.ts"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.107.1",
     "@taxa/shared": "workspace:*",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "wouter": "^3.13.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

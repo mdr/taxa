@@ -1,4 +1,4 @@
-import { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
+import { Energy, Priority, TaskStatus } from "./task.ts"
 
 export const STATUS_TEXT: Record<TaskStatus, string> = {
   [TaskStatus.OPEN]: "open",

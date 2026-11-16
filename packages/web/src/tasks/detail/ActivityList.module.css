@@ -1,0 +1,19 @@
+.heading {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.when {
+  color: var(--muted);
+  margin-right: 0.5rem;
+}

@@ -1,0 +1,14 @@
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  border-color: transparent;
+  background: transparent;
+  padding: 0.2rem 0.4rem;
+  margin-left: -0.4rem;
+}
+
+.title:hover,
+.title:focus {
+  border-color: var(--border);
+  background: var(--surface);
+}

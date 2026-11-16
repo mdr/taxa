@@ -12,7 +12,8 @@ import { createKey } from "../agents/agent-store.ts"
 import { createApp, type DevLogin } from "../app.ts"
 import type { Database } from "../database/database.ts"
 import type { LogFields } from "../telemetry/log.ts"
-import { createUser } from "../users/user-store.ts"
+import type { CallerUser } from "../auth/caller.ts"
+import { createUser, ensureUserNamed } from "../users/user-store.ts"
 import { pgliteDatabase } from "./pglite-database.ts"
 import { TestUser } from "./test-user.ts"
 
@@ -42,12 +43,21 @@ export class InProcessServer {
   readonly logLines: LogLine[]
   readonly #server: ServerType
   readonly #database: Database
+  readonly #devLogin: DevLogin | undefined
   #databaseOpen = true
   #closed = false
 
-  private constructor(server: ServerType, database: Database, clock: FakeClock, port: number, logLines: LogLine[]) {
+  private constructor(
+    server: ServerType,
+    database: Database,
+    clock: FakeClock,
+    port: number,
+    logLines: LogLine[],
+    devLogin: DevLogin | undefined
+  ) {
     this.#server = server
     this.#database = database
+    this.#devLogin = devLogin
     this.clock = clock
     this.logLines = logLines
     this.httpUrl = `http://127.0.0.1:${port}`
@@ -66,13 +76,24 @@ export class InProcessServer {
       logEvent: (code, msg, fields) => logLines.push({ code, msg, ...fields })
     })
     const server = serve({ fetch: app.fetch, port: 0, hostname: "127.0.0.1" })
-    return new InProcessServer(server, database, clock, await listen(server), logLines)
+    return new InProcessServer(server, database, clock, await listen(server), logLines, devLogin)
   }
 
   /** A person with an API key of their own, who calls the API as themselves. */
   async user(name: string, timeZone = "Europe/London"): Promise<TestUser> {
+    return this.#withKey(await createUser(this.#database.db, name, timeZone, this.clock.now()))
+  }
+
+  /** The development login's person, as the web app is in browser tests, with an API key too. */
+  async devLoginUser(): Promise<TestUser> {
+    if (!this.#devLogin) throw new Error("this server has no development login: start it with devLogin")
+    const { name, timeZone } = this.#devLogin
+    return this.#withKey(await ensureUserNamed(this.#database.db, name, timeZone, this.clock.now()))
+  }
+
+  async #withKey(user: CallerUser): Promise<TestUser> {
+    const { name } = user
     const now = this.clock.now()
-    const user = await createUser(this.#database.db, name, timeZone, now)
     const caller = { user, agent: undefined, agentContext: undefined }
     const { secret } = await createKey(
       this.#database.db,

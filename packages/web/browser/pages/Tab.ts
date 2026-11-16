@@ -1,6 +1,8 @@
 import { expect, type Page } from "@playwright/test"
+import type { Instant } from "@taxa/shared/units"
 import { PageObject } from "./steps.ts"
-import { HomePage } from "./HomePage.ts"
+import { TaskDetailPage } from "./TaskDetailPage.ts"
+import { TaskListPage } from "./TaskListPage.ts"
 
 /** One person's browser tab: where each test starts. */
 export class Tab extends PageObject {
@@ -16,9 +18,19 @@ export class Tab extends PageObject {
     this.#refused = refused
   }
 
-  async openHome(): Promise<HomePage> {
+  /** The app's front page: the Inbox. */
+  async openInbox(): Promise<TaskListPage> {
     await this.#page.goto(`${this.#baseUrl}/`)
-    return new HomePage(this.#page)
+    return new TaskListPage(this.#page)
+  }
+
+  async openTask(ref: string): Promise<TaskDetailPage> {
+    await this.#page.goto(`${this.#baseUrl}/tasks/${ref}`)
+    return new TaskDetailPage(this.#page)
+  }
+
+  async setTime(now: Instant): Promise<void> {
+    await this.#page.clock.setFixedTime(now)
   }
 
   /** The page asked nothing of the network beyond localhost. */

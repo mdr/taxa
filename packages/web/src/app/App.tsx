@@ -1,16 +1,36 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { Route, Switch } from "wouter"
 import styles from "./App.module.css"
 import { appTestIds } from "./AppTestIds.ts"
-import { SERVER_STATUS_TEXT } from "../health/server-status.ts"
-import { useServerStatus } from "../health/use-server-status.ts"
+import { Sidebar } from "./Sidebar.tsx"
+import { TaskDetailPage } from "../tasks/detail/TaskDetailPage.tsx"
+import { TaskListPage } from "../tasks/list/TaskListPage.tsx"
 
-export const App = () => {
-  const status = useServerStatus()
-  return (
-    <main className={styles.app}>
-      <h1 className={styles.title}>Taxa</h1>
-      <p className={styles.status} role="status" data-testid={appTestIds.serverStatus} data-status={status}>
-        {SERVER_STATUS_TEXT[status]}
-      </p>
-    </main>
-  )
-}
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 } } })
+
+const NotFound = () => (
+  <section data-testid={appTestIds.notFound}>
+    <h1>Not found</h1>
+    <p>There's nothing at this address.</p>
+  </section>
+)
+
+export const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <div className={styles.layout}>
+      <Sidebar />
+      <main className={styles.main}>
+        <Switch>
+          <Route path="/">
+            <TaskListPage />
+          </Route>
+          <Route path="/domains/:prefix">{({ prefix }) => <TaskListPage key={prefix} domainPrefix={prefix} />}</Route>
+          <Route path="/tasks/:ref">{({ ref }) => <TaskDetailPage key={ref} taskRef={ref} />}</Route>
+          <Route>
+            <NotFound />
+          </Route>
+        </Switch>
+      </main>
+    </div>
+  </QueryClientProvider>
+)

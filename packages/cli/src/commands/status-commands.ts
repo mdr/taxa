@@ -11,7 +11,7 @@ import {
   type CommandContext,
   type OptionValues
 } from "../command.ts"
-import { STATUS_TEXT } from "../format/task-text.ts"
+import { STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 import { ifVersion, VERSION_HELP, VERSION_OPTION } from "../input/version-option.ts"
 
 const changed = (context: CommandContext, task: Task, verb: string): ExitCode => {

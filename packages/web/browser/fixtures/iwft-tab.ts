@@ -1,16 +1,29 @@
 import { test, type Browser } from "@playwright/test"
+import type { Instant } from "@taxa/shared/units"
 import { Tab } from "../pages/Tab.ts"
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"])
+
+export interface TabSetting {
+  timeZone: string
+  /** The page's clock stands here, as the server's does. */
+  now: Instant
+}
 
 /**
  * A tab whose app calls the API at `apiUrl` (the test's in-process server)
  * and is refused anything beyond localhost.
  */
-export const newTab = async (browser: Browser, label: string, apiUrl: string): Promise<Tab> => {
+export const newTab = async (
+  browser: Browser,
+  label: string,
+  apiUrl: string,
+  { timeZone, now }: TabSetting
+): Promise<Tab> => {
   const baseUrl = test.info().project.use.baseURL
   if (!baseUrl) throw new Error("no baseURL: set one in the Playwright config")
-  const context = await browser.newContext()
+  const context = await browser.newContext({ timezoneId: timeZone })
+  await context.clock.setFixedTime(now)
   await context.addInitScript((url) => {
     ;(globalThis as { TAXA_API_BASE?: string }).TAXA_API_BASE = url
   }, apiUrl)

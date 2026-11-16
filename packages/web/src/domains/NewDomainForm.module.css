@@ -1,0 +1,28 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.heading {
+  margin: 0;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.prefix {
+  text-transform: uppercase;
+  width: 5rem;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger);
+}

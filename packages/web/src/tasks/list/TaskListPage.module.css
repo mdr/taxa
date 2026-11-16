@@ -1,0 +1,15 @@
+.page h1 {
+  margin: 0 0 1rem;
+  font-size: 1.6rem;
+}
+
+.tasks {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.quiet {
+  color: var(--muted);
+}

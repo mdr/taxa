@@ -1,0 +1,17 @@
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.title {
+  flex: 1;
+  min-width: 12rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--danger);
+}

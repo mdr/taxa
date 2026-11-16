@@ -1,27 +1,11 @@
 import { formatDay } from "@taxa/shared/dates/date-format"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import type { Domain } from "@taxa/shared/domains/domain"
-import type { Actor } from "@taxa/shared/identity/actor"
+import { actorText } from "@taxa/shared/identity/actor-text"
 import { formatEstimate } from "@taxa/shared/tasks/estimate"
-import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
-import { ENERGY_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "./task-text.ts"
-
-export const actorText = ({ user, agent, agentContext }: Actor): string => {
-  if (!agent) return user.name
-  return `${agent.name} for ${user.name}${agentContext ? ` (${agentContext})` : ""}`
-}
-
-/** What sets a task apart at a glance: status if not open, priority if not normal, dates. */
-const highlights = (task: Task, today: IsoDate): string[] => [
-  ...(task.status === TaskStatus.OPEN ? [] : [STATUS_TEXT[task.status]]),
-  ...(task.waitingOn ? [`on ${task.waitingOn}`] : []),
-  ...(task.priority === Priority.NORMAL ? [] : [PRIORITY_TEXT[task.priority]]),
-  ...(task.due ? [`due ${formatDay(task.due, today)}`] : []),
-  ...(task.scheduled
-    ? [`scheduled ${formatDay(task.scheduled, today)}${task.scheduledTime ? ` ${task.scheduledTime}` : ""}`]
-    : []),
-  ...(task.inbox ? ["inbox"] : [])
-]
+import type { Task } from "@taxa/shared/tasks/task"
+import { taskHighlights } from "@taxa/shared/tasks/task-highlights"
+import { ENERGY_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 
 /** One line per task, references lined up. */
 export const taskLines = (tasks: Task[], today: IsoDate): string => {
@@ -29,7 +13,7 @@ export const taskLines = (tasks: Task[], today: IsoDate): string => {
   const width = Math.max(...tasks.map(({ ref }) => ref.length))
   return tasks
     .map((task) => {
-      const extra = highlights(task, today)
+      const extra = taskHighlights(task, today)
       return `${task.ref.padEnd(width)}  ${task.title}${extra.length > 0 ? `  (${extra.join(", ")})` : ""}`
     })
     .join("\n")
