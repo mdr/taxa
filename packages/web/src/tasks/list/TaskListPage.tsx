@@ -13,6 +13,7 @@ import { listShortcuts } from "./list-shortcuts.ts"
 import { useLocation } from "wouter"
 import { realScheduler } from "../../services/scheduler.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
+import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { useServiceState } from "../../services/service-hooks.ts"
 import { useTaskChanges } from "../changes/task-changes-service.ts"
 import { ShortcutScope, useShortcuts } from "../../shortcuts/shortcut-service.ts"
@@ -107,7 +108,13 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
               type="button"
               className={styles.toggle}
               aria-expanded={showCompleted}
-              onClick={() => setShowCompleted(!showCompleted)}
+              onClick={() => {
+                if (!showCompleted)
+                  appAnalytics.track(ANALYTICS_CODES.list.completedShown, "showed completed tasks", {
+                    domainPrefix: domain?.prefix
+                  })
+                setShowCompleted(!showCompleted)
+              }}
               data-testid={taskListPageTestIds.showCompleted}
             >
               {showCompleted ? <ChevronDown size={15} aria-hidden /> : <ChevronRight size={15} aria-hidden />}

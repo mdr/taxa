@@ -4,6 +4,8 @@ import styles from "./NewDomainForm.module.css"
 import { newDomainFormTestIds } from "./NewDomainFormTestIds.ts"
 import { problemMessage } from "../api/problem-message.ts"
 import { useCreateDomain, useDomains } from "./domain-queries.ts"
+import { appAnalytics } from "../telemetry/app-telemetry.ts"
+import { ANALYTICS_CODES } from "../telemetry/codes.ts"
 
 /** "+ New domain", opening into a small form. */
 export const NewDomainForm = () => {
@@ -38,7 +40,18 @@ export const NewDomainForm = () => {
   }
   const submit = (event: SubmitEvent) => {
     event.preventDefault()
-    create.mutate({ name: name.trim(), prefix: prefix.trim() }, { onSuccess: close })
+    create.mutate(
+      { name: name.trim(), prefix: prefix.trim() },
+      {
+        onSuccess: (domain) => {
+          appAnalytics.track(ANALYTICS_CODES.domain.created, `created domain ${domain.prefix}`, {
+            domainId: domain.id,
+            prefix: domain.prefix
+          })
+          close()
+        }
+      }
+    )
   }
   return (
     <form className={styles.form} onSubmit={submit} aria-label="New domain">

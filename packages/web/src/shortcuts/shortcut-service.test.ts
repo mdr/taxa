@@ -196,6 +196,16 @@ describe("ShortcutService", () => {
     expect(ran).toEqual(["undo", "next", "capture"])
   })
 
+  it("tracks turning single keys off and on", () => {
+    const { shortcuts, telemetry } = makeShortcutService()
+    shortcuts.setSingleKeys(false)
+    shortcuts.setSingleKeys(true)
+    expect(telemetry.tracked()).toEqual([
+      [ANALYTICS_CODES.shortcut.singleKeysSet, { on: false }],
+      [ANALYTICS_CODES.shortcut.singleKeysSet, { on: true }]
+    ])
+  })
+
   it("starts with single keys as the person last chose", () => {
     const { shortcuts } = makeShortcutService(new FakeSettings(false))
     expect(shortcuts.state.singleKeys).toBe(false)

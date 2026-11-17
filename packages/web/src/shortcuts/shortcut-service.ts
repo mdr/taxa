@@ -192,6 +192,9 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
   readonly setSingleKeys = (on: boolean): void => {
     this.setState({ singleKeys: on })
     this.#settings.saveSingleKeys(on)
+    this.#analytics.track(ANALYTICS_CODES.shortcut.singleKeysSet, `turned single-key shortcuts ${on ? "on" : "off"}`, {
+      on
+    })
   }
 
   readonly requestFocus = (target: FocusTarget): void => this.setState({ focusRequest: target })

@@ -20,13 +20,24 @@ export const ANALYTICS_CODES = {
   nav: {
     pageOpened: "nav.pageOpened"
   },
+  onboarding: {
+    finished: "onboarding.finished"
+  },
+  domain: {
+    created: "domain.created"
+  },
   task: {
     captured: "task.captured",
     changed: "task.changed",
-    undone: "task.undone"
+    undone: "task.undone",
+    refCopied: "task.refCopied"
+  },
+  list: {
+    completedShown: "list.completedShown"
   },
   shortcut: {
-    used: "shortcut.used"
+    used: "shortcut.used",
+    singleKeysSet: "shortcut.singleKeysSet"
   },
   shortcutsHelp: {
     opened: "shortcutsHelp.opened"

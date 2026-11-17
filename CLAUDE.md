@@ -35,6 +35,7 @@ Taxa is a task manager for people and their agents. What it does and why is in `
 - Fields carry identifiers for cross-referencing (`userId`, `agentId`, `taskId`, `taskRef`, `domainId`…) and small facts (a status, the names of the fields changed). Never what people wrote (titles, notes, names), nor tokens or API keys.
 - Server: every request that changes data logs one `INFO` line once it's committed, saying who changed what (`task.updated`, with `userId`, `agentId`, `taskId`, `version` and the changed fields' names). Reads log nothing unless something goes wrong. A change that changed nothing isn't logged.
 - Web: logs are for what happens to the app (`app.started`, uncaught errors, failed requests). Analytics are for what people do (`nav.pageOpened`, `task.captured`, `task.changed`, `shortcut.used`…), through `Analytics.track`, which writes them to the log at `INFO`. Their codes are in `ANALYTICS_CODES`, apart from `LOG_CODES`. Services take `Analytics` and a logger through their constructors; tests use `testTelemetry()` and assert on what was tracked.
+- Track every concrete action someone takes: going somewhere, creating, changing or deleting something, running a command, copying, changing a setting, opening or showing something. Not trivial interaction: keystrokes, scrolling, pointer movement, focus, hovering.
 
 ## Folders
 

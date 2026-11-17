@@ -5,6 +5,8 @@ import { onboardingTestIds } from "./OnboardingTestIds.ts"
 import { problemMessage } from "../api/problem-message.ts"
 import { queryKeys } from "../api/query-keys.ts"
 import { taxaApi } from "../api/taxa-api.ts"
+import { appAnalytics } from "../telemetry/app-telemetry.ts"
+import { ANALYTICS_CODES } from "../telemetry/codes.ts"
 import {
   STARTING_CHOICES,
   prefixed,
@@ -24,7 +26,7 @@ export const Onboarding = () => {
   const problems = problemsOf(choices)
   const pending = toCreate(choices)
   const create = useMutation({
-    // One at a time, in order, so the first becomes the default; any made before a failure stay made.
+    // One at a time, in order, so they're listed as chosen; any made before a failure stay made.
     mutationFn: async () => {
       for (const { key, name, prefix } of pending) {
         await taxaApi.createDomain({ name, prefix }, `onboarding-${key}-${prefix}`).catch((error: unknown) => {
@@ -33,7 +35,12 @@ export const Onboarding = () => {
         setChoices((current) => current.map((row) => (row.key === key ? { ...row, created: true } : row)))
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.domains })
+    onSuccess: () => {
+      appAnalytics.track(ANALYTICS_CODES.onboarding.finished, "finished choosing domains", {
+        domainCount: choices.filter(({ chosen }) => chosen).length
+      })
+      return queryClient.invalidateQueries({ queryKey: queryKeys.domains })
+    }
   })
   const submit = (event: SubmitEvent) => {
     event.preventDefault()

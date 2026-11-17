@@ -4,6 +4,8 @@ import { taskMenuTestIds } from "./TaskMenuTestIds.ts"
 import { OptionList } from "../../ui/OptionList.tsx"
 import { Popover, PopoverLook } from "../../ui/Popover.tsx"
 import { TaskChangeType, type TaskChange } from "../changes/task-changes-service.ts"
+import { appAnalytics } from "../../telemetry/app-telemetry.ts"
+import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 
 enum MenuAction {
   COPY_REF = "COPY_REF",
@@ -31,7 +33,13 @@ export const TaskMenu = ({ task, change }: { task: Task; change: (change: TaskCh
         onChoose={(action) => {
           close()
           const actions: Record<MenuAction, () => void> = {
-            [MenuAction.COPY_REF]: () => void navigator.clipboard.writeText(task.ref),
+            [MenuAction.COPY_REF]: () => {
+              void navigator.clipboard.writeText(task.ref)
+              appAnalytics.track(ANALYTICS_CODES.task.refCopied, `copied ${task.ref}`, {
+                taskId: task.id,
+                taskRef: task.ref
+              })
+            },
             [MenuAction.DELETE]: () => change({ type: TaskChangeType.DELETE }),
             [MenuAction.RESTORE]: () => change({ type: TaskChangeType.RESTORE })
           }
