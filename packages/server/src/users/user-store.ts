@@ -1,3 +1,5 @@
+import type { TimeZone } from "@taxa/shared/dates/plain-date"
+import { userId as newUserId, type DomainId, type UserId } from "@taxa/shared/ids"
 import { eq } from "drizzle-orm"
 import { uuidv7 } from "@taxa/shared/ids"
 import type { Instant } from "@taxa/shared/units"
@@ -14,25 +16,25 @@ export const callerUserOf = (row: UserRow): CallerUser => ({
   defaultDomainId: row.defaultDomainId ?? undefined
 })
 
-export const createUser = async (db: Db, name: string, timeZone: string, now: Instant): Promise<CallerUser> => {
+export const createUser = async (db: Db, name: string, timeZone: TimeZone, now: Instant): Promise<CallerUser> => {
   const [row] = await db
     .insert(users)
-    .values({ id: uuidv7(now), name, timeZone, createdAt: new Date(now) })
+    .values({ id: newUserId(uuidv7(now)), name, timeZone, createdAt: new Date(now) })
     .returning()
   return callerUserOf(row!)
 }
 
-export const userById = async (db: Db, id: string): Promise<CallerUser | undefined> => {
+export const userById = async (db: Db, id: UserId): Promise<CallerUser | undefined> => {
   const [row] = await db.select().from(users).where(eq(users.id, id))
   return row && callerUserOf(row)
 }
 
 /** The development login's person, made the first time. */
-export const ensureUserNamed = async (db: Db, name: string, timeZone: string, now: Instant): Promise<CallerUser> => {
+export const ensureUserNamed = async (db: Db, name: string, timeZone: TimeZone, now: Instant): Promise<CallerUser> => {
   const [row] = await db.select().from(users).where(eq(users.name, name))
   return row ? callerUserOf(row) : createUser(db, name, timeZone, now)
 }
 
-export const setDefaultDomain = async (db: Db, userId: string, domainId: string): Promise<void> => {
+export const setDefaultDomain = async (db: Db, userId: UserId, domainId: DomainId): Promise<void> => {
   await db.update(users).set({ defaultDomainId: domainId }).where(eq(users.id, userId))
 }

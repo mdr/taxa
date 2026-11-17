@@ -1,3 +1,4 @@
+import { timeZone as zoneNamed, type TimeZone } from "@taxa/shared/dates/plain-date"
 import { runCli } from "../cli.ts"
 import { DEFAULT_SERVER, type ExitCode } from "../cli-io.ts"
 
@@ -18,14 +19,14 @@ export interface CliCaller {
 
 export interface CliRunOptions {
   stdin?: string
-  timeZone?: string
+  timeZone?: TimeZone
 }
 
 /** Runs `taxa` in this process as `caller`, capturing what it prints. */
 export const runTaxaAs = async (
   caller: CliCaller,
   argv: string[],
-  { stdin = "", timeZone = "Europe/London" }: CliRunOptions = {}
+  { stdin = "", timeZone = zoneNamed("Europe/London") }: CliRunOptions = {}
 ): Promise<CliRun> => {
   let stdout = ""
   let stderr = ""

@@ -1,3 +1,4 @@
+import type { DomainPrefix } from "@taxa/shared/domains/domain"
 import type { Actor } from "@taxa/shared/identity/actor"
 import { definedFields } from "@taxa/shared/objects"
 import { formatTaskRef } from "@taxa/shared/tasks/task-ref"
@@ -75,7 +76,7 @@ export const valuesOf = (state: TaskState): Omit<TaskValues, "updatedAt" | "vers
 })
 
 /** A task as the API shows it. */
-export const taskOf = (row: TaskRow, prefix: string, actorOf: (ids: ActorIds) => Actor): Task => {
+export const taskOf = (row: TaskRow, prefix: DomainPrefix, actorOf: (ids: ActorIds) => Actor): Task => {
   const inProgressBy = inProgressIdsOf(row)
   const task: Task = {
     id: row.id,

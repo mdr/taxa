@@ -3,9 +3,9 @@ import type { z } from "zod"
 import { ActivityType, type Activity, type FieldChange } from "@taxa/shared/activity/activity"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { dateIn } from "@taxa/shared/dates/plain-date"
-import { uuidv7 } from "@taxa/shared/ids"
+import { taskId as newTaskId, uuidv7, type DomainId } from "@taxa/shared/ids"
 import { compareTasks } from "@taxa/shared/tasks/task-order"
-import { parseTaskRef, type TaskRef } from "@taxa/shared/tasks/task-ref"
+import { parseTaskLookup, type TaskLookup } from "@taxa/shared/tasks/task-ref"
 import type {
   ChangeStatusRequestSchema,
   CreateTaskRequestSchema,
@@ -25,8 +25,8 @@ import { Deletion, deletedAtFor, inProgressIdsOf, stateOf, taskOf, valuesOf, typ
 import { changeStatus, changesFromNothing, editTask, type Outcome, type TaskState } from "./task-state.ts"
 import { findTask, findTasks, taskIdExists, type FoundTask } from "./task-store.ts"
 
-const refOf = (text: string): TaskRef => {
-  const ref = parseTaskRef(text)
+const lookupOf = (text: string): TaskLookup => {
+  const ref = parseTaskLookup(text)
   if (!ref)
     throw new ProblemError(
       ProblemType.INVALID_REQUEST,
@@ -75,10 +75,10 @@ export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, n
 }
 
 export const getTask = async (db: Db, caller: Caller, ref: string): Promise<Task> =>
-  taskFrom(db, await findTask(db, caller.user.id, refOf(ref)))
+  taskFrom(db, await findTask(db, caller.user.id, lookupOf(ref)))
 
 /** Where a new task goes when the request names no domain: the person's default, else their first. */
-const defaultDomainId = async (db: Db, caller: Caller): Promise<string> => {
+const defaultDomainId = async (db: Db, caller: Caller): Promise<DomainId> => {
   const domains = await domainsOf(db, caller.user.id)
   const domain = domains.find(({ id }) => id === caller.user.defaultDomainId) ?? domains[0]
   if (!domain) throw new ProblemError(ProblemType.NO_DOMAIN, "Create a domain first: every task belongs to one.")
@@ -92,7 +92,7 @@ export const createTask = async (
   now: Instant
 ): Promise<Task> =>
   db.transaction(async (tx) => {
-    const taskId = id ?? uuidv7(now)
+    const taskId = id ?? newTaskId(uuidv7(now))
     if (await taskIdExists(tx, taskId))
       throw new ProblemError(ProblemType.INVALID_REQUEST, `A task with id ${taskId} already exists.`)
     const domainId =
@@ -111,7 +111,7 @@ export const createTask = async (
     return taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: taskId }))
   })
 
-const blankState = (domainId: string, title: string, inbox: boolean): TaskState => ({
+const blankState = (domainId: DomainId, title: string, inbox: boolean): TaskState => ({
   domainId,
   title,
   notes: "",
@@ -154,7 +154,7 @@ const changeTask = async (
   { type, apply }: Change
 ): Promise<Task> =>
   db.transaction(async (tx) => {
-    const found = await findTask(tx, caller.user.id, refOf(ref), true)
+    const found = await findTask(tx, caller.user.id, lookupOf(ref), true)
     const { row } = found
     if (ifMatch !== undefined && ifMatch !== row.version) {
       throw new ProblemError(
@@ -235,4 +235,4 @@ export const restoreTask = (db: Db, caller: Caller, ref: string, now: Instant): 
   })
 
 export const taskActivity = async (db: Db, caller: Caller, ref: string): Promise<Activity[]> =>
-  activityOf(db, (await findTask(db, caller.user.id, refOf(ref))).row.id)
+  activityOf(db, (await findTask(db, caller.user.id, lookupOf(ref))).row.id)

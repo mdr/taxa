@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vite-plus/test"
 import { Priority, TaskStatus } from "../tasks/task.ts"
+import { agentId, userId } from "../ids.ts"
 import { ActivityType, type Activity } from "./activity.ts"
 import { activityText } from "./activity-text.ts"
 
-const MATT = { id: "0190a1b2-0000-7000-8000-000000000001", name: "Matt" }
+const MATT = { id: userId("0190a1b2-0000-7000-8000-000000000001"), name: "Matt" }
 const HOME = "0190a1b2-0000-7000-8000-000000000002"
 
 const context = { today: "2026-01-05", domainName: (id: string) => (id === HOME ? "Home" : undefined) }
@@ -75,7 +76,11 @@ describe("activityText", () => {
   it("names an agent and its context", () => {
     const activity = {
       ...makeActivity(ActivityType.TASK_DELETED),
-      actor: { user: MATT, agent: { id: MATT.id, name: "Claude Code" }, agentContext: "mdr/taxa" }
+      actor: {
+        user: MATT,
+        agent: { id: agentId("0190a1b2-0000-7000-8000-000000000003"), name: "Claude Code" },
+        agentContext: "mdr/taxa"
+      }
     }
     expect(activityText(activity, context)).toBe("Claude Code for Matt (mdr/taxa) deleted this")
   })

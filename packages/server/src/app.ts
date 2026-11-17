@@ -1,3 +1,4 @@
+import type { TimeZone } from "@taxa/shared/dates/plain-date"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import { HEALTH_PATH } from "@taxa/shared/api/health"
@@ -19,7 +20,7 @@ export const OPENAPI_PATH = "/api/openapi.json"
 export interface DevLogin {
   /** Everyone who calls without an API key is this person, made the first time. */
   name: string
-  timeZone: string
+  timeZone: TimeZone
 }
 
 export interface AppOptions {

@@ -1,3 +1,4 @@
+import { browserTimeZone } from "../../dates/browser-time-zone.ts"
 import { activityParts } from "@taxa/shared/activity/activity-text"
 import type { Domain } from "@taxa/shared/domains/domain"
 import { realClock } from "@taxa/shared/clock"
@@ -13,7 +14,7 @@ export const ActivityList = ({ taskId, domains }: { taskId: string; domains: Dom
   const activity = useActivity(taskId)
   const today = useToday()
   const now = realClock.now()
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const timeZone = browserTimeZone()
   const domainName = (id: string) => domains.find((domain) => domain.id === id)?.name
   return (
     <section className={styles.activity} aria-labelledby="activity-heading">

@@ -1,11 +1,11 @@
 import { z } from "zod"
-import type { Instant } from "../units.ts"
+import { flavoured, type Flavour, type Instant } from "../units.ts"
 
 /** A calendar date with no time zone, as YYYY-MM-DD: Friday is Friday wherever you are. */
-export type IsoDate = string & { readonly __flavour?: "IsoDate" }
+export type IsoDate = Flavour<string, "IsoDate">
 
 /** A wall-clock time with no time zone, as HH:MM. */
-export type IsoTime = string & { readonly __flavour?: "IsoTime" }
+export type IsoTime = Flavour<string, "IsoTime">
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/
 const ISO_TIME = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -29,7 +29,7 @@ export const addDays = (date: IsoDate, days: number): IsoDate => fromUtcMidnight
 export const weekdayOf = (date: IsoDate): number => (new Date(utcMidnight(date)).getUTCDay() + 6) % 7
 
 /** The date it is at `at` in `timeZone` (an IANA name such as Europe/London). */
-export const dateIn = (timeZone: string, at: Instant): IsoDate =>
+export const dateIn = (timeZone: TimeZone, at: Instant): IsoDate =>
   new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(at)
 
 export const isTimeZone = (name: string): boolean => {
@@ -41,6 +41,14 @@ export const isTimeZone = (name: string): boolean => {
   }
 }
 
-export const IsoDateSchema = z.string().refine(isIsoDate, "a date written YYYY-MM-DD")
+export const IsoDateSchema = flavoured<IsoDate>(z.string().refine(isIsoDate, "a date written YYYY-MM-DD"))
 
-export const IsoTimeSchema = z.string().refine(isIsoTime, "a time written HH:MM")
+export const IsoTimeSchema = flavoured<IsoTime>(z.string().refine(isIsoTime, "a time written HH:MM"))
+
+/** An IANA time zone name, such as Europe/London. */
+export const TimeZoneSchema = z
+  .string()
+  .refine(isTimeZone, "an IANA time zone, such as Europe/London")
+  .brand<"TimeZone">()
+export type TimeZone = z.infer<typeof TimeZoneSchema>
+export const timeZone = (name: string): TimeZone => TimeZoneSchema.parse(name)

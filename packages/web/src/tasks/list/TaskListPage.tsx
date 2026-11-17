@@ -43,7 +43,7 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
     <section className={styles.page} aria-labelledby="list-heading">
       <header className={styles.header}>
         {domainPrefix ? (
-          <DomainBadge prefix={domain?.prefix ?? domainPrefix.toUpperCase()} />
+          domain && <DomainBadge prefix={domain.prefix} />
         ) : (
           <Inbox size={22} className={styles.icon} aria-hidden />
         )}

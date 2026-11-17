@@ -1,3 +1,4 @@
+import { timeZone } from "@taxa/shared/dates/plain-date"
 /**
  * Browser tests against the real API server, in the test's own process (see
  * InProcessServer): the `taxa` fixture starts one for each test, opens tabs
@@ -11,7 +12,7 @@ import type { Tab } from "../pages/Tab.ts"
 import { newTab } from "./iwft-tab.ts"
 
 /** Who the web app signs in as: the development login. */
-const PERSON = { name: "Matt", timeZone: "Europe/London" }
+const PERSON = { name: "Matt", timeZone: timeZone("Europe/London") }
 
 export class TestTaxa {
   readonly server: InProcessServer

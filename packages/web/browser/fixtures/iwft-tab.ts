@@ -1,3 +1,4 @@
+import type { TimeZone } from "@taxa/shared/dates/plain-date"
 import { test, type Browser } from "@playwright/test"
 import type { Instant } from "@taxa/shared/units"
 import { Tab } from "../pages/Tab.ts"
@@ -5,7 +6,7 @@ import { Tab } from "../pages/Tab.ts"
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"])
 
 export interface TabSetting {
-  timeZone: string
+  timeZone: TimeZone
   /** The page's clock stands here, as the server's does. */
   now: Instant
 }

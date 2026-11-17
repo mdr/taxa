@@ -1,3 +1,4 @@
+import type { DomainId, TaskId } from "@taxa/shared/ids"
 import { asc, eq } from "drizzle-orm"
 import type { Activity, ActivityType, FieldChange } from "@taxa/shared/activity/activity"
 import type { Instant } from "@taxa/shared/units"
@@ -8,8 +9,8 @@ import { actorsNamed } from "./actor-names.ts"
 
 export interface ActivityRecord {
   type: ActivityType
-  entityId: string
-  domainId: string
+  entityId: TaskId | DomainId
+  domainId: DomainId
   changes: Record<string, FieldChange>
 }
 
@@ -23,7 +24,7 @@ export const recordActivity = async (db: Db, caller: Caller, at: Instant, record
   })
 }
 
-export const activityOf = async (db: Db, entityId: string): Promise<Activity[]> => {
+export const activityOf = async (db: Db, entityId: TaskId | DomainId): Promise<Activity[]> => {
   const rows = await db.select().from(activity).where(eq(activity.entityId, entityId)).orderBy(asc(activity.sequence))
   const ids = rows.map((row) => ({
     userId: row.userId,

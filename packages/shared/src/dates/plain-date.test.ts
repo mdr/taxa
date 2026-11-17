@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test"
-import { addDays, dateIn, isIsoDate, isIsoTime, isTimeZone, weekdayOf } from "./plain-date.ts"
+import { addDays, dateIn, isIsoDate, isIsoTime, isTimeZone, timeZone, weekdayOf } from "./plain-date.ts"
 
 describe("plain dates", () => {
   it("accept only real dates written YYYY-MM-DD", () => {
@@ -30,9 +30,9 @@ describe("plain dates", () => {
 
   it("know what date it is in a time zone", () => {
     const lateMondayInLondon = Date.UTC(2026, 0, 5, 23, 30)
-    expect(dateIn("Europe/London", lateMondayInLondon)).toBe("2026-01-05")
-    expect(dateIn("Asia/Tokyo", lateMondayInLondon)).toBe("2026-01-06")
-    expect(dateIn("America/New_York", lateMondayInLondon)).toBe("2026-01-05")
+    expect(dateIn(timeZone("Europe/London"), lateMondayInLondon)).toBe("2026-01-05")
+    expect(dateIn(timeZone("Asia/Tokyo"), lateMondayInLondon)).toBe("2026-01-06")
+    expect(dateIn(timeZone("America/New_York"), lateMondayInLondon)).toBe("2026-01-05")
   })
 
   it("know real time zone names", () => {

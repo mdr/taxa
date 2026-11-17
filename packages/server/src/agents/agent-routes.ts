@@ -1,3 +1,4 @@
+import { ApiKeyIdSchema } from "@taxa/shared/ids"
 import { createRoute, z } from "@hono/zod-openapi"
 import type { Clock } from "@taxa/shared/clock"
 import {
@@ -59,7 +60,7 @@ const routes = {
     path: `${KEYS_PATH}/{id}`,
     summary: "Revoke an API key",
     security: BEARER,
-    request: { params: z.object({ id: z.uuid() }) },
+    request: { params: z.object({ id: ApiKeyIdSchema }) },
     responses: { 200: json(ApiKeySchema, "The revoked key"), ...PROBLEMS }
   })
 }

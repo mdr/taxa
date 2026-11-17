@@ -1,6 +1,8 @@
 import { z } from "zod"
 import { IsoDateSchema, IsoTimeSchema } from "../dates/plain-date.ts"
 import { Energy, Priority, TaskStatus } from "./task.ts"
+import { TaskIdSchema } from "../ids.ts"
+import { flavoured, type Minutes } from "../units.ts"
 
 const TitleSchema = z.string().trim().min(1).max(500)
 
@@ -14,7 +16,7 @@ const EditableFieldsSchema = z.object({
   scheduled: IsoDateSchema,
   scheduledTime: IsoTimeSchema,
   start: IsoDateSchema,
-  estimateMinutes: z.number().int().min(1).max(100_000),
+  estimateMinutes: flavoured<Minutes>(z.number().int().min(1).max(100_000)),
   energy: z.enum(Energy),
   /** Move it to this domain, by prefix or id. */
   domain: z.string()
@@ -32,7 +34,7 @@ export enum ClearableField {
 
 export const CreateTaskRequestSchema = EditableFieldsSchema.partial().extend({
   /** Chosen by the client (a UUIDv7), so a task made offline is real at once. */
-  id: z.uuid().optional(),
+  id: TaskIdSchema.optional(),
   title: TitleSchema
 })
 

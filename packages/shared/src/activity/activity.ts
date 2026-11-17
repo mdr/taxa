@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { ActorSchema } from "../identity/actor.ts"
+import { flavoured, type ActivitySequence } from "../units.ts"
 
 export enum ActivityType {
   DOMAIN_CREATED = "DOMAIN_CREATED",
@@ -17,7 +18,7 @@ export type FieldChange = z.infer<typeof FieldChangeSchema>
 /** One change, as the activity log keeps it. */
 export const ActivitySchema = z.object({
   /** Increases with every change: a client that has seen up to N asks for what came after. */
-  sequence: z.number().int(),
+  sequence: flavoured<ActivitySequence>(z.number().int()),
   at: z.iso.datetime(),
   actor: ActorSchema,
   type: z.enum(ActivityType),

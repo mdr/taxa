@@ -14,6 +14,10 @@ Taxa is a task manager for people and their agents. What it does and why is in `
 - Discriminators are called `type`. Variants are unions of named types, not a base interface plus intersections.
 - Full-word names. `undefined`, not `null`. Drizzle reads and writes empty columns as `null`: convert in the `*-rows.ts` modules, the only place lint lets `null` appear (besides React's `useRef(null)` for elements), so the rest of the code never sees it. On the wire, clearing a field is an explicit list of fields to clear, never a `null`.
 - Never derive display text from code names (enum values, keys) by changing case; map each to its text.
+- Model values with meaning as their own types, not bare `string` or `number`:
+  - Identifiers and formatted strings are branded (`TaskId`, `DomainPrefix`, `TaskRef`, `TimeZone`…): a schema that checks and brands, and a constructor that parses with it (`taskId(text)`), so one kind can't stand in for another nor a plain string for any. Wire schemas and database columns (`.$type<TaskId>()`) use them, so values come out branded wherever they're read.
+  - Quantities and values often written by hand are flavours (`Instant`, `Ms`, `Minutes`, `Version`, `IsoDate`…, through `Flavour` in `@taxa/shared/units`): a plain value is accepted and arithmetic needs no wrapping, but one flavour can't be passed as another.
+  - Text a person typed to name something (`H-142`, `142` or an id; a prefix or a domain id) stays a `string` until it's parsed.
 - Write the actual type, not an indirection like `Task["status"]`, unless it is very complex or inexpressible.
 - Annotate functions' return types. Not needed for React components, nor where the type is too complex to write (then ask whether the function should be simpler).
 - Small modules, one job each; pull pure logic out so it can be unit-tested.

@@ -1,3 +1,4 @@
+import { domainId, type UserId } from "@taxa/shared/ids"
 import { and, asc, eq, isNull } from "drizzle-orm"
 import type { z } from "zod"
 import { ActivityType } from "@taxa/shared/activity/activity"
@@ -23,7 +24,7 @@ const domainOf = (row: DomainRow): Domain => ({
 })
 
 /** The domains this person belongs to, oldest first. */
-export const domainsOf = async (db: Db, userId: string): Promise<Domain[]> => {
+export const domainsOf = async (db: Db, userId: UserId): Promise<Domain[]> => {
   const rows = await db
     .select({ domain: domains })
     .from(domains)
@@ -34,7 +35,7 @@ export const domainsOf = async (db: Db, userId: string): Promise<Domain[]> => {
 }
 
 /** One of this person's domains, named by prefix (any case) or id. */
-export const findDomain = async (db: Db, userId: string, name: string): Promise<Domain> => {
+export const findDomain = async (db: Db, userId: UserId, name: string): Promise<Domain> => {
   const wanted = name.trim()
   const domain = (await domainsOf(db, userId)).find(
     (candidate) => candidate.id === wanted.toLowerCase() || candidate.prefix === wanted.toUpperCase()
@@ -56,7 +57,7 @@ export const createDomain = async (
     const [row] = await tx
       .insert(domains)
       .values({
-        id: request.id ?? uuidv7(now),
+        id: request.id ?? domainId(uuidv7(now)),
         name: request.name,
         prefix: request.prefix,
         createdBy: caller.user.id,

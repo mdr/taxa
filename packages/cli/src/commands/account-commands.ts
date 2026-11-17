@@ -1,5 +1,6 @@
+import { AgentIdSchema, ApiKeyIdSchema, type AgentId } from "@taxa/shared/ids"
 import { ExitCode } from "../cli-io.ts"
-import { oneArgument, print, stringOption, UsageError, type Command } from "../command.ts"
+import { idFrom, oneArgument, print, stringOption, UsageError, type Command } from "../command.ts"
 
 const whoami: Command = {
   name: "whoami",
@@ -90,7 +91,7 @@ const keys: Command = {
   options: {},
   run: async (context) => {
     const [all, everyAgent] = await Promise.all([context.client.keys(), context.client.agents()])
-    const agentName = (id: string | undefined): string => everyAgent.find((agent) => agent.id === id)?.name ?? "you"
+    const agentName = (id: AgentId | undefined): string => everyAgent.find((agent) => agent.id === id)?.name ?? "you"
     print(context, all, () =>
       all.length === 0
         ? "No API keys yet."
@@ -114,7 +115,11 @@ const addKey: Command = {
   run: async (context, values, positionals) => {
     const name = positionals.join(" ").trim()
     if (name === "") throw new UsageError("Give the key a name, such as where it's used.")
-    const key = await context.client.createKey(name, stringOption(values, "agent"))
+    const agent = stringOption(values, "agent")
+    const key = await context.client.createKey(
+      name,
+      agent === undefined ? undefined : idFrom(AgentIdSchema, agent, "an agent")
+    )
     // The secret alone, so it can be piped straight into a password manager.
     print(context, key, () => key.secret)
     return ExitCode.OK
@@ -127,7 +132,7 @@ const revokeKey: Command = {
   usage: "<id>",
   options: {},
   run: async (context, _values, positionals) => {
-    const key = await context.client.revokeKey(oneArgument(positionals, "key"))
+    const key = await context.client.revokeKey(idFrom(ApiKeyIdSchema, oneArgument(positionals, "key"), "a key"))
     print(context, key, () => `Revoked ${key.name}`)
     return ExitCode.OK
   }

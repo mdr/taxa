@@ -1,9 +1,20 @@
 import { z } from "zod"
+import type { DomainPrefix } from "../domains/domain.ts"
+import { TaskIdSchema, type TaskId } from "../ids.ts"
+import type { TaskNumber } from "../units.ts"
 
 /** How a task is named to people: its domain's prefix and its number, `H-142`. */
-export const formatTaskRef = (prefix: string, number: number): string => `${prefix}-${number}`
+export const TaskRefSchema = z
+  .string()
+  .regex(/^[A-Z]{1,5}-[1-9]\d*$/)
+  .brand<"TaskRef">()
+export type TaskRef = z.infer<typeof TaskRefSchema>
+const taskRef = (text: string): TaskRef => TaskRefSchema.parse(text)
 
-export type TaskRef = { type: "ID"; id: string } | { type: "NUMBER"; number: number }
+export const formatTaskRef = (prefix: DomainPrefix, number: TaskNumber): TaskRef => taskRef(`${prefix}-${number}`)
+
+/** How to find a task someone named. */
+export type TaskLookup = { type: "ID"; id: TaskId } | { type: "NUMBER"; number: TaskNumber }
 
 const NUMBERED = /^(?:([A-Za-z]{1,5})-)?(\d+)$/
 
@@ -12,9 +23,10 @@ const NUMBERED = /^(?:([A-Za-z]{1,5})-)?(\d+)$/
  * matter: the number alone is unique, so a task that moved domain keeps its
  * old names too.
  */
-export const parseTaskRef = (text: string): TaskRef | undefined => {
+export const parseTaskLookup = (text: string): TaskLookup | undefined => {
   const trimmed = text.trim()
-  if (z.uuid().safeParse(trimmed).success) return { type: "ID", id: trimmed.toLowerCase() }
+  const id = TaskIdSchema.safeParse(trimmed.toLowerCase())
+  if (id.success) return { type: "ID", id: id.data }
   const numbered = NUMBERED.exec(trimmed)
   if (!numbered) return undefined
   const number = Number(numbered[2])

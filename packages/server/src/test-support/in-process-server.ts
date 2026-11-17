@@ -16,6 +16,9 @@ import type { CallerUser } from "../auth/caller.ts"
 import { createUser, ensureUserNamed } from "../users/user-store.ts"
 import { pgliteDatabase } from "./pglite-database.ts"
 import { TestUser } from "./test-user.ts"
+import { timeZone as zoneNamed, type TimeZone } from "@taxa/shared/dates/plain-date"
+
+const LONDON = zoneNamed("Europe/London")
 
 /** Monday 5 January 2026, 09:00 UTC: where every test's clock starts unless it says otherwise. */
 const TEST_START: Instant = Date.UTC(2026, 0, 5, 9, 0)
@@ -80,7 +83,7 @@ export class InProcessServer {
   }
 
   /** A person with an API key of their own, who calls the API as themselves. */
-  async user(name: string, timeZone = "Europe/London"): Promise<TestUser> {
+  async user(name: string, timeZone: TimeZone = LONDON): Promise<TestUser> {
     return this.#withKey(await createUser(this.#database.db, name, timeZone, this.clock.now()))
   }
 

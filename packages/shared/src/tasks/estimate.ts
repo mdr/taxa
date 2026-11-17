@@ -1,3 +1,4 @@
+import type { Minutes } from "../units.ts"
 const ESTIMATE = /^(?:(\d+(?:\.\d+)?)h)?(?:(\d+)m?)?$/
 
 /** Minutes from `30`, `30m`, `1h`, `1.5h` or `1h30m`; undefined if it's none of those. */
@@ -9,7 +10,7 @@ export const parseEstimate = (text: string): number | undefined => {
 }
 
 /** `45m`, `2h`, `1h30m`. */
-export const formatEstimate = (minutes: number): string => {
+export const formatEstimate = (minutes: Minutes): string => {
   const hours = Math.floor(minutes / 60)
   const rest = minutes % 60
   if (hours === 0) return `${rest}m`

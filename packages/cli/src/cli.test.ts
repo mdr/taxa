@@ -1,3 +1,4 @@
+import { timeZone } from "@taxa/shared/dates/plain-date"
 import { describe, expect, it } from "vite-plus/test"
 import { runCli } from "./cli.ts"
 import { ExitCode } from "./cli-io.ts"
@@ -11,7 +12,7 @@ const run = async (...argv: string[]): Promise<{ exitCode: ExitCode; stdout: str
     stderr: (text) => (stderr += text),
     readStdin: () => Promise.resolve(""),
     now: () => 0,
-    timeZone: "UTC"
+    timeZone: timeZone("UTC")
   })
   return { exitCode, stdout, stderr }
 }

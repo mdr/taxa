@@ -42,3 +42,15 @@ export const oneArgument = (positionals: string[], what: string): string => {
 export const print = (context: CommandContext, data: unknown, human: () => string): void => {
   context.io.stdout(context.json ? `${JSON.stringify(data, undefined, 2)}\n` : `${human()}\n`)
 }
+
+/** Any schema that checks text and brands it as an id. */
+interface IdSchema<Id> {
+  safeParse: (text: string) => { success: true; data: Id } | { success: false }
+}
+
+/** Text given as an id of some kind, checked as one. */
+export const idFrom = <Id>(schema: IdSchema<Id>, text: string, kind: string): Id => {
+  const parsed = schema.safeParse(text.trim().toLowerCase())
+  if (!parsed.success) throw new UsageError(`${JSON.stringify(text)} isn't ${kind} id.`)
+  return parsed.data
+}

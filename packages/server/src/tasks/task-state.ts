@@ -1,3 +1,5 @@
+import type { Minutes } from "@taxa/shared/units"
+import type { DomainId } from "@taxa/shared/ids"
 import type { FieldChange } from "@taxa/shared/activity/activity"
 import { addDays, type IsoDate, type IsoTime } from "@taxa/shared/dates/plain-date"
 import type { ClearableField, ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
@@ -8,7 +10,7 @@ import type { ActorIds } from "../activity/actor-names.ts"
 
 /** What a task says, apart from its identity and bookkeeping: what edits change. */
 export interface TaskState {
-  domainId: string
+  domainId: DomainId
   title: string
   notes: string
   status: TaskStatus
@@ -18,7 +20,7 @@ export interface TaskState {
   scheduled: IsoDate | undefined
   scheduledTime: IsoTime | undefined
   start: IsoDate | undefined
-  estimateMinutes: number | undefined
+  estimateMinutes: Minutes | undefined
   energy: Energy | undefined
   inProgressBy: ActorIds | undefined
   waitingOn: string | undefined

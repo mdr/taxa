@@ -1,3 +1,4 @@
+import { timeZone } from "@taxa/shared/dates/plain-date"
 import { describe, expect } from "vite-plus/test"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { TaxaClient } from "@taxa/shared/api/taxa-client"
@@ -77,7 +78,7 @@ describe("the API", () => {
 })
 
 describe("the development login", () => {
-  const it = useInProcessServer({ devLogin: { name: "Matt", timeZone: "Europe/London" } })
+  const it = useInProcessServer({ devLogin: { name: "Matt", timeZone: timeZone("Europe/London") } })
 
   it("treats callers with no key as its person", async ({ server }) => {
     const anyone = new TaxaClient({ baseUrl: server.httpUrl })

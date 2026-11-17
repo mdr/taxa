@@ -1,3 +1,5 @@
+import type { AgentId, ApiKeyId } from "../ids.ts"
+import type { Version } from "../units.ts"
 import { z } from "zod"
 import { ActivitySchema, type Activity } from "../activity/activity.ts"
 import { DOMAINS_PATH, DomainSchema, type CreateDomainRequest, type Domain } from "../domains/domain.ts"
@@ -47,7 +49,7 @@ export class TaxaApiError extends Error {
 interface RequestOptions {
   method?: string
   body?: unknown
-  ifMatch?: number
+  ifMatch?: Version
   idempotencyKey?: string
 }
 
@@ -101,15 +103,15 @@ export class TaxaClient {
   }
 
   /** `ifMatch`: the version you last saw; the change is refused if the task has moved on since. */
-  updateTask(ref: string, request: UpdateTaskRequest, ifMatch?: number): Promise<Task> {
+  updateTask(ref: string, request: UpdateTaskRequest, ifMatch?: Version): Promise<Task> {
     return this.#request(TaskSchema, taskPath(ref), { method: "PATCH", body: request, ifMatch })
   }
 
-  changeStatus(ref: string, request: ChangeStatusRequest, ifMatch?: number): Promise<Task> {
+  changeStatus(ref: string, request: ChangeStatusRequest, ifMatch?: Version): Promise<Task> {
     return this.#request(TaskSchema, `${taskPath(ref)}/status`, { method: "POST", body: request, ifMatch })
   }
 
-  deleteTask(ref: string, ifMatch?: number): Promise<Task> {
+  deleteTask(ref: string, ifMatch?: Version): Promise<Task> {
     return this.#request(TaskSchema, taskPath(ref), { method: "DELETE", ifMatch })
   }
 
@@ -133,11 +135,11 @@ export class TaxaClient {
     return (await this.#request(ListSchema(ApiKeySchema), KEYS_PATH)).items
   }
 
-  createKey(name: string, agentId?: string): Promise<CreatedKey> {
+  createKey(name: string, agentId?: AgentId): Promise<CreatedKey> {
     return this.#request(CreatedKeySchema, KEYS_PATH, { method: "POST", body: { name, agentId } })
   }
 
-  revokeKey(id: string): Promise<ApiKey> {
+  revokeKey(id: ApiKeyId): Promise<ApiKey> {
     return this.#request(ApiKeySchema, `${KEYS_PATH}/${encodeURIComponent(id)}`, { method: "DELETE" })
   }
 

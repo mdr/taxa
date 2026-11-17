@@ -1,3 +1,4 @@
+import type { TimeZone } from "@taxa/shared/dates/plain-date"
 import type { Instant } from "@taxa/shared/units"
 
 /** What a CLI run reads and writes, so tests can run it in-process. */
@@ -9,7 +10,7 @@ export interface CliIo {
   readStdin: () => Promise<string>
   now: () => Instant
   /** Where "today" and "friday" are worked out. */
-  timeZone: string
+  timeZone: TimeZone
 }
 
 /** What `taxa` exits with, so scripts and agents can tell outcomes apart. */

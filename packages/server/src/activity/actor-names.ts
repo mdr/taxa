@@ -1,3 +1,4 @@
+import type { AgentId, UserId } from "@taxa/shared/ids"
 import { inArray } from "drizzle-orm"
 import type { Actor } from "@taxa/shared/identity/actor"
 import type { Db } from "../database/database.ts"
@@ -5,8 +6,8 @@ import { agents, users } from "../database/schema.ts"
 
 /** The ids of an actor, as rows hold them. */
 export interface ActorIds {
-  userId: string
-  agentId: string | undefined
+  userId: UserId
+  agentId: AgentId | undefined
   agentContext: string | undefined
 }
 

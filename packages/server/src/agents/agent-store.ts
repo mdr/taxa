@@ -1,3 +1,4 @@
+import { agentId, apiKeyId, type AgentId, type ApiKeyId } from "@taxa/shared/ids"
 import { and, asc, eq } from "drizzle-orm"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { uuidv7 } from "@taxa/shared/ids"
@@ -38,7 +39,7 @@ export const createAgent = async (db: Db, caller: Caller, name: string, now: Ins
   requirePerson(caller)
   const [row] = await db
     .insert(agents)
-    .values({ id: uuidv7(now), ownerId: caller.user.id, name, createdAt: new Date(now) })
+    .values({ id: agentId(uuidv7(now)), ownerId: caller.user.id, name, createdAt: new Date(now) })
     .returning()
   return agentOf(row!)
 }
@@ -53,7 +54,7 @@ export const keysOf = async (db: Db, caller: Caller): Promise<ApiKey[]> => {
 export const createKey = async (
   db: Db,
   caller: Caller,
-  { name, agentId }: { name: string; agentId?: string | undefined },
+  { name, agentId }: { name: string; agentId?: AgentId | undefined },
   now: Instant
 ): Promise<CreatedKey> => {
   requirePerson(caller)
@@ -68,7 +69,7 @@ export const createKey = async (
   const [row] = await db
     .insert(apiKeys)
     .values({
-      id: uuidv7(now),
+      id: apiKeyId(uuidv7(now)),
       userId: caller.user.id,
       agentId,
       name,
@@ -80,7 +81,7 @@ export const createKey = async (
   return { ...keyOf(row!), secret }
 }
 
-export const revokeKey = async (db: Db, caller: Caller, id: string, now: Instant): Promise<ApiKey> => {
+export const revokeKey = async (db: Db, caller: Caller, id: ApiKeyId, now: Instant): Promise<ApiKey> => {
   requirePerson(caller)
   const mine = and(eq(apiKeys.id, id), eq(apiKeys.userId, caller.user.id))
   const [existing] = await db.select().from(apiKeys).where(mine)
