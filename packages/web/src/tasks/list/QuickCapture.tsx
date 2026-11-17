@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react"
 import { useState, type SubmitEvent } from "react"
 import styles from "./QuickCapture.module.css"
 import { quickCaptureTestIds } from "./QuickCaptureTestIds.ts"
@@ -15,15 +16,17 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
   }
   return (
     <form className={styles.form} onSubmit={submit}>
+      <Plus size={18} className={styles.plus} aria-hidden />
       <input
         className={styles.title}
         value={title}
         onChange={(event) => setTitle(event.target.value)}
         aria-label="New task"
-        placeholder="Add a task…"
+        placeholder="Add a task"
         data-testid={quickCaptureTestIds.title}
       />
-      <button type="submit" disabled={create.isPending} data-testid={quickCaptureTestIds.add}>
+      {title.trim() !== "" && <kbd className={styles.hint}>Enter</kbd>}
+      <button type="submit" className={styles.submit} disabled={create.isPending} data-testid={quickCaptureTestIds.add}>
         Add
       </button>
       {create.isError && (

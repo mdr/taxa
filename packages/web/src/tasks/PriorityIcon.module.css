@@ -1,0 +1,15 @@
+.urgent {
+  color: var(--priority-urgent);
+}
+
+.high {
+  color: var(--priority-high);
+}
+
+.normal {
+  color: var(--priority-normal);
+}
+
+.low {
+  color: var(--priority-low);
+}

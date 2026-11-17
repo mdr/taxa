@@ -12,7 +12,7 @@ Taxa is a task manager for people and their agents. What it does and why is in `
 - String enums with ALL_CAPS names and values; reference members, not raw strings.
 - Except values whose literal types an outside library owns: an `as const` object, so its types apply.
 - Discriminators are called `type`. Variants are unions of named types, not a base interface plus intersections.
-- Full-word names. `undefined`, not `null`. Drizzle reads and writes empty columns as `null`: convert in the `*-rows.ts` modules, the only place lint lets `null` appear, so the rest of the code never sees it. On the wire, clearing a field is an explicit list of fields to clear, never a `null`.
+- Full-word names. `undefined`, not `null`. Drizzle reads and writes empty columns as `null`: convert in the `*-rows.ts` modules, the only place lint lets `null` appear (besides React's `useRef(null)` for elements), so the rest of the code never sees it. On the wire, clearing a field is an explicit list of fields to clear, never a `null`.
 - Never derive display text from code names (enum values, keys) by changing case; map each to its text.
 - Write the actual type, not an indirection like `Task["status"]`, unless it is very complex or inexpressible.
 - Annotate functions' return types. Not needed for React components, nor where the type is too complex to write (then ask whether the function should be simpler).

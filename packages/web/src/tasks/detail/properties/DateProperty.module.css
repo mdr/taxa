@@ -1,0 +1,24 @@
+.plain,
+.today,
+.overdue {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.label {
+  color: var(--muted);
+}
+
+.today {
+  color: var(--warning);
+}
+
+.overdue {
+  color: var(--danger);
+}
+
+.today .label,
+.overdue .label {
+  color: inherit;
+}

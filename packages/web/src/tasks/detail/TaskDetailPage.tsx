@@ -1,11 +1,14 @@
+import { ChevronRight, Inbox, RotateCcw } from "lucide-react"
 import { Link } from "wouter"
 import styles from "./TaskDetailPage.module.css"
 import { taskDetailPageTestIds } from "./TaskDetailPageTestIds.ts"
 import { ActivityList } from "./ActivityList.tsx"
 import { NotesEditor } from "./NotesEditor.tsx"
-import { TaskFields } from "./TaskFields.tsx"
+import { TaskMenu } from "./TaskMenu.tsx"
+import { TaskProperties } from "./TaskProperties.tsx"
 import { TitleField } from "./TitleField.tsx"
 import { problemMessage } from "../../api/problem-message.ts"
+import { DomainBadge } from "../../domains/DomainBadge.tsx"
 import { useDomains } from "../../domains/domain-queries.ts"
 import { useTask } from "../task-queries.ts"
 import { TaskChangeType, useTaskChanges } from "../use-task-changes.ts"
@@ -14,10 +17,10 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
   const query = useTask(taskRef)
   const domains = useDomains()
   const { change, problem } = useTaskChanges(query.data, taskRef)
-  if (query.isPending) return <p>Loading…</p>
+  if (query.isPending) return undefined
   if (query.isError) {
     return (
-      <p role="alert" data-testid={taskDetailPageTestIds.error}>
+      <p className={styles.problem} role="alert" data-testid={taskDetailPageTestIds.error}>
         {problemMessage(query.error)}
       </p>
     )
@@ -26,48 +29,50 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
   const domain = domains.data?.find(({ id }) => id === task.domainId)
   return (
     <article className={styles.page} aria-labelledby="task-heading">
-      <p className={styles.back}>
-        <Link href={domain ? `/domains/${domain.prefix}` : "/"}>← {domain?.name ?? "Inbox"}</Link>
-      </p>
-      <h1 id="task-heading" className={styles.heading}>
-        <span className={styles.ref} data-testid={taskDetailPageTestIds.ref}>
-          {task.ref}
-        </span>
-        <span className={styles.visuallyHidden}>{task.title}</span>
+      <div className={styles.bar}>
+        <nav className={styles.crumbs} aria-label="Breadcrumb">
+          {task.inbox ? (
+            <Link href="/" className={styles.crumb}>
+              <Inbox size={14} aria-hidden /> Inbox
+            </Link>
+          ) : (
+            domain && (
+              <Link href={`/domains/${domain.prefix}`} className={styles.crumb}>
+                <DomainBadge prefix={domain.prefix} /> {domain.name}
+              </Link>
+            )
+          )}
+          <ChevronRight size={14} className={styles.separator} aria-hidden />
+          <span className={styles.ref} data-testid={taskDetailPageTestIds.ref}>
+            {task.ref}
+          </span>
+        </nav>
+        <TaskMenu task={task} change={change} />
+      </div>
+      <h1 id="task-heading" className={styles.visuallyHidden}>
+        {task.title}
       </h1>
-      <TitleField key={task.title} title={task.title} change={change} />
-      {problem && (
-        <p className={styles.problem} role="alert" data-testid={taskDetailPageTestIds.problem}>
-          {problem}
-        </p>
-      )}
       {task.deletedAt && (
         <p className={styles.deleted} data-testid={taskDetailPageTestIds.deleted}>
-          This task is deleted.{" "}
+          This task is deleted.
           <button
             type="button"
             onClick={() => change({ type: TaskChangeType.RESTORE })}
             data-testid={taskDetailPageTestIds.restore}
           >
-            Restore it
+            <RotateCcw size={14} aria-hidden /> Restore
           </button>
         </p>
       )}
-      <TaskFields key={`fields-${task.estimateMinutes}`} task={task} domains={domains.data ?? []} change={change} />
+      <TitleField key={task.title} title={task.title} change={change} />
+      <TaskProperties task={task} domains={domains.data ?? []} change={change} />
+      {problem && (
+        <p className={styles.problem} role="alert" data-testid={taskDetailPageTestIds.problem}>
+          {problem}
+        </p>
+      )}
       <NotesEditor notes={task.notes} change={change} />
-      <ActivityList taskId={task.id} />
-      {!task.deletedAt && (
-        <p>
-          <button
-            type="button"
-            className={styles.delete}
-            onClick={() => change({ type: TaskChangeType.DELETE })}
-            data-testid={taskDetailPageTestIds.delete}
-          >
-            Delete task
-          </button>
-        </p>
-      )}
+      <ActivityList taskId={task.id} domains={domains.data ?? []} />
     </article>
   )
 }

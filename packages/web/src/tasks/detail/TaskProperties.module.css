@@ -1,0 +1,28 @@
+.properties {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.inbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.15rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--selected);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.note {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}

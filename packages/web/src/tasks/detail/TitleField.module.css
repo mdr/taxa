@@ -1,14 +1,26 @@
 .title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  border-color: transparent;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.15rem 0.35rem;
+  margin-left: -0.35rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
   background: transparent;
-  padding: 0.2rem 0.4rem;
-  margin-left: -0.4rem;
+  font-size: 1.75rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  resize: none;
+  overflow: hidden;
 }
 
-.title:hover,
+.title:hover {
+  background: var(--hover);
+}
+
 .title:focus {
-  border-color: var(--border);
+  outline: none;
   background: var(--surface);
+  border-color: var(--border-strong);
 }

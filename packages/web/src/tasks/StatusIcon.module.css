@@ -1,0 +1,19 @@
+.open {
+  color: var(--status-open);
+}
+
+.inProgress {
+  color: var(--status-in-progress);
+}
+
+.waiting {
+  color: var(--status-waiting);
+}
+
+.done {
+  color: var(--status-done);
+}
+
+.cancelled {
+  color: var(--status-cancelled);
+}

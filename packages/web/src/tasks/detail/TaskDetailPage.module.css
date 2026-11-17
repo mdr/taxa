@@ -1,23 +1,47 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.1rem;
+  max-width: 52rem;
 }
 
-.back {
-  margin: 0;
-  font-size: 0.9rem;
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
 }
 
-.heading {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 400;
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.4rem;
+  margin-left: -0.4rem;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.crumb:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.separator {
+  color: var(--faint);
 }
 
 .ref {
-  font-family: ui-monospace, monospace;
-  color: var(--muted);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.8rem;
 }
 
 .visuallyHidden {
@@ -31,12 +55,25 @@
 
 .problem,
 .deleted {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   margin: 0;
-  padding: 0.6rem 0.8rem;
-  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius);
   background: var(--notice);
+  font-size: 0.9rem;
 }
 
-.delete {
-  color: var(--danger);
+.deleted {
+  background: var(--danger-soft);
+}
+
+.deleted button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  background: var(--surface);
+  border-color: var(--border-strong);
 }

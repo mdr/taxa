@@ -1,0 +1,130 @@
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 16.5rem;
+  padding: 0.2rem;
+}
+
+.typed {
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.understood {
+  margin: 0 0.2rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.shortcuts {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.shortcut {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.detail {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.calendar {
+  padding-top: 0.1rem;
+}
+
+.monthBar {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0 0.1rem 0.2rem 0.5rem;
+}
+
+.month {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.nav {
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  color: var(--muted);
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.weekday {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+  padding-bottom: 0.15rem;
+}
+
+.grid td {
+  padding: 1px;
+}
+
+.day {
+  width: 2.1rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.day[data-outside="true"] {
+  color: var(--muted);
+}
+
+.day[data-today="true"] {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.day[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-text);
+  opacity: 1;
+}
+
+.day[aria-pressed="true"]:hover {
+  background: var(--accent);
+}
+
+.time {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.5rem 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.time input {
+  width: 5.5rem;
+  color: var(--text);
+}
+
+.clear {
+  align-self: flex-start;
+  color: var(--danger);
+  font-size: 0.875rem;
+}

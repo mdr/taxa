@@ -1,15 +1,70 @@
-.page h1 {
-  margin: 0 0 1rem;
+.page {
+  max-width: 52rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.icon {
+  color: var(--accent);
+}
+
+.heading {
+  margin: 0;
   font-size: 1.6rem;
+  font-weight: 650;
+}
+
+.count {
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--selected);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
 }
 
 .tasks {
   list-style: none;
-  margin: 1rem 0 0;
+  margin: 0;
   padding: 0;
-  border-top: 1px solid var(--border);
 }
 
-.quiet {
+.empty {
+  margin-top: 2.5rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.empty p {
+  margin: 0.25rem 0;
+}
+
+.emptyTitle {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.problem {
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius);
+  background: var(--notice);
+}
+
+.completed {
+  margin-top: 1.25rem;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: -0.5rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
   color: var(--muted);
 }

@@ -22,7 +22,8 @@ export const newTab = async (
 ): Promise<Tab> => {
   const baseUrl = test.info().project.use.baseURL
   if (!baseUrl) throw new Error("no baseURL: set one in the Playwright config")
-  const context = await browser.newContext({ timezoneId: timeZone })
+  // Reduced motion, as the app honours it: nothing is caught half-faded-in.
+  const context = await browser.newContext({ timezoneId: timeZone, reducedMotion: "reduce" })
   await context.clock.setFixedTime(now)
   await context.addInitScript((url) => {
     ;(globalThis as { TAXA_API_BASE?: string }).TAXA_API_BASE = url

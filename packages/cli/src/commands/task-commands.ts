@@ -132,8 +132,12 @@ const log: Command = {
   usage: "<ref>",
   options: {},
   run: async (context, _values, positionals) => {
-    const activity = await context.client.activity(oneArgument(positionals, "task"))
-    print(context, activity, () => activityLines(activity, context.io.timeZone))
+    const [activity, domains] = await Promise.all([
+      context.client.activity(oneArgument(positionals, "task")),
+      context.client.domains()
+    ])
+    const domainName = (id: string): string | undefined => domains.find((domain) => domain.id === id)?.name
+    print(context, activity, () => activityLines(activity, context.io.timeZone, { today: context.today(), domainName }))
     return ExitCode.OK
   }
 }

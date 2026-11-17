@@ -1,0 +1,82 @@
+.wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.chip,
+.emptyChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 1.9rem;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.chip {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.chip:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
+
+.emptyChip {
+  color: var(--muted);
+  border: 1px dashed var(--border-strong);
+}
+
+.emptyChip:hover:not(:disabled) {
+  color: var(--text);
+  border-style: solid;
+}
+
+.chip[aria-expanded="true"],
+.emptyChip[aria-expanded="true"] {
+  border-color: var(--accent);
+  border-style: solid;
+}
+
+.icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: var(--muted);
+}
+
+.panel {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 13rem;
+  padding: 0.35rem;
+  background: var(--surface);
+  border-radius: 10px;
+  box-shadow: var(--shadow-popover);
+  animation: appear 120ms ease-out;
+}
+
+.end {
+  left: auto;
+  right: 0;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}

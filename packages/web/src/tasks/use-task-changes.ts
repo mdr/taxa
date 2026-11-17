@@ -44,8 +44,12 @@ export interface TaskChanges {
   problem: string | undefined
 }
 
-/** Changes to the task shown under `queryRef`, refreshing everything that shows it. */
-export const useTaskChanges = (task: Task | undefined, queryRef: string): TaskChanges => {
+/** Changes to the task shown under `queryRef`, refreshing everything that shows it; `onChanged` hears of each one made. */
+export const useTaskChanges = (
+  task: Task | undefined,
+  queryRef: string,
+  onChanged?: (task: Task) => void
+): TaskChanges => {
   const queryClient = useQueryClient()
   const [problem, setProblem] = useState<string>()
   const show = async (latest: Task): Promise<void> => {
@@ -64,7 +68,10 @@ export const useTaskChanges = (task: Task | undefined, queryRef: string): TaskCh
       return send(latest, change)
     },
     onMutate: () => setProblem(undefined),
-    onSuccess: show,
+    onSuccess: async (latest) => {
+      onChanged?.(latest)
+      await show(latest)
+    },
     onError: async (error) => {
       if (error instanceof TaxaApiError && error.problem.type === ProblemType.VERSION_CONFLICT) {
         setProblem(CONFLICT_NOTICE)

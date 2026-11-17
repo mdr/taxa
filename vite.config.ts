@@ -6,7 +6,11 @@ const noReexports = [
 ]
 
 const noNull = [
-  { selector: "Literal[raw='null']", message: "Use undefined, not null." },
+  // Except useRef(null): React sets element refs to null, by its own contract.
+  {
+    selector: "Literal[raw='null']:not(CallExpression[callee.name='useRef'] > Literal)",
+    message: "Use undefined, not null."
+  },
   { selector: "TSNullKeyword", message: "Use undefined, not null." },
   { selector: "MemberExpression[property.name='toBeNull']", message: "Use toBeUndefined, not toBeNull." }
 ]

@@ -1,40 +1,114 @@
 .row {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   gap: 0.25rem 0.75rem;
-  padding: 0.55rem 0.25rem;
-  border-bottom: 1px solid var(--border);
+  min-height: 2.6rem;
+  padding: 0.35rem 0.6rem;
+  margin: 0 -0.6rem;
+  border-radius: var(--radius);
 }
 
-.done {
-  width: 1.1rem;
-  height: 1.1rem;
-  align-self: center;
+.row:hover {
+  background: var(--hover);
 }
 
-.ref {
-  font-family: ui-monospace, monospace;
-  font-size: 0.85rem;
-  color: var(--muted);
-  min-width: 3.5rem;
+.tick {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  cursor: pointer;
+}
+
+.box {
+  appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms;
+}
+
+.box:hover {
+  border-color: var(--accent);
+}
+
+.box:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.mark {
+  position: absolute;
+  color: var(--accent-text);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.box:checked + .mark {
+  opacity: 1;
+}
+
+.box:hover:not(:checked) + .mark {
+  opacity: 0.6;
+  color: var(--accent);
 }
 
 .title {
+  flex: 1;
+  min-width: 10rem;
   text-decoration: none;
 }
 
-.title:hover {
-  text-decoration: underline;
+.details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.85rem;
 }
 
-.highlights {
-  font-size: 0.85rem;
+.meta,
+.dueToday,
+.overdue {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dueToday {
+  color: var(--warning);
+}
+
+.overdue {
+  color: var(--danger);
+}
+
+.ref {
+  min-width: 2.75rem;
+  text-align: right;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
 .problem {
   flex-basis: 100%;
+  padding-left: 1.9rem;
   color: var(--danger);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+}
+
+.row[data-done="true"] .title {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--faint);
 }

@@ -203,7 +203,7 @@ describe("taxa edit and status commands", () => {
       "high"
     ])
     expect((await taxa(server, matt, "log", "1")).stdout).toBe(
-      "2026-01-05 09:00  Matt created it\n2026-01-05 10:00  Claude Code for Matt (mdr/taxa) changed: priority normal → high\n"
+      "2026-01-05 09:00  Matt created this\n2026-01-05 10:00  Claude Code for Matt (mdr/taxa) set priority to high\n"
     )
   })
 })

@@ -1,0 +1,16 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 12rem;
+}
+
+.editor input {
+  font-size: 0.9rem;
+}
+
+.clear {
+  align-self: flex-start;
+  color: var(--danger);
+  font-size: 0.875rem;
+}

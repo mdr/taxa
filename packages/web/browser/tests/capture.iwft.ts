@@ -38,14 +38,40 @@ test("a task captured in a domain's list goes straight into it", async ({ taxa }
   expect((await taxa.matt.client.task("H-1")).inbox).toBe(false)
 })
 
-test("ticking a task off finishes it", async ({ taxa }) => {
+test("a ticked-off task stays in place until you leave, with a chance to undo", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Fix the tap", { domain: "H", due: "2026-01-09" })
   await taxa.matt.addTask("Renew passport", { domain: "H" })
   const list = await (await taxa.openTab("Matt")).openInbox()
   await list.sidebar.openDomain("Home")
-  await list.expectHighlights("Fix the tap", "due Fri 9 Jan")
+  await list.expectHighlights("Fix the tap", "Due Fri 9 Jan")
+
   await list.complete("Fix the tap")
-  await list.expectTasks(["H-2 Renew passport"])
+  await list.expectTasks(["✓ H-1 Fix the tap", "H-2 Renew passport"])
+  await list.expectUndoOffered("Fix the tap")
+  await list.expectAccessible()
   await expect.poll(async () => (await taxa.matt.client.task("H-1")).status).toBe(TaskStatus.DONE)
+
+  await list.undo()
+  await list.expectTasks(["H-1 Fix the tap", "H-2 Renew passport"])
+  await expect.poll(async () => (await taxa.matt.client.task("H-1")).status).toBe(TaskStatus.OPEN)
+})
+
+test("finished tasks can be found again, and unticked", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  await taxa.matt.addTask("Renew passport", { domain: "H" })
+  const list = await (await taxa.openTab("Matt")).openInbox()
+  await list.sidebar.openDomain("Home")
+  await list.complete("Fix the tap")
+  await list.expectTasks(["✓ H-1 Fix the tap", "H-2 Renew passport"])
+
+  await list.sidebar.openInbox()
+  await list.sidebar.openDomain("Home")
+  await list.expectTasks(["H-2 Renew passport"])
+  await list.showCompleted()
+  await list.expectCompleted(["✓ H-1 Fix the tap"])
+  await list.reopen("Fix the tap")
+  await list.expectTasks(["H-1 Fix the tap", "H-2 Renew passport"])
+  await expect.poll(async () => (await taxa.matt.client.task("H-1")).status).toBe(TaskStatus.OPEN)
 })

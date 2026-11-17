@@ -34,11 +34,13 @@
 }
 
 .open {
-  align-self: flex-start;
+  align-self: stretch;
   border: 0;
   background: transparent;
   color: var(--muted);
-  padding: 0.3rem 0.5rem;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  font-size: 0.925rem;
 }
 
 .open:hover {
