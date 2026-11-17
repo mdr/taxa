@@ -17,11 +17,12 @@ const mattWithDomains = async (server: InProcessServer): Promise<TestUser> => {
 describe("creating tasks", () => {
   const it = useInProcessServer()
 
-  it("puts a bare title in the default domain's Inbox", async ({ server }) => {
+  it("puts a bare title in your Inbox, in no domain", async ({ server }) => {
     const matt = await mattWithDomains(server)
     const task = await matt.addTask("Renew passport")
+    expect(task.domainId).toBeUndefined()
     expect(task).toMatchObject({
-      ref: "M-1",
+      ref: "IN-1",
       title: "Renew passport",
       notes: "",
       status: TaskStatus.OPEN,
@@ -83,9 +84,9 @@ describe("creating tasks", () => {
     expect(await matt.client.tasks()).toHaveLength(1)
   })
 
-  it("needs a domain to put it in", async ({ server }) => {
+  it("captures into the Inbox before there are any domains", async ({ server }) => {
     const matt = await server.user("Matt")
-    await expectProblem(matt.addTask("Homeless"), ProblemType.NO_DOMAIN)
+    expect(await matt.addTask("Get started")).toMatchObject({ ref: "IN-1", inbox: true })
   })
 
   it("refuses dates that aren't dates", async ({ server }) => {
@@ -115,7 +116,9 @@ describe("listing tasks", () => {
     await matt.addTask("At home", { domain: "H" })
     await matt.addTask("Personal, filed", { domain: "M" })
     expect((await matt.client.tasks({ domain: "H" })).map(({ title }) => title)).toEqual(["At home"])
+    expect((await matt.client.tasks({ domain: "M" })).map(({ title }) => title)).toEqual(["Personal, filed"])
     expect((await matt.client.tasks({ inbox: "true" })).map(({ title }) => title)).toEqual(["Captured"])
+    expect(await matt.client.tasks({ inbox: "false" })).toHaveLength(2)
   })
 
   it("hides tasks until their start date, in the person's time zone", async ({ server }) => {
@@ -127,14 +130,18 @@ describe("listing tasks", () => {
     expect(await matt.client.tasks()).toHaveLength(1)
   })
 
-  it("shows nobody else's tasks", async ({ server }) => {
+  it("shows nobody else's tasks, in their domains or their Inbox", async ({ server }) => {
     const matt = await mattWithDomains(server)
     const jo = await server.user("Jo")
     await jo.addDomain("Jo", "J")
-    const secret = await matt.addTask("Surprise party")
+    const captured = await matt.addTask("Surprise party")
+    const filed = await matt.addTask("Buy a present", { domain: "H" })
     expect(await jo.client.tasks()).toEqual([])
-    await expectProblem(jo.client.task(secret.ref), ProblemType.NOT_FOUND)
-    await expectProblem(jo.client.updateTask(secret.ref, { set: { title: "Ha" } }), ProblemType.NOT_FOUND)
+    expect(await jo.client.tasks({ inbox: "true" })).toEqual([])
+    for (const secret of [captured, filed]) {
+      await expectProblem(jo.client.task(secret.ref), ProblemType.NOT_FOUND)
+      await expectProblem(jo.client.updateTask(secret.ref, { set: { title: "Ha" } }), ProblemType.NOT_FOUND)
+    }
   })
 
   it("names unknown statuses and domains", async ({ server }) => {

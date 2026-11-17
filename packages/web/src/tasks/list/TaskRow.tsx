@@ -1,4 +1,6 @@
 import { formatDay } from "@taxa/shared/dates/date-format"
+import type { Domain } from "@taxa/shared/domains/domain"
+import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
@@ -13,11 +15,18 @@ import { StatusIcon } from "../StatusIcon.tsx"
 import { capitalised } from "../../ui/capitalised.ts"
 import { useCelebrated, useHighlighted, useListSession, useShownDone } from "./list-session-service.ts"
 import { useTaskProblem } from "../changes/task-changes-service.ts"
+import { DomainChoice } from "../filing/DomainChoice.tsx"
+
+/** In the Inbox: the domains to file a task in, and how. */
+export interface Filing {
+  domains: readonly Domain[]
+  file: (task: Task, request: UpdateTaskRequest) => void
+}
 
 const dueClass = (due: IsoDate, today: IsoDate): string | undefined =>
   due < today ? styles.overdue : due === today ? styles.dueToday : styles.meta
 
-export const TaskRow = ({ task, today }: { task: Task; today: IsoDate }) => {
+export const TaskRow = ({ task, today, filing }: { task: Task; today: IsoDate; filing?: Filing }) => {
   const { toggle, highlight } = useListSession()
   const highlighted = useHighlighted(task.id)
   const row = useRef<HTMLLIElement>(null)
@@ -90,6 +99,15 @@ export const TaskRow = ({ task, today }: { task: Task; today: IsoDate }) => {
           </span>
         )}
       </span>
+      {filing && task.inbox && (
+        <DomainChoice
+          task={task}
+          domains={filing.domains}
+          testId={taskRowTestIds.domain}
+          shortcut={highlighted ? { key: "m", description: "File in a domain" } : undefined}
+          onChoose={(request) => filing.file(task, request)}
+        />
+      )}
       <span className={styles.ref} data-testid={taskRowTestIds.ref}>
         {task.ref}
       </span>

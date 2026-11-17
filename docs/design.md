@@ -18,8 +18,8 @@ Domain (Personal / Work / Home)   who can see it
             └─ Subtask            any depth; the UI keeps it shallow
 ```
 
-- **Domains** are the top level and the sharing boundary. Every task and
-  project belongs to exactly one domain. A domain has **members**, and each
+- **Domains** are the top level and the sharing boundary. Every project,
+  and every task once it's filed, belongs to exactly one domain. A domain has **members**, and each
   person sees only the domains they belong to: Matt has Personal and Work,
   Jo has her own, and Home has both of them. Sharing is never set per task:
   moving a task into Home is what shares it, and the UI asks first.
@@ -66,10 +66,11 @@ hard security boundary, and the two are kept separate.
 Everything except the title is optional. A quick capture is a title in the
 Inbox.
 
-The **Inbox** is a flag, not a place: a task created without a domain goes
-into your default domain (your first, until settings let you choose) with
-the flag set, and filing it into a domain clears it. So every task always
-has a domain, and so a sharing boundary.
+The **Inbox** is where a task waits before it's filed: a task created without
+a domain goes into its creator's Inbox, in no domain, seen only by them. Its
+ref is `IN-7`; filing it in Home makes it `H-7`, and `7` still finds it. A
+task is in a domain or an Inbox, never both, so domain lists hold only filed
+tasks. Capture without deciding where something goes, and sort it later.
 
 - **In progress** records who is working on the task: a person or an agent.
   For agents it works as a claim, so two agents don't pick up the same task.

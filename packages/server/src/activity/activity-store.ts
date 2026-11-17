@@ -10,7 +10,7 @@ import { actorsNamed } from "./actor-names.ts"
 export interface ActivityRecord {
   type: ActivityType
   entityId: TaskId | DomainId
-  domainId: DomainId
+  domainId: DomainId | undefined
   changes: Record<string, FieldChange>
 }
 

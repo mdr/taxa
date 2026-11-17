@@ -25,10 +25,11 @@ describe("domains", () => {
     expect(problem.message).toContain("H")
   })
 
-  it("need a prefix of 1 to 5 letters", async ({ server }) => {
+  it("need a prefix of 1 to 5 letters, other than the Inbox's", async ({ server }) => {
     const matt = await server.user("Matt")
     await expectProblem(matt.client.createDomain({ name: "Work", prefix: "W1" }), ProblemType.INVALID_REQUEST)
     await expectProblem(matt.client.createDomain({ name: "Work", prefix: "WORKSS" }), ProblemType.INVALID_REQUEST)
+    await expectProblem(matt.client.createDomain({ name: "Ideas", prefix: "in" }), ProblemType.INVALID_REQUEST)
   })
 
   it("are seen only by their members", async ({ server }) => {
@@ -36,12 +37,5 @@ describe("domains", () => {
     const jo = await server.user("Jo")
     await matt.addDomain("Personal", "M")
     expect(await jo.client.domains()).toEqual([])
-  })
-
-  it("make the first one the default for new tasks", async ({ server }) => {
-    const matt = await server.user("Matt")
-    const personal = await matt.addDomain("Personal", "M")
-    await matt.addDomain("Work", "W")
-    expect((await matt.client.me()).user.defaultDomainId).toBe(personal.id)
   })
 })

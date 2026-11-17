@@ -42,8 +42,7 @@ const routes = {
     method: "post",
     path: TASKS_PATH,
     summary: "Create a task",
-    description:
-      "Without a domain, it goes in your default domain's Inbox. Send an Idempotency-Key header to make retries safe.",
+    description: "Without a domain, it goes in your Inbox. Send an Idempotency-Key header to make retries safe.",
     security: BEARER,
     request: jsonBody(CreateTaskRequestSchema),
     responses: { 201: json(TaskSchema, "The new task"), ...PROBLEMS }

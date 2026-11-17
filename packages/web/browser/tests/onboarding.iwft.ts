@@ -16,8 +16,6 @@ test("a first visit offers domains to start with, and starts with the chosen one
   await inbox.sidebar.expectDomains(["P Personal", "H Home", "W Work", "HE Health"])
   await inbox.expectTasks([])
   await inbox.expectAccessible()
-  const personal = (await taxa.matt.client.domains()).find(({ prefix }) => prefix === "P")
-  expect((await taxa.matt.client.me()).user.defaultDomainId).toBe(personal?.id)
 })
 
 test("problems with the choices are shown before anything is made", async ({ taxa }) => {

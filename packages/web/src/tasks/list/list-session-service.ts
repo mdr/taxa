@@ -1,5 +1,6 @@
 import type { TaskId } from "@taxa/shared/ids"
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
+import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import type { Ms } from "@taxa/shared/units"
 import { AbstractService } from "../../services/abstract-service.ts"
 import type { Scheduler } from "../../services/scheduler.ts"
@@ -38,6 +39,8 @@ export interface ListSessionActions {
   highlight: (id: TaskId | undefined) => void
   /** Moves the highlight through the tasks shown, in order: from none, to the first or last. */
   moveHighlight: (shown: readonly TaskId[], step: Step) => void
+  /** Files a task out of the list; if it's highlighted, the highlight goes on to the task after it. */
+  file: (task: Task, request: UpdateTaskRequest, shown: readonly TaskId[]) => Promise<void>
   dispose: () => void
 }
 
@@ -91,6 +94,14 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
           : shown.length - 1
         : Math.min(Math.max(index + (step === Step.NEXT ? 1 : -1), 0), shown.length - 1)
     this.highlight(shown[next])
+  }
+
+  readonly file = async (task: Task, request: UpdateTaskRequest, shown: readonly TaskId[]): Promise<void> => {
+    if (this.state.highlighted === task.id) {
+      const others = shown.filter((id) => id !== task.id)
+      this.highlight(others[Math.min(shown.indexOf(task.id), others.length - 1)])
+    }
+    await this.#changes.change(task, { type: TaskChangeType.UPDATE, request })
   }
 
   readonly dispose = (): void => {

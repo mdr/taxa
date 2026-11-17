@@ -1,5 +1,5 @@
 import type { TimeZone } from "@taxa/shared/dates/plain-date"
-import { userId as newUserId, type DomainId, type UserId } from "@taxa/shared/ids"
+import { userId as newUserId, type UserId } from "@taxa/shared/ids"
 import { eq } from "drizzle-orm"
 import { uuidv7 } from "@taxa/shared/ids"
 import type { Instant } from "@taxa/shared/units"
@@ -12,8 +12,7 @@ type UserRow = typeof users.$inferSelect
 export const callerUserOf = (row: UserRow): CallerUser => ({
   id: row.id,
   name: row.name,
-  timeZone: row.timeZone,
-  defaultDomainId: row.defaultDomainId ?? undefined
+  timeZone: row.timeZone
 })
 
 export const createUser = async (db: Db, name: string, timeZone: TimeZone, now: Instant): Promise<CallerUser> => {
@@ -33,8 +32,4 @@ export const userById = async (db: Db, id: UserId): Promise<CallerUser | undefin
 export const ensureUserNamed = async (db: Db, name: string, timeZone: TimeZone, now: Instant): Promise<CallerUser> => {
   const [row] = await db.select().from(users).where(eq(users.name, name))
   return row ? callerUserOf(row) : createUser(db, name, timeZone, now)
-}
-
-export const setDefaultDomain = async (db: Db, userId: UserId, domainId: DomainId): Promise<void> => {
-  await db.update(users).set({ defaultDomainId: domainId }).where(eq(users.id, userId))
 }

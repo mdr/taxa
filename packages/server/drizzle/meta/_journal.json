@@ -8,6 +8,13 @@
       "when": 1794868758925,
       "tag": "0000_initial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794919744284,
+      "tag": "0001_inbox_outside_domains",
+      "breakpoints": true
     }
   ]
 }

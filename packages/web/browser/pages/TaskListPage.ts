@@ -8,6 +8,7 @@ import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts
 import { taskListPageTestIds } from "../../src/tasks/list/TaskListPageTestIds.ts"
 import { taskRowTestIds } from "../../src/tasks/list/TaskRowTestIds.ts"
 import { undoToastTestIds } from "../../src/tasks/list/UndoToastTestIds.ts"
+import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
 
 /** The Inbox, or a domain's tasks. */
 export class TaskListPage extends PageObject {
@@ -133,6 +134,12 @@ export class TaskListPage extends PageObject {
   /** The completed tasks shown, as `ref title`, ✓ before each still ticked. */
   async expectCompleted(tasks: string[]): Promise<void> {
     await this.#expectRows(this.#page.getByTestId(taskListPageTestIds.completed), tasks)
+  }
+
+  /** Files a task from the Inbox list, through its domain chip. */
+  async file(title: string, prefix: string): Promise<void> {
+    await this.#row(title).getByTestId(taskRowTestIds.domain).click()
+    await this.#page.locator(`[data-testid="${optionListTestIds.option}"][data-value="${prefix}"]`).click()
   }
 
   async openTask(title: string): Promise<TaskDetailPage> {

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import styles from "./TaskListPage.module.css"
 import { taskListPageTestIds } from "./TaskListPageTestIds.ts"
 import { QuickCapture } from "./QuickCapture.tsx"
-import { TaskRow } from "./TaskRow.tsx"
+import { TaskRow, type Filing } from "./TaskRow.tsx"
 import { UndoToast } from "./UndoToast.tsx"
 import { withTicked } from "./with-ticked.ts"
 import { ListSessionContext, ListSessionService } from "./list-session-service.ts"
@@ -51,6 +51,18 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
     )
   )
   const openCount = tasks.data?.length ?? 0
+  const filing: Filing | undefined =
+    domainPrefix || !domains.data
+      ? undefined
+      : {
+          domains: domains.data,
+          file: (task, request) =>
+            void session.file(
+              task,
+              request,
+              (shown ?? []).map(({ id }) => id)
+            )
+        }
   return (
     <ListSessionContext.Provider value={session}>
       <section className={styles.page} aria-labelledby="list-heading">
@@ -84,7 +96,7 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
         ) : (
           <ul className={styles.tasks} data-testid={taskListPageTestIds.tasks}>
             {shown?.map((task) => (
-              <TaskRow key={task.id} task={task} today={today} />
+              <TaskRow key={task.id} task={task} today={today} filing={filing} />
             ))}
           </ul>
         )}
@@ -103,7 +115,7 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
             {showCompleted && (
               <ul className={styles.tasks} data-testid={taskListPageTestIds.completed}>
                 {earlier.map((task) => (
-                  <TaskRow key={task.id} task={task} today={today} />
+                  <TaskRow key={task.id} task={task} today={today} filing={filing} />
                 ))}
               </ul>
             )}

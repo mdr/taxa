@@ -11,7 +11,6 @@ import {
   CalendarClock,
   CalendarDays,
   EyeOff,
-  Inbox,
   Zap,
   type LucideIcon
 } from "lucide-react"
@@ -21,7 +20,7 @@ import { ChoiceProperty } from "./properties/ChoiceProperty.tsx"
 import { DateProperty, DateTone } from "./properties/DateProperty.tsx"
 import { EstimateProperty } from "./properties/EstimateProperty.tsx"
 import { useToday } from "../../dates/use-today.ts"
-import { DomainBadge } from "../../domains/DomainBadge.tsx"
+import { DomainChoice } from "../filing/DomainChoice.tsx"
 import { PriorityIcon } from "../PriorityIcon.tsx"
 import { StatusIcon } from "../StatusIcon.tsx"
 import { capitalised } from "../../ui/capitalised.ts"
@@ -41,7 +40,6 @@ interface TaskPropertiesProps {
 
 export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) => {
   const today = useToday()
-  const domain = domains.find(({ id }) => id === task.domainId)
   const setOrClear = (field: ClearableField, value: string | number | undefined) =>
     change({
       type: TaskChangeType.UPDATE,
@@ -91,31 +89,12 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
           change({ type: TaskChangeType.UPDATE, request: { set: { priority: priority as Priority } } })
         }
       />
-      <ChoiceProperty
-        label="Domain"
+      <DomainChoice
+        task={task}
+        domains={domains}
         testId={taskPropertiesTestIds.domain}
-        shortcut={{ key: "m", description: "Move to a domain" }}
-        // In the Inbox, no domain is chosen yet, so choosing any one files it.
-        value={task.inbox ? "" : (domain?.prefix ?? "")}
-        trigger={
-          <>
-            {domain && <DomainBadge prefix={domain.prefix} />}
-            {domain?.name ?? "Domain"}
-            {task.inbox && (
-              <span className={styles.inbox}>
-                <Inbox size={13} aria-hidden /> Inbox
-              </span>
-            )}
-          </>
-        }
-        options={domains.map(({ name, prefix }) => ({
-          value: prefix,
-          label: name,
-          icon: <DomainBadge prefix={prefix} />
-        }))}
-        onChoose={(prefix) =>
-          change({ type: TaskChangeType.UPDATE, request: { set: { domain: prefix, inbox: false } } })
-        }
+        shortcut={{ key: "m", description: task.inbox ? "File in a domain" : "Move to a domain" }}
+        onChoose={(request) => change({ type: TaskChangeType.UPDATE, request })}
       />
       <DateProperty
         label="Due"

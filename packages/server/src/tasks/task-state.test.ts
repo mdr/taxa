@@ -5,15 +5,15 @@ import { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { changeStatus, changesFromNothing, editTask, type StatusContext, type TaskState } from "./task-state.ts"
 
 const HOME = domainId("0190a1b2-0000-7000-8000-00000000000a")
-const WORK = domainId("0190a1b2-0000-7000-8000-00000000000b")
+const MATT = userId("0190a1b2-0000-7000-8000-000000000001")
 
 const makeState = (overrides: Partial<TaskState> = {}): TaskState => ({
-  domainId: HOME,
+  domainId: undefined,
+  inboxUserId: MATT,
   title: "Fix the tap",
   notes: "",
   status: TaskStatus.OPEN,
   priority: Priority.NORMAL,
-  inbox: true,
   due: undefined,
   scheduled: undefined,
   scheduledTime: undefined,
@@ -32,7 +32,7 @@ const makeState = (overrides: Partial<TaskState> = {}): TaskState => ({
 const NOW = Date.UTC(2026, 0, 7, 10, 0)
 const CONTEXT: StatusContext = {
   actor: {
-    userId: userId("0190a1b2-0000-7000-8000-000000000001"),
+    userId: MATT,
     agentId: agentId("0190a1b2-0000-7000-8000-000000000002"),
     agentContext: "mdr/taxa"
   },
@@ -55,10 +55,18 @@ describe("editTask", () => {
     })
   })
 
-  it("takes a task out of the Inbox when it's filed in another domain", () => {
-    expect(editTask(makeState(), { set: { domainId: WORK }, clear: [] }).state.inbox).toBe(false)
-    expect(editTask(makeState(), { set: { domainId: WORK, inbox: true }, clear: [] }).state.inbox).toBe(true)
-    expect(editTask(makeState(), { set: { domainId: HOME }, clear: [] }).state.inbox).toBe(true)
+  it("takes a task out of the Inbox when it's filed in a domain", () => {
+    const { state, changes } = editTask(makeState(), { set: { domainId: HOME }, clear: [] })
+    expect(state).toMatchObject({ domainId: HOME, inboxUserId: undefined })
+    expect(changes).toEqual({ domainId: { to: HOME }, inboxUserId: { from: MATT } })
+  })
+
+  it("takes a task out of its domain when it's put back in an Inbox", () => {
+    const filed = makeState({ domainId: HOME, inboxUserId: undefined })
+    expect(editTask(filed, { set: { inboxUserId: MATT }, clear: [] }).state).toMatchObject({
+      domainId: undefined,
+      inboxUserId: MATT
+    })
   })
 
   it("changes nothing when nothing differs", () => {
@@ -103,12 +111,11 @@ describe("changeStatus", () => {
 describe("changesFromNothing", () => {
   it("logs every field a new task has", () => {
     expect(changesFromNothing(makeState({ due: "2026-01-09" }))).toEqual({
-      domainId: { to: HOME },
+      inboxUserId: { to: MATT },
       title: { to: "Fix the tap" },
       notes: { to: "" },
       status: { to: TaskStatus.OPEN },
       priority: { to: Priority.NORMAL },
-      inbox: { to: true },
       due: { to: "2026-01-09" }
     })
   })

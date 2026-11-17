@@ -59,7 +59,7 @@ const list: Command = {
   summary: "List active tasks, most urgent first",
   usage: `[options]
   --domain PREFIX       Only this domain's
-  --inbox               Only the Inbox
+  --inbox               Only your Inbox
   --status LIST         Only these statuses, e.g. done or open,waiting (default: open, in progress, waiting)
   --all                 Include tasks whose start date is still to come`,
   options: {

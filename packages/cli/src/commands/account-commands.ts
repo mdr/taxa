@@ -20,16 +20,11 @@ const domains: Command = {
   usage: "",
   options: {},
   run: async (context) => {
-    const [all, me] = await Promise.all([context.client.domains(), context.client.me()])
+    const all = await context.client.domains()
     print(context, all, () =>
       all.length === 0
         ? "No domains yet: add one with taxa add-domain <name> --prefix <letters>."
-        : all
-            .map(
-              ({ id, prefix, name }) =>
-                `${prefix.padEnd(5)}  ${name}${id === me.user.defaultDomainId ? "  (default)" : ""}`
-            )
-            .join("\n")
+        : all.map(({ prefix, name }) => `${prefix.padEnd(5)}  ${name}`).join("\n")
     )
     return ExitCode.OK
   }

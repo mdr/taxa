@@ -32,14 +32,28 @@ describe("changing tasks", () => {
     expect((await matt.client.updateTask(task.ref, { set: { title: "Fix the tap" } })).version).toBe(1)
   })
 
-  it("files a task in another domain, out of the Inbox, keeping its number", async ({ server }) => {
+  it("files a task from the Inbox in a domain, keeping its number", async ({ server }) => {
     const matt = await server.user("Matt")
-    await matt.addDomain("Personal", "M")
-    await matt.addDomain("Home", "H")
+    const home = await matt.addDomain("Home", "H")
     const task = await matt.addTask("Fix the tap")
-    const moved = await matt.client.updateTask(task.ref, { set: { domain: "H" } })
-    expect(moved).toMatchObject({ ref: "H-1", inbox: false })
-    expect((await matt.client.task("M-1")).ref).toBe("H-1")
+    const filed = await matt.client.updateTask(task.ref, { set: { domain: "H" } })
+    expect(filed).toMatchObject({ ref: "H-1", domainId: home.id, inbox: false })
+    expect((await matt.client.task("IN-1")).ref).toBe("H-1")
+    expect(await matt.client.tasks({ inbox: "true" })).toEqual([])
+  })
+
+  it("puts a task back in the Inbox, out of its domain", async ({ server }) => {
+    const matt = await server.user("Matt")
+    await matt.addDomain("Home", "H")
+    const task = await matt.addTask("Fix the tap", { domain: "H" })
+    const back = await matt.client.updateTask(task.ref, { set: { inbox: true } })
+    expect(back).toMatchObject({ ref: "IN-1", inbox: true })
+    expect(back.domainId).toBeUndefined()
+    expect(await matt.client.tasks({ domain: "H" })).toEqual([])
+    await expectProblem(
+      matt.client.updateTask(task.ref, { set: { inbox: true, domain: "H" } }),
+      ProblemType.INVALID_REQUEST
+    )
   })
 
   it("refuses a change based on an old version, saying what the task is now", async ({ server }) => {

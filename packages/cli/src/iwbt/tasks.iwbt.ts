@@ -23,7 +23,7 @@ describe("taxa add", () => {
     const matt = await mattAtHome(server)
     expect(await taxa(server, matt, "add", "Renew", "passport")).toEqual({
       exitCode: ExitCode.OK,
-      stdout: "Added M-1  Renew passport\n",
+      stdout: "Added IN-1  Renew passport\n",
       stderr: ""
     })
   })
@@ -62,7 +62,7 @@ describe("taxa add", () => {
     expect(run.exitCode).toBe(ExitCode.OK)
     expect((JSON.parse(run.stdout) as Task[]).map(({ ref, due }) => [ref, due])).toEqual([
       ["H-1", undefined],
-      ["M-2", "2026-02-01"]
+      ["IN-2", "2026-02-01"]
     ])
   })
 
@@ -84,11 +84,11 @@ describe("taxa list and show", () => {
     await matt.addTask("Renew passport")
     await matt.addTask("Fix the tap", { domain: "H", priority: Priority.URGENT, due: "2026-01-09" })
     const run = await taxa(server, matt, "list")
-    expect(run.stdout).toBe("H-2  Fix the tap  (urgent, due Fri 9 Jan)\nM-1  Renew passport  (inbox)\n")
+    expect(run.stdout).toBe("H-2   Fix the tap  (urgent, due Fri 9 Jan)\nIN-1  Renew passport  (inbox)\n")
     expect((await taxa(server, matt, "list", "--domain", "H")).stdout).toBe(
       "H-2  Fix the tap  (urgent, due Fri 9 Jan)\n"
     )
-    expect((await taxa(server, matt, "list", "--inbox")).stdout).toBe("M-1  Renew passport  (inbox)\n")
+    expect((await taxa(server, matt, "list", "--inbox")).stdout).toBe("IN-1  Renew passport  (inbox)\n")
   })
 
   it("lists finished tasks when asked", async ({ server }) => {
@@ -96,7 +96,7 @@ describe("taxa list and show", () => {
     const { ref } = await matt.addTask("Renew passport")
     await matt.client.changeStatus(ref, { status: TaskStatus.DONE })
     expect((await taxa(server, matt, "list")).stdout).toBe("No tasks.\n")
-    expect((await taxa(server, matt, "list", "--status", "done")).stdout).toBe("M-1  Renew passport  (done, inbox)\n")
+    expect((await taxa(server, matt, "list", "--status", "done")).stdout).toBe("IN-1  Renew passport  (done, inbox)\n")
   })
 
   it("shows everything about a task", async ({ server }) => {
@@ -173,10 +173,19 @@ describe("taxa edit and status commands", () => {
     expect((await matt.client.task("1")).priority).toBe(Priority.HIGH)
   })
 
+  it("files a task, and puts it back in the Inbox", async ({ server }) => {
+    const matt = await mattAtHome(server)
+    await matt.addTask("Renew passport")
+    await taxa(server, matt, "edit", "IN-1", "--domain", "h")
+    expect(await matt.client.task("1")).toMatchObject({ ref: "H-1", inbox: false })
+    await taxa(server, matt, "edit", "H-1", "--inbox")
+    expect(await matt.client.task("1")).toMatchObject({ ref: "IN-1", inbox: true })
+  })
+
   it("starts, waits on, finishes and deletes a task", async ({ server }) => {
     const matt = await mattAtHome(server)
     await matt.addTask("Get boiler quotes")
-    expect((await taxa(server, matt, "start", "1")).stdout).toBe("Started M-1  Get boiler quotes\n")
+    expect((await taxa(server, matt, "start", "1")).stdout).toBe("Started IN-1  Get boiler quotes\n")
     await taxa(server, matt, "wait", "1", "--on", "Dave", "--follow-up", "+3d")
     expect(await matt.client.task("1")).toMatchObject({
       status: TaskStatus.WAITING,
@@ -224,7 +233,7 @@ describe("taxa for people and agents", () => {
     const matt = await server.user("Matt")
     await taxa(server, matt, "add-domain", "Home", "--prefix", "h")
     await taxa(server, matt, "add-domain", "Work", "--prefix", "W")
-    expect((await taxa(server, matt, "domains")).stdout).toBe("H      Home  (default)\nW      Work\n")
+    expect((await taxa(server, matt, "domains")).stdout).toBe("H      Home\nW      Work\n")
   })
 
   it("makes an agent a key, printing only the secret", async ({ server }) => {

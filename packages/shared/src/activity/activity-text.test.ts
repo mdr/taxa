@@ -38,10 +38,14 @@ describe("activityText", () => {
     ).toBe("Matt set priority to high, set due to Fri 9 Jan, estimated it at 1h30m and cleared the scheduled date")
   })
 
-  it("names the domain a task moved to, and that it was filed", () => {
-    expect(
-      said(ActivityType.TASK_UPDATED, { domainId: { from: "x", to: HOME }, inbox: { from: true, to: false } })
-    ).toBe("Matt moved it to Home and filed it")
+  it("names the domain a task was filed in or moved to, or that it went back to the Inbox", () => {
+    expect(said(ActivityType.TASK_UPDATED, { domainId: { to: HOME }, inboxUserId: { from: "u" } })).toBe(
+      "Matt filed it in Home"
+    )
+    expect(said(ActivityType.TASK_UPDATED, { domainId: { from: "x", to: HOME } })).toBe("Matt moved it to Home")
+    expect(said(ActivityType.TASK_UPDATED, { domainId: { from: HOME }, inboxUserId: { to: "u" } })).toBe(
+      "Matt put it back in the Inbox"
+    )
   })
 
   it("says a title changed and notes were edited, without quoting the notes", () => {

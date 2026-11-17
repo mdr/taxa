@@ -11,7 +11,6 @@ import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
 import { domainMembers, domains } from "../database/schema.ts"
 import { ProblemError } from "../http/problem-error.ts"
-import { setDefaultDomain } from "../users/user-store.ts"
 
 type DomainRow = typeof domains.$inferSelect
 
@@ -68,7 +67,6 @@ export const createDomain = async (
       .returning()
     const domain = domainOf(row!)
     await tx.insert(domainMembers).values({ domainId: domain.id, userId: caller.user.id })
-    if (!caller.user.defaultDomainId) await setDefaultDomain(tx, caller.user.id, domain.id)
     await recordActivity(tx, caller, now, {
       type: ActivityType.DOMAIN_CREATED,
       entityId: domain.id,

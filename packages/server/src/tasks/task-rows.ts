@@ -6,6 +6,7 @@ import type { Task } from "@taxa/shared/tasks/task"
 import type { ActorIds } from "../activity/actor-names.ts"
 import type { tasks } from "../database/schema.ts"
 import type { TaskState } from "./task-state.ts"
+import type { FoundTask } from "./task-store.ts"
 
 export type TaskRow = typeof tasks.$inferSelect
 export type TaskValues = Omit<typeof tasks.$inferInsert, "id" | "number" | "createdAt">
@@ -32,12 +33,12 @@ export const inProgressIdsOf = (row: TaskRow): ActorIds | undefined =>
     : undefined
 
 export const stateOf = (row: TaskRow): TaskState => ({
-  domainId: row.domainId,
+  domainId: row.domainId ?? undefined,
+  inboxUserId: row.inboxUserId ?? undefined,
   title: row.title,
   notes: row.notes,
   status: row.status,
   priority: row.priority,
-  inbox: row.inbox,
   due: row.due ?? undefined,
   scheduled: row.scheduled ?? undefined,
   scheduledTime: row.scheduledTime ?? undefined,
@@ -53,12 +54,12 @@ export const stateOf = (row: TaskRow): TaskState => ({
 })
 
 export const valuesOf = (state: TaskState): Omit<TaskValues, "updatedAt" | "version" | "deletedAt"> => ({
-  domainId: state.domainId,
+  domainId: state.domainId ?? null,
+  inboxUserId: state.inboxUserId ?? null,
   title: state.title,
   notes: state.notes,
   status: state.status,
   priority: state.priority,
-  inbox: state.inbox,
   due: state.due ?? null,
   scheduled: state.scheduled ?? null,
   scheduledTime: state.scheduledTime ?? null,
@@ -76,18 +77,18 @@ export const valuesOf = (state: TaskState): Omit<TaskValues, "updatedAt" | "vers
 })
 
 /** A task as the API shows it. */
-export const taskOf = (row: TaskRow, prefix: DomainPrefix, actorOf: (ids: ActorIds) => Actor): Task => {
+export const taskOf = (row: TaskRow, prefix: DomainPrefix | undefined, actorOf: (ids: ActorIds) => Actor): Task => {
   const inProgressBy = inProgressIdsOf(row)
   const task: Task = {
     id: row.id,
     ref: formatTaskRef(prefix, row.number),
     number: row.number,
-    domainId: row.domainId,
+    domainId: row.domainId ?? undefined,
     title: row.title,
     notes: row.notes,
     status: row.status,
     priority: row.priority,
-    inbox: row.inbox,
+    inbox: row.inboxUserId !== null,
     due: row.due ?? undefined,
     scheduled: row.scheduled ?? undefined,
     scheduledTime: row.scheduledTime ?? undefined,
@@ -108,3 +109,9 @@ export const taskOf = (row: TaskRow, prefix: DomainPrefix, actorOf: (ids: ActorI
   // Absent fields are left out of the JSON, not sent as undefined.
   return definedFields(task) as Task
 }
+
+/** A task row as selected with its domain's prefix, which is empty while it's in the Inbox. */
+export const foundOf = ({ row, prefix }: { row: TaskRow; prefix: DomainPrefix | null }): FoundTask => ({
+  row,
+  prefix: prefix ?? undefined
+})

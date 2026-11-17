@@ -1,5 +1,5 @@
 import type { Minutes } from "@taxa/shared/units"
-import type { DomainId } from "@taxa/shared/ids"
+import type { DomainId, UserId } from "@taxa/shared/ids"
 import type { FieldChange } from "@taxa/shared/activity/activity"
 import { addDays, type IsoDate, type IsoTime } from "@taxa/shared/dates/plain-date"
 import type { ClearableField, ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
@@ -10,12 +10,13 @@ import type { ActorIds } from "../activity/actor-names.ts"
 
 /** What a task says, apart from its identity and bookkeeping: what edits change. */
 export interface TaskState {
-  domainId: DomainId
+  /** Exactly one of these: filed in a domain, or in someone's Inbox. */
+  domainId: DomainId | undefined
+  inboxUserId: UserId | undefined
   title: string
   notes: string
   status: TaskStatus
   priority: Priority
-  inbox: boolean
   due: IsoDate | undefined
   scheduled: IsoDate | undefined
   scheduledTime: IsoTime | undefined
@@ -64,15 +65,13 @@ const changesBetween = (before: TaskState, after: TaskState): Record<string, Fie
   return changes
 }
 
-/**
- * Sets and clears fields. Filing a task in a domain takes it out of the
- * Inbox, unless the edit says where it belongs itself.
- */
+/** Sets and clears fields. Filing a task in a domain takes it out of the Inbox, and putting it in an Inbox out of its domain. */
 export const editTask = (before: TaskState, { set, clear }: Edit): Outcome => {
   const after: TaskState = { ...before }
   Object.assign(after, definedFields(set))
   for (const field of clear) after[field] = undefined
-  if (set.domainId !== undefined && set.domainId !== before.domainId && set.inbox === undefined) after.inbox = false
+  if (set.domainId !== undefined) after.inboxUserId = undefined
+  if (set.inboxUserId !== undefined) after.domainId = undefined
   return { state: after, changes: changesBetween(before, after) }
 }
 

@@ -73,8 +73,7 @@ export const agentRoutes = (app: TaxaApp, db: Db, clock: Clock): void => {
         user: {
           id: user.id,
           name: user.name,
-          timeZone: user.timeZone,
-          ...(user.defaultDomainId && { defaultDomainId: user.defaultDomainId })
+          timeZone: user.timeZone
         },
         ...(agent && { agent })
       },

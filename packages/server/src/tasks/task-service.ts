@@ -3,7 +3,7 @@ import type { z } from "zod"
 import { ActivityType, type Activity, type FieldChange } from "@taxa/shared/activity/activity"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { dateIn } from "@taxa/shared/dates/plain-date"
-import { taskId as newTaskId, uuidv7, type DomainId } from "@taxa/shared/ids"
+import { taskId as newTaskId, uuidv7, type DomainId, type UserId } from "@taxa/shared/ids"
 import { compareTasks } from "@taxa/shared/tasks/task-order"
 import { parseTaskLookup, type TaskLookup } from "@taxa/shared/tasks/task-ref"
 import type {
@@ -19,7 +19,7 @@ import { actorsNamed, type ActorIds } from "../activity/actor-names.ts"
 import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
 import { tasks } from "../database/schema.ts"
-import { domainsOf, findDomain } from "../domains/domain-store.ts"
+import { findDomain } from "../domains/domain-store.ts"
 import { ProblemError } from "../http/problem-error.ts"
 import { Deletion, deletedAtFor, inProgressIdsOf, stateOf, taskOf, valuesOf, type TaskRow } from "./task-rows.ts"
 import { changeStatus, changesFromNothing, editTask, type Outcome, type TaskState } from "./task-state.ts"
@@ -77,14 +77,6 @@ export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, n
 export const getTask = async (db: Db, caller: Caller, ref: string): Promise<Task> =>
   taskFrom(db, await findTask(db, caller.user.id, lookupOf(ref)))
 
-/** Where a new task goes when the request names no domain: the person's default, else their first. */
-const defaultDomainId = async (db: Db, caller: Caller): Promise<DomainId> => {
-  const domains = await domainsOf(db, caller.user.id)
-  const domain = domains.find(({ id }) => id === caller.user.defaultDomainId) ?? domains[0]
-  if (!domain) throw new ProblemError(ProblemType.NO_DOMAIN, "Create a domain first: every task belongs to one.")
-  return domain.id
-}
-
 export const createTask = async (
   db: Db,
   caller: Caller,
@@ -95,11 +87,9 @@ export const createTask = async (
     const taskId = id ?? newTaskId(uuidv7(now))
     if (await taskIdExists(tx, taskId))
       throw new ProblemError(ProblemType.INVALID_REQUEST, `A task with id ${taskId} already exists.`)
-    const domainId =
-      domain === undefined ? await defaultDomainId(tx, caller) : (await findDomain(tx, caller.user.id, domain)).id
-    const state: TaskState = {
-      ...editTask(blankState(domainId, title, domain === undefined), { set: fields, clear: [] }).state
-    }
+    const domainId = domain === undefined ? undefined : (await findDomain(tx, caller.user.id, domain)).id
+    const inboxUserId = domainId === undefined ? caller.user.id : undefined
+    const state = editTask(blankState(domainId, inboxUserId, title), { set: fields, clear: [] }).state
     const at = new Date(now)
     await tx.insert(tasks).values({ id: taskId, ...valuesOf(state), createdAt: at, updatedAt: at, version: 1 })
     await recordActivity(tx, caller, now, {
@@ -111,13 +101,13 @@ export const createTask = async (
     return taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: taskId }))
   })
 
-const blankState = (domainId: DomainId, title: string, inbox: boolean): TaskState => ({
+const blankState = (domainId: DomainId | undefined, inboxUserId: UserId | undefined, title: string): TaskState => ({
   domainId,
+  inboxUserId,
   title,
   notes: "",
   status: TaskStatus.OPEN,
   priority: Priority.NORMAL,
-  inbox,
   due: undefined,
   scheduled: undefined,
   scheduledTime: undefined,
@@ -182,15 +172,21 @@ export const updateTask = (
   db: Db,
   caller: Caller,
   ref: string,
-  { set: { domain, ...set }, clear }: z.infer<typeof UpdateTaskRequestSchema>,
+  { set: { domain, inbox, ...set }, clear }: z.infer<typeof UpdateTaskRequestSchema>,
   ifMatch: number | undefined,
   now: Instant
 ): Promise<Task> =>
   changeTask(db, caller, ref, ifMatch, now, {
     type: ActivityType.TASK_UPDATED,
     apply: async (state, _row, tx) => {
+      if (domain !== undefined && inbox)
+        throw new ProblemError(ProblemType.INVALID_REQUEST, "A task is either in a domain or in the Inbox, not both.")
       const domainId = domain === undefined ? undefined : (await findDomain(tx, caller.user.id, domain)).id
-      return editTask(state, { set: { ...set, ...(domainId && { domainId }) }, clear })
+      const inboxUserId = inbox && state.inboxUserId === undefined ? caller.user.id : undefined
+      return editTask(state, {
+        set: { ...set, ...(domainId && { domainId }), ...(inboxUserId && { inboxUserId }) },
+        clear
+      })
     }
   })
 

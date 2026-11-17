@@ -11,14 +11,15 @@ const EditableFieldsSchema = z.object({
   title: TitleSchema,
   notes: z.string().max(100_000),
   priority: z.enum(Priority),
-  inbox: z.boolean(),
+  /** Back to your Inbox, out of its domain. */
+  inbox: z.literal(true),
   due: IsoDateSchema,
   scheduled: IsoDateSchema,
   scheduledTime: IsoTimeSchema,
   start: IsoDateSchema,
   estimateMinutes: flavoured<Minutes>(z.number().int().min(1).max(100_000)),
   energy: z.enum(Energy),
-  /** Move it to this domain, by prefix or id. */
+  /** File it in this domain, by prefix or id. */
   domain: z.string()
 })
 
@@ -32,7 +33,8 @@ export enum ClearableField {
   ENERGY = "energy"
 }
 
-export const CreateTaskRequestSchema = EditableFieldsSchema.partial().extend({
+/** Without a domain, it goes in your Inbox. */
+export const CreateTaskRequestSchema = EditableFieldsSchema.omit({ inbox: true }).partial().extend({
   /** Chosen by the client (a UUIDv7), so a task made offline is real at once. */
   id: TaskIdSchema.optional(),
   title: TitleSchema
@@ -65,7 +67,7 @@ export const ListTasksQuerySchema = z.object({
   domain: z.string().optional(),
   /** Comma-separated; the active ones (OPEN, IN_PROGRESS, WAITING) by default. */
   status: z.string().optional(),
-  /** true for the Inbox only, false for organised tasks only. */
+  /** true for your Inbox only, false for tasks filed in domains only. */
   inbox: z.enum(["true", "false"]).optional(),
   /** true to include tasks whose start date is still to come, which are hidden otherwise. */
   includeNotStarted: z.enum(["true", "false"]).optional()

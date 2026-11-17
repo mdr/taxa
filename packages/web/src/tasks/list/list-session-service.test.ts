@@ -234,4 +234,25 @@ describe("ListSessionService's highlight", () => {
     session.moveHighlight([], Step.NEXT)
     expect(session.state.highlighted).toBeUndefined()
   })
+
+  it("goes on to the next task when the highlighted one is filed, or back from the last", () => {
+    const { changes, session } = makeListSessionService()
+    session.highlight(second.id)
+    void session.file(second, { set: { domain: "H" } }, shown)
+    expect(session.state.highlighted).toBe(third.id)
+    expect(changes.asked.map(({ task, change }) => [task.id, change])).toEqual([
+      [second.id, { type: TaskChangeType.UPDATE, request: { set: { domain: "H" } } }]
+    ])
+    void session.file(third, { set: { domain: "H" } }, [first.id, third.id])
+    expect(session.state.highlighted).toBe(first.id)
+    void session.file(first, { set: { domain: "H" } }, [first.id])
+    expect(session.state.highlighted).toBeUndefined()
+  })
+
+  it("leaves the highlight alone when another task is filed", () => {
+    const { session } = makeListSessionService()
+    session.highlight(first.id)
+    void session.file(third, { set: { domain: "H" } }, shown)
+    expect(session.state.highlighted).toBe(first.id)
+  })
 })

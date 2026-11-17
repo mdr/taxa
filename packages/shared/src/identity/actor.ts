@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { TimeZoneSchema } from "../dates/plain-date.ts"
-import { AgentIdSchema, DomainIdSchema, UserIdSchema } from "../ids.ts"
+import { AgentIdSchema, UserIdSchema } from "../ids.ts"
 
 const UserSchema = z.object({ id: UserIdSchema, name: z.string() })
 const AgentNameSchema = z.object({ id: AgentIdSchema, name: z.string() })
@@ -18,7 +18,7 @@ export type Actor = z.infer<typeof ActorSchema>
 export const ME_PATH = "/api/me"
 
 export const MeSchema = z.object({
-  user: UserSchema.extend({ timeZone: TimeZoneSchema, defaultDomainId: DomainIdSchema.optional() }),
+  user: UserSchema.extend({ timeZone: TimeZoneSchema }),
   agent: AgentNameSchema.optional()
 })
 

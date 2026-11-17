@@ -51,11 +51,12 @@ const PHRASES: Record<string, Phrase> = {
   estimateMinutes: ({ to }) =>
     typeof to === "number" ? `estimated it at ${formatEstimate(to)}` : "cleared the estimate",
   scheduledTime: ({ to }) => (typeof to === "string" ? `set the time to ${to}` : "cleared the time"),
-  domainId: ({ to }, { domainName }) => {
-    const name = typeof to === "string" ? domainName(to) : undefined
+  domainId: ({ from, to }, { domainName }) => {
+    if (typeof to !== "string") return "put it back in the Inbox"
+    const name = domainName(to)
+    if (from === undefined) return name ? `filed it in ${name}` : "filed it"
     return name ? `moved it to ${name}` : "moved it to another domain"
-  },
-  inbox: ({ to }) => (to === true ? "put it back in the Inbox" : "filed it")
+  }
 }
 
 const phrase = (field: string, change: FieldChange, context: ActivityContext): string | undefined =>

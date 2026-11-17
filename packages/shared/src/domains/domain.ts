@@ -11,6 +11,9 @@ const DomainPrefixSchema = z.string().regex(PREFIX_PATTERN, "1 to 5 letters").br
 export type DomainPrefix = z.infer<typeof DomainPrefixSchema>
 export const domainPrefix = (text: string): DomainPrefix => DomainPrefixSchema.parse(text)
 
+/** How an Inbox task's ref starts, `IN-7`, so no domain may take it. */
+export const INBOX_PREFIX = domainPrefix("IN")
+
 export const VersionSchema = flavoured<Version>(z.number().int())
 
 export const DomainSchema = z.object({
@@ -31,6 +34,7 @@ export const CreateDomainRequestSchema = z.object({
     .string()
     .transform((prefix) => prefix.toUpperCase())
     .pipe(DomainPrefixSchema)
+    .refine((prefix) => prefix !== INBOX_PREFIX, `${INBOX_PREFIX} is kept for the Inbox`)
 })
 
 export type CreateDomainRequest = z.input<typeof CreateDomainRequestSchema>

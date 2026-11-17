@@ -1,12 +1,12 @@
 import { sql } from "drizzle-orm"
 import {
   bigserial,
-  boolean,
   date,
   index,
   integer,
   jsonb,
   pgSequence,
+  check,
   pgTable,
   primaryKey,
   text,
@@ -39,7 +39,6 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").unique(),
   timeZone: text("time_zone").$type<TimeZone>().notNull(),
-  defaultDomainId: domainId("default_domain_id"),
   createdAt: instant("created_at").notNull()
 })
 
@@ -103,14 +102,13 @@ export const tasks = pgTable(
       .notNull()
       .unique()
       .default(sql`nextval('task_numbers')`),
-    domainId: domainId("domain_id")
-      .notNull()
-      .references(() => domains.id),
+    /** Where it's filed; while it's in the Inbox, empty, and `inboxUserId` says whose. */
+    domainId: domainId("domain_id").references(() => domains.id),
+    inboxUserId: userId("inbox_user_id").references(() => users.id),
     title: text("title").notNull(),
     notes: text("notes").notNull(),
     status: text("status").$type<TaskStatus>().notNull(),
     priority: text("priority").$type<Priority>().notNull(),
-    inbox: boolean("inbox").notNull(),
     due: plainDate("due"),
     scheduled: plainDate("scheduled"),
     scheduledTime: text("scheduled_time").$type<IsoTime>(),
@@ -130,7 +128,11 @@ export const tasks = pgTable(
     deletedAt: instant("deleted_at"),
     version: version()
   },
-  (table) => [index("tasks_domain").on(table.domainId)]
+  (table) => [
+    index("tasks_domain").on(table.domainId),
+    index("tasks_inbox").on(table.inboxUserId),
+    check("tasks_filed_or_in_an_inbox", sql`(${table.domainId} is null) <> (${table.inboxUserId} is null)`)
+  ]
 )
 
 export const activity = pgTable(
@@ -145,9 +147,8 @@ export const activity = pgTable(
     agentContext: text("agent_context"),
     /** The task or domain changed. */
     entityId: uuid("entity_id").$type<TaskId | DomainId>().notNull(),
-    domainId: domainId("domain_id")
-      .notNull()
-      .references(() => domains.id),
+    /** Empty for a task in the Inbox. */
+    domainId: domainId("domain_id").references(() => domains.id),
     type: text("type").$type<ActivityType>().notNull(),
     changes: jsonb("changes").$type<Record<string, FieldChange>>().notNull()
   },

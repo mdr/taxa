@@ -30,7 +30,7 @@ export const taskDetail = (task: Task, domain: Domain | undefined, today: IsoDat
     `${task.ref}  ${task.title}`,
     "",
     ...row("Status", STATUS_TEXT[task.status]),
-    ...row("Domain", domain && `${domain.name}${task.inbox ? " (Inbox)" : ""}`),
+    ...row("Domain", task.inbox ? "Inbox" : domain?.name),
     ...row("Priority", PRIORITY_TEXT[task.priority]),
     ...row("Due", day(task.due, today)),
     ...row(

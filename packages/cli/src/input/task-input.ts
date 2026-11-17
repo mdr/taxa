@@ -16,10 +16,10 @@ export const TASK_FIELD_OPTIONS = {
   priority: { type: "string" },
   estimate: { type: "string" },
   energy: { type: "string" },
-  inbox: { type: "string" }
+  inbox: { type: "boolean" }
 } as const
 
-export const TASK_FIELD_HELP = `  --domain PREFIX       Put it in this domain (out of the Inbox)
+export const TASK_FIELD_HELP = `  --domain PREFIX       File it in this domain, out of the Inbox
   --notes TEXT          Notes, in Markdown
   --due DATE            When it must be done by
   --scheduled DATE      When you plan to do it
@@ -28,7 +28,7 @@ export const TASK_FIELD_HELP = `  --domain PREFIX       Put it in this domain (o
   --priority LEVEL      urgent, high, normal or low
   --estimate TIME       How long it'll take: 30m, 1h, 1h30m
   --energy LEVEL        low, medium or high
-  --inbox yes|no        Whether it's in the Inbox (not yet organised)
+  --inbox               Put it back in the Inbox, out of its domain
 DATE is ${DATE_INPUT_HELP}.`
 
 const choice = <T extends string>(choices: Record<string, T>, text: string, what: string): T => {
@@ -71,10 +71,7 @@ export const fieldsFrom = (values: OptionValues, today: IsoDate): NonNullable<Up
         throw new UsageError(`--estimate must be like 30m, 1h or 1h30m, not ${JSON.stringify(text)}.`)
       return minutes
     }),
-    inbox: optional(
-      stringOption(values, "inbox"),
-      (text) => choice({ YES: "YES", NO: "NO" }, text, "--inbox") === "YES"
-    )
+    inbox: values["inbox"] === true ? true : undefined
   }
   return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined))
 }

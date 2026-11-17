@@ -10,7 +10,7 @@ test("adding tasks and moving between lists from the keyboard", async ({ taxa })
 
   // c and g in a title are typed, not taken as shortcuts.
   await inbox.keyboard.addTask("Get coffee")
-  await inbox.expectTasks(["H-1 Get coffee"])
+  await inbox.expectTasks(["IN-1 Get coffee"])
 
   const work = await inbox.keyboard.goTo("g w k")
   await work.expectHeading("Work")
@@ -77,7 +77,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
   await reopened.setSingleKeys(true)
   await reopened.close()
   await inbox.keyboard.addTask("Fix the tap")
-  await inbox.expectTasks(["H-1 Fix the tap"])
+  await inbox.expectTasks(["IN-1 Fix the tap"])
 })
 
 test("moving through a list, and ticking off and opening tasks, from the keyboard", async ({ taxa }) => {
@@ -148,6 +148,7 @@ test("finding and running commands from the command menu", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Fix the tap", { domain: "H" })
   const inbox = await (await taxa.openTab("Matt")).openInbox()
+  await inbox.sidebar.expectDomains(["H Home"])
 
   const menu = await inbox.keyboard.openCommandMenu()
   await menu.expectAccessible()

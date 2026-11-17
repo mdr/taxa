@@ -9,17 +9,53 @@ test("capturing to the Inbox and filing a task", async ({ taxa }) => {
 
   await inbox.capture("Fix the tap")
   await inbox.capture("Renew passport")
-  await inbox.expectTasks(["P-1 Fix the tap", "P-2 Renew passport"])
+  await inbox.expectTasks(["IN-1 Fix the tap", "IN-2 Renew passport"])
   await inbox.expectAccessible()
+  // Not filed anywhere yet, so in no domain's list.
+  await inbox.sidebar.openDomain("Personal")
+  await inbox.expectTasks([])
+  await inbox.sidebar.openInbox()
 
   const detail = await inbox.openTask("Fix the tap")
   await detail.moveTo("H")
   await detail.expectRef("H-1")
   await detail.sidebar.openInbox()
-  await inbox.expectTasks(["P-2 Renew passport"])
+  await inbox.expectTasks(["IN-2 Renew passport"])
+  await inbox.file("Renew passport", "P")
+  await inbox.expectTasks([])
   await inbox.sidebar.openDomain("Home")
   await inbox.expectHeading("Home")
   await inbox.expectTasks(["H-1 Fix the tap"])
+  await inbox.sidebar.openDomain("Personal")
+  await inbox.expectTasks(["P-2 Renew passport"])
+})
+
+test("filing the Inbox from the keyboard, one task after another", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addDomain("Work", "W")
+  await taxa.matt.addTask("Fix the tap")
+  await taxa.matt.addTask("Plan the quarter")
+  const inbox = await (await taxa.openTab("Matt")).openInbox()
+  await inbox.expectTasks(["IN-1 Fix the tap", "IN-2 Plan the quarter"])
+
+  await inbox.keyboard.press("j")
+  await inbox.expectHighlighted("Fix the tap")
+  await inbox.keyboard.choose("m", "H")
+  await inbox.expectTasks(["IN-2 Plan the quarter"])
+  await inbox.expectHighlighted("Plan the quarter")
+  await inbox.keyboard.choose("m", "W")
+  await inbox.expectTasks([])
+  await expect.poll(async () => (await taxa.matt.client.task("2")).ref).toBe("W-2")
+})
+
+test("putting a task back in the Inbox", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  const detail = await (await taxa.openTab("Matt")).openTask("H-1")
+  await detail.moveTo("IN")
+  await detail.expectRef("IN-1")
+  const inbox = await detail.sidebar.openInbox()
+  await inbox.expectTasks(["IN-1 Fix the tap"])
 })
 
 test("a new domain's prefix is suggested from its name", async ({ taxa }) => {
