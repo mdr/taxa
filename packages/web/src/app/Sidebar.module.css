@@ -45,9 +45,3 @@
   font-size: 0.85rem;
   min-width: 2.5rem;
 }
-
-.status {
-  margin: auto 0 0;
-  font-size: 0.85rem;
-  color: var(--muted);
-}

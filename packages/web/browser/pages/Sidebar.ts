@@ -2,7 +2,6 @@ import { expect, type Page } from "@playwright/test"
 import { PageObject } from "./steps.ts"
 import { sidebarTestIds } from "../../src/app/SidebarTestIds.ts"
 import { newDomainFormTestIds } from "../../src/domains/NewDomainFormTestIds.ts"
-import { SERVER_STATUS_TEXT, type ServerStatus } from "../../src/health/server-status.ts"
 
 /** The lists down the side, on every page. */
 export class Sidebar extends PageObject {
@@ -44,11 +43,5 @@ export class Sidebar extends PageObject {
 
   async openDomain(name: string): Promise<void> {
     await this.#page.getByTestId(sidebarTestIds.domain).filter({ hasText: name }).click()
-  }
-
-  async expectServerStatus(status: ServerStatus): Promise<void> {
-    const shown = this.#page.getByTestId(sidebarTestIds.serverStatus)
-    await expect(shown).toHaveAttribute("data-status", status)
-    await expect(shown).toHaveText(SERVER_STATUS_TEXT[status])
   }
 }

@@ -3,13 +3,10 @@ import styles from "./Sidebar.module.css"
 import { sidebarTestIds } from "./SidebarTestIds.ts"
 import { NewDomainForm } from "../domains/NewDomainForm.tsx"
 import { useDomains } from "../domains/domain-queries.ts"
-import { SERVER_STATUS_TEXT } from "../health/server-status.ts"
-import { useServerStatus } from "../health/use-server-status.ts"
 
 export const Sidebar = () => {
   const [location] = useLocation()
   const domains = useDomains()
-  const status = useServerStatus()
   const current = (href: string) => (location === href ? "page" : undefined)
   const started = (domains.data?.length ?? 0) > 0
   return (
@@ -43,9 +40,6 @@ export const Sidebar = () => {
           <NewDomainForm />
         </>
       )}
-      <p className={styles.status} role="status" data-testid={sidebarTestIds.serverStatus} data-status={status}>
-        {SERVER_STATUS_TEXT[status]}
-      </p>
     </nav>
   )
 }
