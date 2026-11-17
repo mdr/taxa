@@ -23,11 +23,20 @@ export const keyName = (press: KeyPress): string | undefined => {
   return `${press.metaKey || press.ctrlKey ? "mod+" : ""}${shift}${key}`
 }
 
-/** A key as people see it written: `G`, `?`, `⌘Z` or `Ctrl+Z`. */
+const KEY_TEXT: Readonly<Record<string, string>> = {
+  ArrowDown: "↓",
+  ArrowUp: "↑",
+  ArrowLeft: "←",
+  ArrowRight: "→",
+  Escape: "Esc",
+  Enter: "Enter"
+}
+
+/** A key as people see it written: `G`, `?`, `↓`, `⌘Z` or `Ctrl+Z`. */
 export const keyLabel = (name: string, mac: boolean): string => {
   const parts = name.split("+")
   const key = parts.at(-1) ?? name
-  const shown = key.length === 1 ? key.toUpperCase() : key
+  const shown = KEY_TEXT[key] ?? (key.length === 1 ? key.toUpperCase() : key)
   const modifiers = parts.slice(0, -1).map((modifier) => {
     if (modifier === "mod") return mac ? "⌘" : "Ctrl+"
     return mac ? "⇧" : "Shift+"

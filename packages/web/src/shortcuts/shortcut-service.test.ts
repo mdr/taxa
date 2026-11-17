@@ -111,6 +111,28 @@ describe("ShortcutService", () => {
     expect(shortcuts.active()).toHaveLength(1)
   })
 
+  it("lists the app's shortcuts first, then the page's, each in the order they were set", () => {
+    const { shortcuts, shortcut } = makeShortcutService()
+    shortcuts.register(ShortcutScope.PAGE, () => [shortcut("s", "status"), shortcut("p", "priority")])
+    shortcuts.register(ShortcutScope.PAGE, () => [shortcut("d", "due")])
+    shortcuts.register(ShortcutScope.APP, () => [shortcut("c", "capture"), shortcut("?", "help")])
+    expect(shortcuts.active().map(({ description }) => description)).toEqual([
+      "capture",
+      "help",
+      "status",
+      "priority",
+      "due"
+    ])
+  })
+
+  it("prefers the latest of a page's shortcuts for the same keys", () => {
+    const { shortcuts, shortcut, ran } = makeShortcutService()
+    shortcuts.register(ShortcutScope.PAGE, () => [shortcut("x", "older")])
+    shortcuts.register(ShortcutScope.PAGE, () => [shortcut("x", "newer")])
+    shortcuts.press("x")
+    expect(ran).toEqual(["newer"])
+  })
+
   it("stops using shortcuts taken away", () => {
     const { shortcuts, shortcut } = makeShortcutService()
     const unregister = shortcuts.register(ShortcutScope.PAGE, () => [shortcut("c", "capture")])
@@ -126,23 +148,25 @@ describe("ShortcutService", () => {
     expect(shortcuts.press("mod+z")).toBe(false)
   })
 
-  it("turns single-key shortcuts off and on, remembering the choice, and keeps ⌘ ones", () => {
+  it("turns off and on shortcuts that start with a character, remembering the choice, and keeps the rest", () => {
     const { shortcuts, shortcut, settings, ran } = makeShortcutService()
     shortcuts.register(ShortcutScope.APP, () => [
       shortcut("c", "capture"),
       shortcut("g i", "inbox"),
-      shortcut("mod+z", "undo")
+      shortcut("mod+z", "undo"),
+      shortcut("ArrowDown", "next")
     ])
     shortcuts.setSingleKeys(false)
     expect(settings.singleKeys).toBe(false)
     expect(shortcuts.press("c")).toBe(false)
     expect(shortcuts.press("g")).toBe(false)
     expect(shortcuts.press("mod+z")).toBe(true)
-    expect(shortcuts.active().map(({ description }) => description)).toEqual(["undo"])
+    expect(shortcuts.press("ArrowDown")).toBe(true)
+    expect(shortcuts.active().map(({ description }) => description)).toEqual(["undo", "next"])
 
     shortcuts.setSingleKeys(true)
     shortcuts.press("c")
-    expect(ran).toEqual(["undo", "capture"])
+    expect(ran).toEqual(["undo", "next", "capture"])
   })
 
   it("starts with single keys as the person last chose", () => {

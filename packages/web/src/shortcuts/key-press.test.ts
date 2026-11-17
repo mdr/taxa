@@ -39,7 +39,9 @@ describe("keyLabel", () => {
     ["mod+z", false, "Ctrl+Z"],
     ["mod+shift+z", true, "⌘⇧Z"],
     ["shift+c", false, "Shift+C"],
-    ["Escape", true, "Escape"]
+    ["Escape", true, "Esc"],
+    ["ArrowDown", true, "↓"],
+    ["ArrowUp", false, "↑"]
   ])("writes %s (Mac %s) as %s", (name, mac, label) => {
     expect(keyLabel(name, mac)).toBe(label)
   })

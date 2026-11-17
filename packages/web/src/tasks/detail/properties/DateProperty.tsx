@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import styles from "./DateProperty.module.css"
 import { DatePicker } from "../../../dates/DatePicker.tsx"
 import { Popover, PopoverLook } from "../../../ui/Popover.tsx"
+import type { KeyShortcut } from "../../../shortcuts/shortcut-service.ts"
 
 export enum DateTone {
   PLAIN = "PLAIN",
@@ -26,6 +27,7 @@ interface DatePropertyProps {
   onChange: (date: IsoDate | undefined) => void
   tone?: DateTone
   time?: { value: IsoTime | undefined; onChange: (time: IsoTime | undefined) => void }
+  shortcut?: KeyShortcut
 }
 
 export const DateProperty = ({
@@ -36,13 +38,15 @@ export const DateProperty = ({
   today,
   onChange,
   tone = DateTone.PLAIN,
-  time
+  time,
+  shortcut
 }: DatePropertyProps) => (
   <Popover
     label={label}
     look={value ? PopoverLook.CHIP : PopoverLook.EMPTY_CHIP}
     testId={testId}
     value={value ?? ""}
+    shortcut={shortcut}
     trigger={
       <span className={TONE_CLASS[tone] ?? styles.plain}>
         {icon}

@@ -9,10 +9,12 @@ import { TaskRow } from "./TaskRow.tsx"
 import { UndoToast } from "./UndoToast.tsx"
 import { withTicked } from "./with-ticked.ts"
 import { ListSessionContext, ListSessionService } from "./list-session-service.ts"
+import { listShortcuts } from "./list-shortcuts.ts"
+import { useLocation } from "wouter"
 import { realScheduler } from "../../services/scheduler.ts"
 import { useServiceState } from "../../services/service-hooks.ts"
 import { useTaskChanges } from "../changes/task-changes-service.ts"
-import { ShortcutGroup, ShortcutScope, useShortcuts } from "../../shortcuts/shortcut-service.ts"
+import { ShortcutScope, useShortcuts } from "../../shortcuts/shortcut-service.ts"
 import { problemMessage } from "../../api/problem-message.ts"
 import { useToday } from "../../dates/use-today.ts"
 import { DomainBadge } from "../../domains/DomainBadge.tsx"
@@ -25,15 +27,6 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
   const changes = useTaskChanges()
   const [session] = useState(() => new ListSessionService(changes, realScheduler))
   useEffect(() => session.dispose, [session])
-  useShortcuts(ShortcutScope.PAGE, [
-    {
-      keys: ["mod+z"],
-      description: "Undo ticking a task off",
-      group: ShortcutGroup.TASKS,
-      available: () => session.state.undoable !== undefined,
-      run: () => void session.undo()
-    }
-  ])
   const ticked = useServiceState(session, (state) => state.ticked)
   const undoable = useServiceState(session, (state) => state.undoable)
   const domains = useDomains()
@@ -45,6 +38,18 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
   const domain = domains.data?.find(({ prefix }) => prefix === domainPrefix?.toUpperCase())
   const shown = tasks.data ? withTicked(tasks.data, ticked) : undefined
   const earlier = (completed.data ?? []).filter(({ id }) => ticked[id] === undefined)
+  const [, navigate] = useLocation()
+  useShortcuts(
+    ShortcutScope.PAGE,
+    listShortcuts(
+      [...(shown ?? []), ...(showCompleted ? earlier : [])],
+      session,
+      (task) => navigate(`/tasks/${task.ref}`),
+      () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+      }
+    )
+  )
   const openCount = tasks.data?.length ?? 0
   return (
     <ListSessionContext.Provider value={session}>

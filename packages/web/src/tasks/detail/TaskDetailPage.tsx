@@ -38,7 +38,10 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
         navigate(listPath)
         requestFocus(FocusTarget.CAPTURE)
       }
-    }
+    },
+    { keys: ["Escape"], description: "Back to the list", group: ShortcutGroup.GO, run: () => navigate(listPath) },
+    { keys: ["r"], description: "Rename", group: ShortcutGroup.TASKS, run: () => requestFocus(FocusTarget.TITLE) },
+    { keys: ["n"], description: "Write notes", group: ShortcutGroup.TASKS, run: () => requestFocus(FocusTarget.NOTES) }
   ])
   if (query.isPending) return undefined
   if (query.isError) {

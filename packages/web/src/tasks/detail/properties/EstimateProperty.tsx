@@ -5,6 +5,7 @@ import styles from "./EstimateProperty.module.css"
 import { estimatePropertyTestIds } from "./EstimatePropertyTestIds.ts"
 import { OptionList } from "../../../ui/OptionList.tsx"
 import { Popover, PopoverLook } from "../../../ui/Popover.tsx"
+import type { KeyShortcut } from "../../../shortcuts/shortcut-service.ts"
 
 const QUICK = [15, 30, 60, 120, 240]
 
@@ -23,7 +24,10 @@ const EstimateEditor = ({
         value={typed}
         onChange={(event) => setTyped(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && parsed !== undefined) onChoose(parsed)
+          if (event.key !== "Enter" || parsed === undefined) return
+          // Handled: the Enter would otherwise go on to click the picker's button, which has the focus back, and reopen it.
+          event.preventDefault()
+          onChoose(parsed)
         }}
         placeholder="Type one: 45m, 1h30m"
         aria-label="Estimate"
@@ -53,10 +57,12 @@ const EstimateEditor = ({
 export const EstimateProperty = ({
   minutes,
   testId,
+  shortcut,
   onChange
 }: {
   minutes: number | undefined
   testId: string
+  shortcut?: KeyShortcut
   onChange: (minutes: number | undefined) => void
 }) => (
   <Popover
@@ -64,6 +70,7 @@ export const EstimateProperty = ({
     look={minutes === undefined ? PopoverLook.EMPTY_CHIP : PopoverLook.CHIP}
     testId={testId}
     value={minutes === undefined ? "" : formatEstimate(minutes)}
+    shortcut={shortcut}
     trigger={
       <>
         <Timer size={15} aria-hidden />

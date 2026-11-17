@@ -47,6 +47,12 @@ export class TaskListPage extends PageObject {
       .toEqual(tasks)
   }
 
+  /** The keyboard is on this task's row. */
+  async expectHighlighted(title: string): Promise<void> {
+    await expect(this.#row(title)).toHaveAttribute("data-highlighted", "true")
+    await expect(this.#row(title).getByTestId(taskRowTestIds.title)).toBeFocused()
+  }
+
   async expectHeading(heading: string): Promise<void> {
     await expect(this.#page.getByTestId(taskListPageTestIds.heading)).toHaveText(heading)
   }

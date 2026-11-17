@@ -92,3 +92,7 @@
     transition: none;
   }
 }
+
+.row[data-highlighted="true"] {
+  background: var(--selected);
+}

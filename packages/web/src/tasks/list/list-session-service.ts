@@ -19,6 +19,14 @@ export interface ListSessionState {
   pending: Readonly<Partial<Record<TaskId, boolean>>>
   /** The task ticked off last, with a chance to undo it. */
   undoable: Task | undefined
+  /** The task the keyboard is on, if any. */
+  highlighted: TaskId | undefined
+}
+
+/** Which way to move the highlight through the list. */
+export enum Step {
+  NEXT = "NEXT",
+  PREVIOUS = "PREVIOUS"
 }
 
 export interface ListSessionActions {
@@ -26,6 +34,10 @@ export interface ListSessionActions {
   toggle: (task: Task) => Promise<void>
   undo: () => Promise<void>
   dismissUndo: () => void
+  /** Puts the highlight on a task, or takes it away. */
+  highlight: (id: TaskId | undefined) => void
+  /** Moves the highlight through the tasks shown, in order: from none, to the first or last. */
+  moveHighlight: (shown: readonly TaskId[], step: Step) => void
   dispose: () => void
 }
 
@@ -44,7 +56,7 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   #cancelUndoOffer: (() => void) | undefined
 
   constructor(changes: TaskChangesActions, scheduler: Scheduler) {
-    super({ ticked: {}, pending: {}, undoable: undefined })
+    super({ ticked: {}, pending: {}, undoable: undefined, highlighted: undefined })
     this.#changes = changes
     this.#scheduler = scheduler
   }
@@ -66,6 +78,21 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
     if (this.state.undoable) this.setState({ undoable: undefined })
   }
 
+  readonly highlight = (id: TaskId | undefined): void => {
+    if (this.state.highlighted !== id) this.setState({ highlighted: id })
+  }
+
+  readonly moveHighlight = (shown: readonly TaskId[], step: Step): void => {
+    const index = this.state.highlighted === undefined ? -1 : shown.indexOf(this.state.highlighted)
+    const next =
+      index === -1
+        ? step === Step.NEXT
+          ? 0
+          : shown.length - 1
+        : Math.min(Math.max(index + (step === Step.NEXT ? 1 : -1), 0), shown.length - 1)
+    this.highlight(shown[next])
+  }
+
   readonly dispose = (): void => {
     this.#cancelUndoOffer?.()
     this.#cancelUndoOffer = undefined
@@ -73,10 +100,18 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
 
   async #setStatus(task: Task, status: TaskStatus.OPEN | TaskStatus.DONE): Promise<void> {
     const done = status === TaskStatus.DONE
-    this.updateState((state) => ({ ...state, pending: { ...state.pending, [task.id]: done } }))
+    // Kept in the list from the tick: the server's answer refreshes the list, without it, before it comes back.
+    this.updateState((state) => ({
+      ...state,
+      pending: { ...state.pending, [task.id]: done },
+      ticked: done ? { ...state.ticked, [task.id]: state.ticked[task.id] ?? task } : state.ticked
+    }))
     const changed = await this.#changes.change(task, { type: TaskChangeType.STATUS, request: { status } })
     this.updateState((state) => ({ ...state, pending: { ...state.pending, [task.id]: undefined } }))
-    if (!changed) return
+    if (!changed) {
+      if (done) this.updateState((state) => ({ ...state, ticked: { ...state.ticked, [task.id]: undefined } }))
+      return
+    }
     this.updateState((state) => ({
       ...state,
       ticked: { ...state.ticked, [task.id]: done ? changed : undefined },
@@ -97,6 +132,9 @@ export const useListSession = (): ListSessionActions => useService(ListSessionCo
 
 export const useShownDone = (task: Task): boolean =>
   useServiceState(useService(ListSessionContext), (state) => isShownDone(state, task))
+
+export const useHighlighted = (id: TaskId): boolean =>
+  useServiceState(useService(ListSessionContext), (state) => state.highlighted === id)
 
 export const useCelebrated = (id: TaskId): boolean =>
   useServiceState(useService(ListSessionContext), (state) => isCelebrated(state, id))

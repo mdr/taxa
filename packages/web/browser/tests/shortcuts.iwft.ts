@@ -1,3 +1,5 @@
+import { expect } from "@playwright/test"
+import { Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
 test("adding tasks and moving between lists from the keyboard", async ({ taxa }) => {
@@ -49,11 +51,22 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Show keyboard shortcuts ?",
     "Inbox G then I",
     "Home G then H",
+    "Next task J or ↓",
+    "Previous task K or ↑",
+    "Open the task Enter",
+    "Tick off, or untick X",
+    "Leave the list Esc",
     "Undo ticking a task off ⌘Z"
   ])
   await help.expectAccessible()
   await help.setSingleKeys(false)
-  await help.expectShortcuts(["Undo ticking a task off ⌘Z"])
+  await help.expectShortcuts([
+    "Next task ↓",
+    "Previous task ↑",
+    "Open the task Enter",
+    "Leave the list Esc",
+    "Undo ticking a task off ⌘Z"
+  ])
   await help.closeWithEscape()
 
   await inbox.keyboard.press("c")
@@ -63,4 +76,68 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
   await reopened.close()
   await inbox.keyboard.addTask("Fix the tap")
   await inbox.expectTasks(["H-1 Fix the tap"])
+})
+
+test("moving through a list, and ticking off and opening tasks, from the keyboard", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  for (const title of ["Fix the tap", "Bleed the radiators", "Clear the gutters"]) {
+    await taxa.matt.addTask(title, { domain: "H" })
+  }
+  const home = await (await taxa.openTab("Matt")).openInbox().then((inbox) => inbox.sidebar.openDomain("Home"))
+  await home.expectTasks(["H-1 Fix the tap", "H-2 Bleed the radiators", "H-3 Clear the gutters"])
+
+  await home.keyboard.press("j")
+  await home.expectHighlighted("Fix the tap")
+  await home.keyboard.press("ArrowDown")
+  await home.expectHighlighted("Bleed the radiators")
+  await home.keyboard.press("x")
+  await home.expectTasks(["H-1 Fix the tap", "✓ H-2 Bleed the radiators", "H-3 Clear the gutters"])
+  await home.expectUndoOffered("Bleed the radiators")
+  await home.keyboard.press("mod+z")
+  await home.expectTasks(["H-1 Fix the tap", "H-2 Bleed the radiators", "H-3 Clear the gutters"])
+
+  await home.keyboard.press("k")
+  await home.expectHighlighted("Fix the tap")
+  const detail = await home.keyboard.openHighlighted()
+  await detail.expectRef("H-1")
+  const back = await detail.keyboard.backToList()
+  await back.expectHeading("Home")
+})
+
+test("changing a task from the keyboard on its page", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addDomain("Work", "W")
+  await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  const detail = await (await taxa.openTab("Matt")).openTask("H-1")
+  await detail.expectRef("H-1")
+
+  await detail.keyboard.choose("p", Priority.HIGH)
+  await detail.expectPriority(Priority.HIGH)
+  await detail.keyboard.choose("s", TaskStatus.IN_PROGRESS)
+  await detail.expectStatus(TaskStatus.IN_PROGRESS)
+  await detail.keyboard.typeDate("d", "2026-03-02")
+  await detail.expectDue("2026-03-02")
+  await detail.keyboard.rename("Fix the kitchen tap")
+  await detail.expectTitle("Fix the kitchen tap")
+  await detail.keyboard.writeNotes("Washers")
+  await detail.expectNotesText("Washers")
+  await detail.keyboard.choose("m", "W")
+  await detail.expectRef("W-1")
+  await expect
+    .poll(async () => {
+      const { priority, status, due, title, notes, ref } = await taxa.matt.client.task("W-1")
+      return { priority, status, due, title, notes, ref }
+    })
+    .toEqual({
+      priority: Priority.HIGH,
+      status: TaskStatus.IN_PROGRESS,
+      due: "2026-03-02",
+      title: "Fix the kitchen tap",
+      notes: "Washers",
+      ref: "W-1"
+    })
+
+  const work = await detail.keyboard.backToList()
+  await work.expectHeading("Work")
+  await work.expectTasks(["W-1 Fix the kitchen tap"])
 })

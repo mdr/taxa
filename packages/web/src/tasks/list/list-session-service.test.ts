@@ -1,7 +1,7 @@
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { makeTask } from "@taxa/shared/test-support/make-task"
 import { describe, expect, it } from "vite-plus/test"
-import { isCelebrated, isShownDone, ListSessionService, UNDO_OFFERED_MS } from "./list-session-service.ts"
+import { isCelebrated, isShownDone, ListSessionService, Step, UNDO_OFFERED_MS } from "./list-session-service.ts"
 import { FakeScheduler } from "../../test-support/fake-scheduler.ts"
 import { TaskChangeType, type TaskChange, type TaskChangesActions } from "../changes/task-changes-service.ts"
 
@@ -43,6 +43,7 @@ describe("ListSessionService", () => {
     expect(isShownDone(session.state, task)).toBe(true)
     expect(isCelebrated(session.state, task.id)).toBe(true)
     expect(session.state.undoable).toBeUndefined()
+    expect(session.state.ticked[task.id]).toBe(task)
 
     await changes.answer()
     await ticking
@@ -192,5 +193,45 @@ describe("ListSessionService", () => {
     expect(scheduler.waiting).toBe(1)
     session.dispose()
     expect(scheduler.waiting).toBe(0)
+  })
+})
+
+describe("ListSessionService's highlight", () => {
+  const [first, second, third] = [makeTask({ number: 1 }), makeTask({ number: 2 }), makeTask({ number: 3 })]
+  const shown = [first.id, second.id, third.id]
+
+  it("starts on the first task going down, or the last going up", () => {
+    const { session } = makeListSessionService()
+    session.moveHighlight(shown, Step.NEXT)
+    expect(session.state.highlighted).toBe(first.id)
+    session.highlight(undefined)
+    session.moveHighlight(shown, Step.PREVIOUS)
+    expect(session.state.highlighted).toBe(third.id)
+  })
+
+  it("moves a task at a time, and stops at the ends", () => {
+    const { session } = makeListSessionService()
+    session.highlight(second.id)
+    session.moveHighlight(shown, Step.NEXT)
+    expect(session.state.highlighted).toBe(third.id)
+    session.moveHighlight(shown, Step.NEXT)
+    expect(session.state.highlighted).toBe(third.id)
+    session.moveHighlight(shown, Step.PREVIOUS)
+    session.moveHighlight(shown, Step.PREVIOUS)
+    session.moveHighlight(shown, Step.PREVIOUS)
+    expect(session.state.highlighted).toBe(first.id)
+  })
+
+  it("starts again from the top when the highlighted task is no longer shown", () => {
+    const { session } = makeListSessionService()
+    session.highlight(second.id)
+    session.moveHighlight([first.id, third.id], Step.NEXT)
+    expect(session.state.highlighted).toBe(first.id)
+  })
+
+  it("highlights nothing in an empty list", () => {
+    const { session } = makeListSessionService()
+    session.moveHighlight([], Step.NEXT)
+    expect(session.state.highlighted).toBeUndefined()
   })
 })

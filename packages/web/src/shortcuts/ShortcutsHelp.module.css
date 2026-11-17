@@ -102,3 +102,7 @@
   display: block;
   color: var(--muted);
 }
+
+.or {
+  margin: 0 0.2rem;
+}

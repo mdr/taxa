@@ -33,8 +33,10 @@ normalising what the API receives from others is still to come.
 
 Also added after first use: keyboard shortcuts. `C` adds a task, `G` then `I` or
 a domain's prefix goes to a list, `⌘Z` undoes a tick, and `?` lists them, with
-single-key ones able to be turned off. Still to come: moving through a list
-(`J`/`K`, `X` to tick), keys for a task's properties, and a `⌘K` command menu.
+single-key ones able to be turned off. In a list, `J`/`K` or the arrows move
+through the tasks, `Enter` opens one and `X` ticks it off; on a task's page, a
+key opens each picker (`S`, `P`, `M`, `D`, `T`, `H`, `E`), `R` renames, `N`
+writes notes and `Esc` goes back. Still to come: a `⌘K` command menu.
 
 **Feedback checkpoint:** daily use, the CLI, and how agents get on with it.
 

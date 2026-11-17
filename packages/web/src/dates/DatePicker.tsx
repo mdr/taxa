@@ -42,7 +42,10 @@ export const DatePicker = ({ value, today, onChoose, time }: DatePickerProps) =>
         value={typed}
         onChange={(event) => setTyped(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && parsed) onChoose(parsed)
+          if (event.key !== "Enter" || !parsed) return
+          // Handled: the Enter would otherwise go on to click the picker's button, which has the focus back, and reopen it.
+          event.preventDefault()
+          onChoose(parsed)
         }}
         placeholder="Type a date: fri, +3d, 2026-03-01"
         aria-label="Date"

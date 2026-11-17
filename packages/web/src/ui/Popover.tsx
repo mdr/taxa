@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react"
 import styles from "./Popover.module.css"
+import { ShortcutGroup, ShortcutScope, useShortcuts, type KeyShortcut } from "../shortcuts/shortcut-service.ts"
 
 export enum PopoverLook {
   /** A property shown as a rounded chip. */
@@ -26,6 +27,8 @@ interface PopoverProps {
   value?: string
   /** Line the panel up with the trigger's right edge instead of its left. */
   alignEnd?: boolean
+  /** A key that opens it, on the page that shows it. */
+  shortcut?: KeyShortcut
   /** The panel's content, given a way to close it. */
   children: (close: () => void) => ReactNode
 }
@@ -33,12 +36,34 @@ interface PopoverProps {
 const FOCUSABLE = "input, button:not(:disabled), [tabindex]:not([tabindex='-1'])"
 
 /** A button that opens a small panel beside it, closed by Escape or a click elsewhere. */
-export const Popover = ({ label, trigger, look, testId, value, alignEnd = false, children }: PopoverProps) => {
+export const Popover = ({
+  label,
+  trigger,
+  look,
+  testId,
+  value,
+  alignEnd = false,
+  shortcut,
+  children
+}: PopoverProps) => {
   const [open, setOpen] = useState(false)
   const wrapper = useRef<HTMLDivElement>(null)
   const button = useRef<HTMLButtonElement>(null)
   const panel = useRef<HTMLDivElement>(null)
   const panelId = useId()
+  useShortcuts(
+    ShortcutScope.PAGE,
+    shortcut
+      ? [
+          {
+            keys: [shortcut.key],
+            description: shortcut.description,
+            group: ShortcutGroup.TASKS,
+            run: () => setOpen(true)
+          }
+        ]
+      : []
+  )
   const close = () => {
     setOpen(false)
     button.current?.focus()
@@ -52,6 +77,7 @@ export const Popover = ({ label, trigger, look, testId, value, alignEnd = false,
     const escape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return
       event.stopPropagation()
+      event.preventDefault()
       setOpen(false)
       button.current?.focus()
     }
@@ -71,6 +97,7 @@ export const Popover = ({ label, trigger, look, testId, value, alignEnd = false,
         aria-label={look === PopoverLook.ICON ? label : undefined}
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-keyshortcuts={shortcut?.key.toUpperCase()}
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen(!open)}
         data-testid={testId}

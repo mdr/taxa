@@ -12,19 +12,19 @@ export class ShortcutsHelp extends PageObject {
     this.#page = page
   }
 
-  /** Each shortcut, as `description keys`, keys as shown (`G then H`). */
+  /** Each shortcut, as `description keys`, keys as shown (`G then H`, `J or ↓`). */
   async expectShortcuts(shortcuts: string[]): Promise<void> {
     await expect(this.#page.getByTestId(shortcutsHelpTestIds.dialog)).toBeVisible()
     await expect
       .poll(() =>
-        this.#page
-          .getByTestId(shortcutsHelpTestIds.shortcut)
-          .evaluateAll((rows) =>
-            rows.map(
-              (row) =>
-                `${row.querySelector("dt")?.textContent ?? ""} ${[...row.querySelectorAll("kbd")].map((key) => key.textContent).join(" then ")}`
-            )
-          )
+        this.#page.getByTestId(shortcutsHelpTestIds.shortcut).evaluateAll((rows) =>
+          rows.map((row) => {
+            const keys = [...(row.querySelector("dd")?.childNodes ?? [])]
+              .map((node) => node.textContent?.trim() ?? "")
+              .filter((text) => text !== "")
+            return `${row.querySelector("dt")?.textContent ?? ""} ${keys.join(" ")}`
+          })
+        )
       )
       .toEqual(shortcuts)
   }

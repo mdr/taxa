@@ -3,6 +3,7 @@ import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 import { CalendarClock, CalendarDays } from "lucide-react"
+import { useEffect, useRef } from "react"
 import { Link } from "wouter"
 import styles from "./TaskRow.module.css"
 import { taskRowTestIds } from "./TaskRowTestIds.ts"
@@ -10,19 +11,47 @@ import { TickBox } from "./TickBox.tsx"
 import { PriorityIcon } from "../PriorityIcon.tsx"
 import { StatusIcon } from "../StatusIcon.tsx"
 import { capitalised } from "../../ui/capitalised.ts"
-import { useCelebrated, useListSession, useShownDone } from "./list-session-service.ts"
+import { useCelebrated, useHighlighted, useListSession, useShownDone } from "./list-session-service.ts"
 import { useTaskProblem } from "../changes/task-changes-service.ts"
 
 const dueClass = (due: IsoDate, today: IsoDate): string | undefined =>
   due < today ? styles.overdue : due === today ? styles.dueToday : styles.meta
 
 export const TaskRow = ({ task, today }: { task: Task; today: IsoDate }) => {
-  const { toggle } = useListSession()
+  const { toggle, highlight } = useListSession()
+  const highlighted = useHighlighted(task.id)
+  const row = useRef<HTMLLIElement>(null)
+  // The highlight is the keyboard's focus, so Enter opens the task and screen readers follow it.
+  useEffect(() => {
+    if (highlighted && !row.current?.contains(document.activeElement)) row.current?.querySelector("a")?.focus()
+  }, [highlighted])
+  // Clicking or tabbing into the row highlights it too; leaving it lets go.
+  useEffect(() => {
+    const element = row.current
+    if (!element) return undefined
+    const entered = (): void => highlight(task.id)
+    const left = (event: FocusEvent): void => {
+      if (!(event.relatedTarget instanceof Node && element.contains(event.relatedTarget))) highlight(undefined)
+    }
+    element.addEventListener("focusin", entered)
+    element.addEventListener("focusout", left)
+    return () => {
+      element.removeEventListener("focusin", entered)
+      element.removeEventListener("focusout", left)
+    }
+  }, [highlight, task.id])
   const problem = useTaskProblem(task.id)
   const done = useShownDone(task)
   const celebrate = useCelebrated(task.id)
   return (
-    <li className={styles.row} data-done={done} data-celebrate={done && celebrate} data-testid={taskRowTestIds.row}>
+    <li
+      ref={row}
+      className={styles.row}
+      data-done={done}
+      data-celebrate={done && celebrate}
+      data-highlighted={highlighted}
+      data-testid={taskRowTestIds.row}
+    >
       <TickBox
         checked={done}
         celebrate={celebrate}

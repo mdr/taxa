@@ -8,6 +8,7 @@ import { NotesDraftService } from "./notes-draft-service.ts"
 import { documentToNotes, notesToDocument, NOTES_EXTENSIONS } from "./notes-markdown.ts"
 import { localNotesModeStore, NotesMode } from "./notes-mode.ts"
 import { useServiceState } from "../services/service-hooks.ts"
+import { FocusTarget, useFocusRequested, useShortcutActions } from "../shortcuts/shortcut-service.ts"
 import { TaskChangeType, type TaskChange } from "../tasks/changes/task-changes-service.ts"
 
 const PLACEHOLDER = "Add notes…"
@@ -64,6 +65,14 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
     onBlur: draft.finishWriting
   })
 
+  const { focusTaken } = useShortcutActions()
+  const focusWanted = useFocusRequested(FocusTarget.NOTES)
+  useEffect(() => {
+    if (!focusWanted) return
+    if (mode === NotesMode.RICH) editor.commands.focus("end")
+    else sourceField.current?.focus()
+    focusTaken()
+  }, [focusWanted, focusTaken, mode, editor, sourceField])
   useEffect(() => draft.dispose, [draft])
   useEffect(() => draft.receive(notes), [draft, notes])
   useEffect(() => {

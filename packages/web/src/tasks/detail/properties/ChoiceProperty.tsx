@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import { OptionList, type Option } from "../../../ui/OptionList.tsx"
 import { Popover, PopoverLook } from "../../../ui/Popover.tsx"
+import type { KeyShortcut } from "../../../shortcuts/shortcut-service.ts"
 
 interface ChoicePropertyProps {
   label: string
@@ -11,6 +12,7 @@ interface ChoicePropertyProps {
   trigger: ReactNode
   /** Not set yet, so the chip is quieter. */
   empty?: boolean
+  shortcut?: KeyShortcut
   onChoose: (value: string) => void
 }
 
@@ -22,6 +24,7 @@ export const ChoiceProperty = ({
   options,
   trigger,
   empty = false,
+  shortcut,
   onChoose
 }: ChoicePropertyProps) => (
   <Popover
@@ -30,6 +33,7 @@ export const ChoiceProperty = ({
     look={empty ? PopoverLook.EMPTY_CHIP : PopoverLook.CHIP}
     testId={testId}
     value={value}
+    shortcut={shortcut}
   >
     {(close) => (
       <OptionList

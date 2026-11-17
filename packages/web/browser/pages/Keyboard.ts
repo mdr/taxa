@@ -1,7 +1,12 @@
 import { expect, type Page } from "@playwright/test"
 import { PageObject } from "./steps.ts"
 import { ShortcutsHelp } from "./ShortcutsHelp.ts"
+import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { TaskListPage } from "./TaskListPage.ts"
+import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
+import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
+import { notesEditorTestIds } from "../../src/notes/NotesEditorTestIds.ts"
+import { titleFieldTestIds } from "../../src/tasks/detail/TitleFieldTestIds.ts"
 import { sidebarTestIds } from "../../src/app/SidebarTestIds.ts"
 import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
 
@@ -46,5 +51,54 @@ export class Keyboard extends PageObject {
   /** Quick capture wasn't given the cursor: checked after something else has happened since. */
   async expectCaptureNotFocused(): Promise<void> {
     await expect(this.#page.getByTestId(quickCaptureTestIds.title)).not.toBeFocused()
+  }
+
+  /** Enter on the highlighted task. */
+  async openHighlighted(): Promise<TaskDetailPage> {
+    await this.press("Enter")
+    return new TaskDetailPage(this.#page)
+  }
+
+  /** Escape, from a task's page to its list. */
+  async backToList(): Promise<TaskListPage> {
+    await this.press("Escape")
+    return new TaskListPage(this.#page)
+  }
+
+  /** A picker's key, then the arrow keys to an option, and Enter. */
+  async choose(key: string, value: string): Promise<void> {
+    await this.press(key)
+    const focused = this.#page.locator(`[data-testid="${optionListTestIds.option}"]:focus`)
+    await expect(focused).toHaveCount(1)
+    for (let step = 0; step < 10 && (await focused.getAttribute("data-value")) !== value; step++) {
+      await this.#page.keyboard.press("ArrowDown")
+    }
+    await expect(focused).toHaveAttribute("data-value", value)
+    await this.#page.keyboard.press("Enter")
+  }
+
+  /** A date picker's key, then a date typed, and Enter. */
+  async typeDate(key: string, date: string): Promise<void> {
+    await this.press(key)
+    await expect(this.#page.getByTestId(datePickerTestIds.typed)).toBeFocused()
+    await this.#page.keyboard.type(date)
+    await this.#page.keyboard.press("Enter")
+    await expect(this.#page.getByTestId(datePickerTestIds.typed)).toHaveCount(0)
+  }
+
+  /** `R`: the title, selected, replaced by typing, and Enter. */
+  async rename(title: string): Promise<void> {
+    await this.press("r")
+    await expect(this.#page.getByTestId(titleFieldTestIds.title)).toBeFocused()
+    await this.#page.keyboard.type(title)
+    await this.#page.keyboard.press("Enter")
+  }
+
+  /** `N`: writes at the end of the notes, then leaves them with Escape. */
+  async writeNotes(text: string): Promise<void> {
+    await this.press("n")
+    await expect(this.#page.getByTestId(notesEditorTestIds.editor)).toBeFocused()
+    await this.#page.keyboard.type(text)
+    await this.#page.keyboard.press("Escape")
   }
 }

@@ -23,7 +23,9 @@ export enum ShortcutScope {
 
 /** Somewhere a shortcut puts the cursor, once the page with it is showing. */
 export enum FocusTarget {
-  CAPTURE = "CAPTURE"
+  CAPTURE = "CAPTURE",
+  TITLE = "TITLE",
+  NOTES = "NOTES"
 }
 
 export interface Shortcut {
@@ -34,6 +36,12 @@ export interface Shortcut {
   run: () => void
   /** Whether there's anything for it to do now; if not, the key is left to the browser. */
   available?: () => boolean
+}
+
+/** A key that does one thing, such as opening a picker. */
+export interface KeyShortcut {
+  key: string
+  description: string
 }
 
 interface Layer {
@@ -68,7 +76,8 @@ export interface ShortcutActions {
 
 const SCOPE_RANK: Record<ShortcutScope, number> = { [ShortcutScope.PAGE]: 0, [ShortcutScope.APP]: 1 }
 
-const isSingleKey = (shortcut: Shortcut): boolean => !shortcut.keys[0]?.startsWith("mod+")
+/** Starts with a key that types a character, without ⌘ or Ctrl: what WCAG 2.1.4 lets people turn off. */
+const isSingleKey = (shortcut: Shortcut): boolean => (shortcut.keys[0] ?? "").length === 1
 
 const startsWith = (keys: readonly string[], start: readonly string[]): boolean =>
   start.every((key, index) => keys[index] === key)
@@ -92,17 +101,26 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
   }
 
   readonly active = (): readonly Shortcut[] => {
-    const layers = [...this.state.layers].reverse().sort((a, b) => SCOPE_RANK[a.scope] - SCOPE_RANK[b.scope])
-    const seen = new Set<string>()
-    return layers
-      .flatMap((layer) => layer.shortcuts())
-      .filter((shortcut) => this.state.singleKeys || !isSingleKey(shortcut))
-      .filter((shortcut) => {
+    const layers = this.state.layers.map(({ scope, shortcuts }) => ({
+      scope,
+      shortcuts: shortcuts().filter((shortcut) => this.state.singleKeys || !isSingleKey(shortcut))
+    }))
+    // For the same keys, a page's beat the app's, and the latest set beat earlier ones.
+    const winners = new Set<Shortcut>()
+    const taken = new Set<string>()
+    for (const layer of [...layers].reverse().sort((a, b) => SCOPE_RANK[a.scope] - SCOPE_RANK[b.scope])) {
+      for (const shortcut of layer.shortcuts) {
         const sequence = shortcut.keys.join(" ")
-        if (seen.has(sequence)) return false
-        seen.add(sequence)
-        return true
-      })
+        if (taken.has(sequence)) continue
+        taken.add(sequence)
+        winners.add(shortcut)
+      }
+    }
+    // Listed the app's first, each in the order they were set.
+    return [...layers]
+      .sort((a, b) => SCOPE_RANK[b.scope] - SCOPE_RANK[a.scope])
+      .flatMap((layer) => layer.shortcuts)
+      .filter((shortcut) => winners.has(shortcut))
   }
 
   readonly press = (key: string): boolean => {
@@ -181,22 +199,26 @@ export const useShortcuts = (scope: ShortcutScope, shortcuts: readonly Shortcut[
 const TYPED_IN = new Set(["INPUT", "TEXTAREA", "SELECT"])
 const NOT_TYPED_IN = new Set(["checkbox", "radio", "button", "submit", "reset"])
 
-/** Whether a key pressed here is someone typing, which shortcuts must leave alone. */
-const isTyping = (target: EventTarget | undefined): boolean => {
+/** Whether a key pressed here is someone typing, or belongs to an open dialog: shortcuts leave it alone. */
+const isTaken = (target: EventTarget | undefined): boolean => {
   if (!(target instanceof HTMLElement)) return false
-  if (target.isContentEditable) return true
+  if (target.isContentEditable || target.closest("dialog, [role='dialog']")) return true
   if (!TYPED_IN.has(target.tagName)) return false
   return !(target instanceof HTMLInputElement && NOT_TYPED_IN.has(target.type))
 }
 
-/** Sends the page's key presses to the service. */
+/**
+ * Sends the page's key presses to the service. On the window, so it hears
+ * a key last: anything on the page that handles it first (a picker's
+ * Escape) prevents its default, and the shortcut stands aside.
+ */
 export const useKeyboardShortcuts = (service: ShortcutService): void =>
   useEffect(() => {
     const listener = (event: KeyboardEvent): void => {
-      if (event.defaultPrevented || event.isComposing || isTyping(event.target ?? undefined)) return
+      if (event.defaultPrevented || event.isComposing || isTaken(event.target ?? undefined)) return
       const key = keyName(event)
       if (key !== undefined && service.press(key)) event.preventDefault()
     }
-    document.addEventListener("keydown", listener)
-    return () => document.removeEventListener("keydown", listener)
+    window.addEventListener("keydown", listener)
+    return () => window.removeEventListener("keydown", listener)
   }, [service])

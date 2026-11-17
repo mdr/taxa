@@ -55,6 +55,7 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
       <ChoiceProperty
         label="Status"
         testId={taskPropertiesTestIds.status}
+        shortcut={{ key: "s", description: "Change status" }}
         value={task.status}
         trigger={
           <>
@@ -72,6 +73,7 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
       <ChoiceProperty
         label="Priority"
         testId={taskPropertiesTestIds.priority}
+        shortcut={{ key: "p", description: "Set priority" }}
         value={task.priority}
         empty={task.priority === Priority.NORMAL}
         trigger={
@@ -92,6 +94,7 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
       <ChoiceProperty
         label="Domain"
         testId={taskPropertiesTestIds.domain}
+        shortcut={{ key: "m", description: "Move to a domain" }}
         // In the Inbox, no domain is chosen yet, so choosing any one files it.
         value={task.inbox ? "" : (domain?.prefix ?? "")}
         trigger={
@@ -118,6 +121,7 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
         label="Due"
         icon={<CalendarClock size={15} aria-hidden />}
         testId={taskPropertiesTestIds.due}
+        shortcut={{ key: "d", description: "Set a due date" }}
         value={task.due}
         today={today}
         tone={dueTone}
@@ -127,6 +131,7 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
         label="Scheduled"
         icon={<CalendarDays size={15} aria-hidden />}
         testId={taskPropertiesTestIds.scheduled}
+        shortcut={{ key: "t", description: "Schedule" }}
         value={task.scheduled}
         today={today}
         onChange={(date) => setOrClear(ClearableField.SCHEDULED, date)}
@@ -136,6 +141,7 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
         label="Hidden until"
         icon={<EyeOff size={15} aria-hidden />}
         testId={taskPropertiesTestIds.start}
+        shortcut={{ key: "h", description: "Hide until a date" }}
         value={task.start}
         today={today}
         onChange={(date) => setOrClear(ClearableField.START, date)}
@@ -143,6 +149,7 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
       <EstimateProperty
         minutes={task.estimateMinutes}
         testId={taskPropertiesTestIds.estimate}
+        shortcut={{ key: "e", description: "Estimate" }}
         onChange={(minutes) => setOrClear(ClearableField.ESTIMATE_MINUTES, minutes)}
       />
       <ChoiceProperty
