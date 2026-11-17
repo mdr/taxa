@@ -2,33 +2,31 @@ import { expect } from "@playwright/test"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
-test("a first domain, then capturing to the Inbox and filing a task", async ({ taxa }) => {
-  const inbox = await (await taxa.openTab("Matt")).openInbox()
-  await inbox.expectWelcome()
-  await inbox.expectAccessible()
-
-  await inbox.sidebar.addDomain("Personal", "m")
-  await inbox.sidebar.expectDomains(["M Personal"])
-  await taxa.advance(1000)
-  await inbox.sidebar.addDomain("Home", "H")
-  await inbox.sidebar.expectDomains(["M Personal", "H Home"])
+test("capturing to the Inbox and filing a task", async ({ taxa }) => {
+  const inbox = await (await (await taxa.openTab("Matt")).openFirstTime()).start()
   await inbox.sidebar.addDomain("Hobbies", "H")
   await inbox.sidebar.expectDomainProblem("H")
 
-  await inbox.expectHeading("Inbox")
   await inbox.capture("Fix the tap")
   await inbox.capture("Renew passport")
-  await inbox.expectTasks(["M-1 Fix the tap", "M-2 Renew passport"])
+  await inbox.expectTasks(["P-1 Fix the tap", "P-2 Renew passport"])
   await inbox.expectAccessible()
 
   const detail = await inbox.openTask("Fix the tap")
   await detail.moveTo("H")
   await detail.expectRef("H-1")
   await detail.sidebar.openInbox()
-  await inbox.expectTasks(["M-2 Renew passport"])
+  await inbox.expectTasks(["P-2 Renew passport"])
   await inbox.sidebar.openDomain("Home")
   await inbox.expectHeading("Home")
   await inbox.expectTasks(["H-1 Fix the tap"])
+})
+
+test("a new domain's prefix is suggested from its name", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  const inbox = await (await taxa.openTab("Matt")).openInbox()
+  await inbox.sidebar.addDomainSuggested("Hobbies")
+  await inbox.sidebar.expectDomains(["H Home", "HO Hobbies"])
 })
 
 test("a task captured in a domain's list goes straight into it", async ({ taxa }) => {

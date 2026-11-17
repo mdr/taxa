@@ -3,12 +3,10 @@
   flex-direction: column;
   gap: 0.4rem;
   font-size: 0.9rem;
-}
-
-.heading {
-  margin: 0;
-  font-weight: 600;
-  color: var(--muted);
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
 }
 
 .field {
@@ -20,6 +18,31 @@
 .prefix {
   text-transform: uppercase;
   width: 5rem;
+  font-family: ui-monospace, monospace;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+.add {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.open {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.3rem 0.5rem;
+}
+
+.open:hover {
+  color: var(--text);
 }
 
 .error {

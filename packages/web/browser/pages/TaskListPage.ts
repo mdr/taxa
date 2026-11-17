@@ -28,10 +28,6 @@ export class TaskListPage extends PageObject {
     await expect(this.#page.getByTestId(taskListPageTestIds.heading)).toHaveText(heading)
   }
 
-  async expectWelcome(): Promise<void> {
-    await expect(this.#page.getByTestId(taskListPageTestIds.welcome)).toBeVisible()
-  }
-
   async capture(title: string): Promise<void> {
     const input = this.#page.getByTestId(quickCaptureTestIds.title)
     await input.fill(title)

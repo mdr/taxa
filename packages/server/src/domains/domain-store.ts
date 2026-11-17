@@ -29,7 +29,7 @@ export const domainsOf = async (db: Db, userId: string): Promise<Domain[]> => {
     .from(domains)
     .innerJoin(domainMembers, eq(domainMembers.domainId, domains.id))
     .where(and(eq(domainMembers.userId, userId), isNull(domains.deletedAt)))
-    .orderBy(asc(domains.createdAt), asc(domains.name))
+    .orderBy(asc(domains.createdAt), asc(domains.id))
   return rows.map(({ domain }) => domainOf(domain))
 }
 

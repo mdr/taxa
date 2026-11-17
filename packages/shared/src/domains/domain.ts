@@ -3,7 +3,7 @@ import { z } from "zod"
 export const DOMAINS_PATH = "/api/domains"
 
 /** 1–5 capital letters, unique across the installation: the `H` of `H-142`. */
-const PREFIX_PATTERN = /^[A-Z]{1,5}$/
+export const PREFIX_PATTERN = /^[A-Z]{1,5}$/
 
 const PrefixSchema = z
   .string()

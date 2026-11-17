@@ -12,14 +12,6 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
   const domains = useDomains()
   const tasks = useTasks(domainPrefix ? { domain: domainPrefix } : { inbox: "true" })
   const today = useToday()
-  if (domains.data?.length === 0) {
-    return (
-      <section className={styles.page} data-testid={taskListPageTestIds.welcome}>
-        <h1>Welcome to Taxa</h1>
-        <p>Tasks live in domains, such as Home or Work. Add your first one in the sidebar to start.</p>
-      </section>
-    )
-  }
   const domain = domains.data?.find(({ prefix }) => prefix === domainPrefix?.toUpperCase())
   return (
     <section className={styles.page} aria-labelledby="list-heading">
@@ -35,7 +27,9 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
         </p>
       ) : tasks.data.length === 0 ? (
         <p className={styles.quiet} data-testid={taskListPageTestIds.empty}>
-          {domainPrefix ? "Nothing to do here." : "Nothing waiting to be organised."}
+          {domainPrefix
+            ? "Nothing to do here."
+            : "Your Inbox is empty. Type anything above and press Enter to capture it, then file it into a domain when you're ready."}
         </p>
       ) : (
         <ul className={styles.tasks}>

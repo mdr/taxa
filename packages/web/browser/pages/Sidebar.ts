@@ -14,8 +14,16 @@ export class Sidebar extends PageObject {
   }
 
   async addDomain(name: string, prefix: string): Promise<void> {
+    await this.#page.getByTestId(newDomainFormTestIds.open).click()
     await this.#page.getByTestId(newDomainFormTestIds.name).fill(name)
     await this.#page.getByTestId(newDomainFormTestIds.prefix).fill(prefix)
+    await this.#page.getByTestId(newDomainFormTestIds.add).click()
+  }
+
+  /** Adds a domain with the prefix suggested for its name. */
+  async addDomainSuggested(name: string): Promise<void> {
+    await this.#page.getByTestId(newDomainFormTestIds.open).click()
+    await this.#page.getByTestId(newDomainFormTestIds.name).fill(name)
     await this.#page.getByTestId(newDomainFormTestIds.add).click()
   }
 

@@ -14,4 +14,11 @@ describe("uuidv7", () => {
   it("sorts by time", () => {
     expect(uuidv7(1_000) < uuidv7(2_000)).toBe(true)
   })
+
+  it("sorts in the order made within a millisecond, whatever the random bits", () => {
+    const at = Date.UTC(2026, 0, 6)
+    const ids = [0xff, 0x00, 0x80].map((fill) => uuidv7(at, new Uint8Array(10).fill(fill)))
+    expect([...ids].sort()).toEqual(ids)
+    expect(ids.map((id) => id.slice(14, 18))).toEqual(["7000", "7001", "7002"])
+  })
 })

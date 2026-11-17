@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import type { Instant } from "@taxa/shared/units"
+import { OnboardingPage } from "./OnboardingPage.ts"
 import { PageObject } from "./steps.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { TaskListPage } from "./TaskListPage.ts"
@@ -16,6 +17,12 @@ export class Tab extends PageObject {
     this.#page = page
     this.#baseUrl = baseUrl.replace(/\/$/, "")
     this.#refused = refused
+  }
+
+  /** The app's front page before there are any domains. */
+  async openFirstTime(): Promise<OnboardingPage> {
+    await this.#page.goto(`${this.#baseUrl}/`)
+    return new OnboardingPage(this.#page)
   }
 
   /** The app's front page: the Inbox. */

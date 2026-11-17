@@ -1,36 +1,55 @@
+import { suggestPrefix } from "@taxa/shared/domains/prefix-suggestion"
 import { useState, type SubmitEvent } from "react"
 import styles from "./NewDomainForm.module.css"
 import { newDomainFormTestIds } from "./NewDomainFormTestIds.ts"
 import { problemMessage } from "../api/problem-message.ts"
-import { useCreateDomain } from "./domain-queries.ts"
+import { useCreateDomain, useDomains } from "./domain-queries.ts"
 
+/** "+ New domain", opening into a small form. */
 export const NewDomainForm = () => {
+  const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const [prefix, setPrefix] = useState("")
+  const [prefixEdited, setPrefixEdited] = useState(false)
   const create = useCreateDomain()
+  const domains = useDomains()
+  const rename = (newName: string) => {
+    setName(newName)
+    if (!prefixEdited) setPrefix(suggestPrefix(newName, new Set(domains.data?.map((domain) => domain.prefix))))
+  }
+  const close = () => {
+    setOpen(false)
+    setName("")
+    setPrefix("")
+    setPrefixEdited(false)
+    create.reset()
+  }
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className={styles.open}
+        onClick={() => setOpen(true)}
+        data-testid={newDomainFormTestIds.open}
+      >
+        + New domain
+      </button>
+    )
+  }
   const submit = (event: SubmitEvent) => {
     event.preventDefault()
-    const submitted = { name, prefix }
-    create.mutate(
-      { name: name.trim(), prefix: prefix.trim() },
-      {
-        // Keep anything typed since.
-        onSuccess: () => {
-          setName((current) => (current === submitted.name ? "" : current))
-          setPrefix((current) => (current === submitted.prefix ? "" : current))
-        }
-      }
-    )
+    create.mutate({ name: name.trim(), prefix: prefix.trim() }, { onSuccess: close })
   }
   return (
     <form className={styles.form} onSubmit={submit} aria-label="New domain">
-      <p className={styles.heading}>New domain</p>
       <label className={styles.field}>
         Name
         <input
           value={name}
-          onChange={(event) => setName(event.target.value)}
+          onChange={(event) => rename(event.target.value)}
           required
+          // oxlint-disable-next-line jsx-a11y/no-autofocus -- it opens because you asked to type in it.
+          autoFocus
           data-testid={newDomainFormTestIds.name}
         />
       </label>
@@ -38,7 +57,10 @@ export const NewDomainForm = () => {
         Prefix
         <input
           value={prefix}
-          onChange={(event) => setPrefix(event.target.value.toUpperCase())}
+          onChange={(event) => {
+            setPrefix(event.target.value.toUpperCase())
+            setPrefixEdited(true)
+          }}
           required
           maxLength={5}
           pattern="[A-Za-z]{1,5}"
@@ -47,9 +69,14 @@ export const NewDomainForm = () => {
           data-testid={newDomainFormTestIds.prefix}
         />
       </label>
-      <button type="submit" disabled={create.isPending} data-testid={newDomainFormTestIds.add}>
-        Add domain
-      </button>
+      <div className={styles.actions}>
+        <button type="submit" className={styles.add} disabled={create.isPending} data-testid={newDomainFormTestIds.add}>
+          Add
+        </button>
+        <button type="button" onClick={close}>
+          Cancel
+        </button>
+      </div>
       {create.isError && (
         <p className={styles.error} role="alert" data-testid={newDomainFormTestIds.error}>
           {problemMessage(create.error)}

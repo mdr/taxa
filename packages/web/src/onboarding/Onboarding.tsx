@@ -1,0 +1,149 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState, type SubmitEvent } from "react"
+import styles from "./Onboarding.module.css"
+import { onboardingTestIds } from "./OnboardingTestIds.ts"
+import { problemMessage } from "../api/problem-message.ts"
+import { queryKeys } from "../api/query-keys.ts"
+import { taxaApi } from "../api/taxa-api.ts"
+import {
+  STARTING_CHOICES,
+  prefixed,
+  problemsOf,
+  renamed,
+  toCreate,
+  toggled,
+  withAnother,
+  type DomainChoice
+} from "./domain-choices.ts"
+
+/** The first screen: choose the domains to start with. */
+export const Onboarding = () => {
+  const queryClient = useQueryClient()
+  const [choices, setChoices] = useState<DomainChoice[]>([...STARTING_CHOICES])
+  const [attempted, setAttempted] = useState(false)
+  const problems = problemsOf(choices)
+  const pending = toCreate(choices)
+  const create = useMutation({
+    // One at a time, in order, so the first becomes the default; any made before a failure stay made.
+    mutationFn: async () => {
+      for (const { key, name, prefix } of pending) {
+        await taxaApi.createDomain({ name, prefix }, `onboarding-${key}-${prefix}`).catch((error: unknown) => {
+          throw new Error(`Couldn't add ${name}: ${problemMessage(error)}`)
+        })
+        setChoices((current) => current.map((row) => (row.key === key ? { ...row, created: true } : row)))
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.domains })
+  })
+  const submit = (event: SubmitEvent) => {
+    event.preventDefault()
+    setAttempted(true)
+    if (problems.size === 0 && pending.length > 0) create.mutate()
+  }
+  return (
+    <div className={styles.page}>
+      <p className={styles.brand}>Taxa</p>
+      <section className={styles.card} aria-labelledby="welcome-heading" data-testid={onboardingTestIds.welcome}>
+        <p className={styles.eyebrow}>Getting started</p>
+        <h1 id="welcome-heading" className={styles.heading}>
+          Welcome to Taxa
+        </h1>
+        <p className={styles.lead}>
+          Taxa sorts your tasks into a few big areas of your life, called <strong>domains</strong>. Choose the ones to
+          start with; you can add more whenever you like.
+        </p>
+        <form onSubmit={submit} noValidate>
+          <fieldset className={styles.choices}>
+            <legend className={styles.legend}>Your domains</legend>
+            <div className={styles.columns} aria-hidden="true">
+              <span />
+              <span>Name</span>
+              <span>Prefix</span>
+              <span>Tasks look like</span>
+            </div>
+            {choices.map((row, index) => {
+              const problem = attempted ? problems.get(row.key) : undefined
+              const problemId = `domain-${row.key}-problem`
+              return (
+                <div
+                  key={row.key}
+                  className={styles.choice}
+                  data-chosen={row.chosen}
+                  data-testid={onboardingTestIds.choice}
+                >
+                  <input
+                    type="checkbox"
+                    className={styles.check}
+                    checked={row.chosen}
+                    disabled={row.created}
+                    onChange={() => setChoices(toggled(choices, row.key))}
+                    aria-label={`Start with ${row.name || `domain ${index + 1}`}`}
+                    data-testid={onboardingTestIds.chosen}
+                  />
+                  <input
+                    value={row.name}
+                    disabled={row.created}
+                    placeholder="Name it"
+                    onChange={(event) => setChoices(renamed(choices, row.key, event.target.value))}
+                    aria-label={`Domain ${index + 1} name`}
+                    aria-invalid={problem !== undefined}
+                    aria-describedby={problem ? problemId : undefined}
+                    data-testid={onboardingTestIds.name}
+                  />
+                  <input
+                    className={styles.prefix}
+                    value={row.prefix}
+                    disabled={row.created}
+                    maxLength={5}
+                    onChange={(event) => setChoices(prefixed(choices, row.key, event.target.value))}
+                    aria-label={`Domain ${index + 1} prefix`}
+                    aria-invalid={problem !== undefined}
+                    aria-describedby={problem ? problemId : undefined}
+                    data-testid={onboardingTestIds.prefix}
+                  />
+                  <span className={styles.example} aria-hidden="true">
+                    {row.created ? "✓ added" : row.prefix ? `${row.prefix}-1` : ""}
+                  </span>
+                  {problem && (
+                    <p id={problemId} className={styles.problem} data-testid={onboardingTestIds.problem}>
+                      {problem}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </fieldset>
+          <button
+            type="button"
+            className={styles.another}
+            onClick={() => setChoices(withAnother(choices))}
+            data-testid={onboardingTestIds.another}
+          >
+            + Another domain
+          </button>
+          <p className={styles.hint}>
+            The prefix starts every task's reference, so “H-12” means the same thing here, in the terminal and to an
+            agent. Your first domain is the default: whatever you capture without choosing one goes to its Inbox.
+          </p>
+          <div className={styles.actions}>
+            <button
+              type="submit"
+              className={styles.start}
+              disabled={pending.length === 0 || create.isPending}
+              data-testid={onboardingTestIds.start}
+            >
+              {pending.length === 0
+                ? "Choose a domain to start"
+                : `Start with ${pending.length} ${pending.length === 1 ? "domain" : "domains"}`}
+            </button>
+          </div>
+          {create.isError && (
+            <p className={styles.error} role="alert" data-testid={onboardingTestIds.error}>
+              {create.error.message}
+            </p>
+          )}
+        </form>
+      </section>
+    </div>
+  )
+}
