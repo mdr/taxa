@@ -8,6 +8,9 @@ import type { TaskCache } from "./task-cache.ts"
 import { problemMessage } from "../../api/problem-message.ts"
 import { AbstractService } from "../../services/abstract-service.ts"
 import { createServiceContext, useService, useServiceState } from "../../services/service-hooks.ts"
+import type { Logger, LogFields } from "@taxa/shared/telemetry/log"
+import type { Analytics } from "../../telemetry/analytics.ts"
+import { ANALYTICS_CODES, LOG_CODES, type WebLogCode } from "../../telemetry/codes.ts"
 
 export const CONFLICT_NOTICE =
   "Someone else changed this task just now, so your change wasn't saved. This is the task as it is now: make your change again if you still want it."
@@ -24,6 +27,21 @@ export type TaskChange =
   | { type: TaskChangeType.STATUS; request: ChangeStatusRequest }
   | { type: TaskChangeType.DELETE }
   | { type: TaskChangeType.RESTORE }
+
+/** What a change touched, for analytics: the fields it set or cleared, or the status it moved to. */
+const changeFields = (change: TaskChange): LogFields => {
+  switch (change.type) {
+    case TaskChangeType.UPDATE:
+      return {
+        fields: [...Object.keys(change.request.set ?? {}), ...(change.request.clear ?? [])].join(",")
+      }
+    case TaskChangeType.STATUS:
+      return { status: change.request.status }
+    case TaskChangeType.DELETE:
+    case TaskChangeType.RESTORE:
+      return {}
+  }
+}
 
 /** The API's task changes, as TaxaClient makes them. */
 export interface TaskChangesApi {
@@ -52,13 +70,17 @@ export interface TaskChangesActions {
 export class TaskChangesService extends AbstractService<TaskChangesState> implements TaskChangesActions {
   readonly #api: TaskChangesApi
   readonly #cache: TaskCache
+  readonly #analytics: Analytics
+  readonly #logger: Logger<WebLogCode>
   /** Each task's latest change, which its next one waits for. */
   readonly #queues = new Map<TaskId, Promise<unknown>>()
 
-  constructor(api: TaskChangesApi, cache: TaskCache) {
+  constructor(api: TaskChangesApi, cache: TaskCache, analytics: Analytics, logger: Logger<WebLogCode>) {
     super({ problems: {} })
     this.#api = api
     this.#cache = cache
+    this.#analytics = analytics
+    this.#logger = logger
   }
 
   readonly change = (task: Task, change: TaskChange): Promise<Task | undefined> => {
@@ -80,9 +102,20 @@ export class TaskChangesService extends AbstractService<TaskChangesState> implem
     const base = this.#cache.latest(task.id) ?? task
     try {
       const latest = await this.#send(base, change)
+      this.#analytics.track(ANALYTICS_CODES.task.changed, `changed ${latest.ref}`, {
+        taskId: latest.id,
+        taskRef: latest.ref,
+        change: change.type,
+        ...changeFields(change)
+      })
       await this.#cache.show(latest)
       return latest
     } catch (error) {
+      this.#logger.warn(LOG_CODES.task.changeRefused, "a change to a task was refused", {
+        taskId: task.id,
+        change: change.type,
+        problem: error instanceof TaxaApiError ? error.problem.type : error instanceof Error ? error.name : typeof error
+      })
       if (error instanceof TaxaApiError && error.problem.type === ProblemType.VERSION_CONFLICT) {
         this.#setProblem(task.id, CONFLICT_NOTICE)
         const current = TaskSchema.safeParse(error.problem.current)

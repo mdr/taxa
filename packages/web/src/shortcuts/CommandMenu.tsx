@@ -8,6 +8,7 @@ import { keyLabel } from "./key-press.ts"
 import { GROUP_TEXT } from "./shortcut-list.ts"
 import { useShortcutActions } from "./shortcut-service.ts"
 import { useServiceState } from "../services/service-hooks.ts"
+import { appAnalytics } from "../telemetry/app-telemetry.ts"
 
 const MAC = navigator.userAgent.includes("Mac")
 
@@ -15,7 +16,9 @@ const MAC = navigator.userAgent.includes("Mac")
 export const CommandMenu = () => {
   const { active, closeMenu } = useShortcutActions()
   const [, navigate] = useLocation()
-  const [menu] = useState(() => new CommandMenuService(menuCommands(active()), (ref) => navigate(`/tasks/${ref}`)))
+  const [menu] = useState(
+    () => new CommandMenuService(menuCommands(active()), (ref) => navigate(`/tasks/${ref}`), appAnalytics)
+  )
   const query = useServiceState(menu, (state) => state.query)
   const selected = useServiceState(menu, (state) => state.selected)
   const dialog = useRef<HTMLDialogElement>(null)
@@ -27,7 +30,7 @@ export const CommandMenu = () => {
     if (!command) return
     // Closed first, so focus is back on the page for what the command opens.
     dialog.current?.close()
-    command.run()
+    menu.run(command)
   }
   return (
     <dialog

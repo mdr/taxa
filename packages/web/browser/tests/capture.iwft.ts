@@ -58,6 +58,17 @@ test("putting a task back in the Inbox", async ({ taxa }) => {
   await inbox.expectTasks(["IN-1 Fix the tap"])
 })
 
+test("what people do is tracked, from starting the app to capturing and changing a task", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  const tab = await taxa.openTab("Matt")
+  const inbox = await tab.openInbox()
+  await inbox.capture("Fix the tap")
+  const detail = await inbox.openTask("Fix the tap")
+  await detail.moveTo("H")
+  await detail.expectRef("H-1")
+  await tab.expectLogged(["app.started", "nav.pageOpened", "task.captured", "nav.pageOpened", "task.changed"])
+})
+
 test("a new domain's prefix is suggested from its name", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   const inbox = await (await taxa.openTab("Matt")).openInbox()

@@ -11,6 +11,8 @@ import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
 import { domainMembers, domains } from "../database/schema.ts"
 import { ProblemError } from "../http/problem-error.ts"
+import { callerFields } from "../telemetry/change-fields.ts"
+import { LOG_CODES, type ServerLogger } from "../telemetry/log.ts"
 
 type DomainRow = typeof domains.$inferSelect
 
@@ -45,11 +47,12 @@ export const findDomain = async (db: Db, userId: UserId, name: string): Promise<
 
 export const createDomain = async (
   db: Db,
+  log: ServerLogger,
   caller: Caller,
   request: z.infer<typeof CreateDomainRequestSchema>,
   now: Instant
-): Promise<Domain> =>
-  db.transaction(async (tx) => {
+): Promise<Domain> => {
+  const created = await db.transaction(async (tx) => {
     const [taken] = await tx.select().from(domains).where(eq(domains.prefix, request.prefix))
     if (taken) throw new ProblemError(ProblemType.PREFIX_TAKEN, `The prefix ${request.prefix} is already in use.`)
     const at = new Date(now)
@@ -75,3 +78,10 @@ export const createDomain = async (
     })
     return domain
   })
+  log.info(LOG_CODES.domain.created, `domain ${created.prefix} created`, {
+    ...callerFields(caller),
+    domainId: created.id,
+    prefix: created.prefix
+  })
+  return created
+}

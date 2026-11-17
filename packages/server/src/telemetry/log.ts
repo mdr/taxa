@@ -1,3 +1,5 @@
+import { flatRecord, type CodeIn, type LogDestination, type Logger } from "@taxa/shared/telemetry/log"
+
 /** Every event the server logs, as `group.event`. */
 export const LOG_CODES = {
   server: {
@@ -8,18 +10,34 @@ export const LOG_CODES = {
   },
   request: {
     failed: "request.failed"
+  },
+  user: {
+    created: "user.created"
+  },
+  agent: {
+    created: "agent.created"
+  },
+  apiKey: {
+    created: "apiKey.created",
+    revoked: "apiKey.revoked"
+  },
+  domain: {
+    created: "domain.created"
+  },
+  task: {
+    created: "task.created",
+    updated: "task.updated",
+    statusChanged: "task.statusChanged",
+    deleted: "task.deleted",
+    restored: "task.restored"
   }
 } as const
 
-type LogCode = {
-  [Group in keyof typeof LOG_CODES]: (typeof LOG_CODES)[Group][keyof (typeof LOG_CODES)[Group]]
-}[keyof typeof LOG_CODES]
+export type ServerLogCode = CodeIn<typeof LOG_CODES>
 
-export type LogFields = Record<string, string | number | boolean | undefined>
+export type ServerLogger = Logger<ServerLogCode>
 
-export type LogEvent = (code: LogCode, msg: string, fields?: LogFields) => void
-
-/** One flat JSON line per event, on standard output. */
-export const logToStdout: LogEvent = (code, msg, fields = {}) => {
-  process.stdout.write(`${JSON.stringify({ time: new Date().toISOString(), code, msg, ...fields })}\n`)
+/** One flat JSON line per record, on standard output. */
+export const stdoutDestination: LogDestination = (record) => {
+  process.stdout.write(`${JSON.stringify(flatRecord(record))}\n`)
 }

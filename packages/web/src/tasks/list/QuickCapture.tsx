@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, type SubmitEvent } from "react"
 import styles from "./QuickCapture.module.css"
 import { quickCaptureTestIds } from "./QuickCaptureTestIds.ts"
 import { problemMessage } from "../../api/problem-message.ts"
+import { appAnalytics } from "../../telemetry/app-telemetry.ts"
+import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { useCreateTask } from "../task-queries.ts"
 import { FocusTarget, useFocusRequested, useShortcutActions } from "../../shortcuts/shortcut-service.ts"
 
@@ -21,7 +23,19 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
   const submit = (event: SubmitEvent) => {
     event.preventDefault()
     if (title.trim() === "") return
-    create.mutate({ title: title.trim(), domain: domainPrefix }, { onSuccess: () => setTitle("") })
+    create.mutate(
+      { title: title.trim(), domain: domainPrefix },
+      {
+        onSuccess: (task) => {
+          setTitle("")
+          appAnalytics.track(ANALYTICS_CODES.task.captured, `captured ${task.ref}`, {
+            taskId: task.id,
+            taskRef: task.ref,
+            domainId: task.domainId
+          })
+        }
+      }
+    )
   }
   return (
     <form className={styles.form} onSubmit={submit}>

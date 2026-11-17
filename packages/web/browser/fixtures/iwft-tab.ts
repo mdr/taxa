@@ -42,8 +42,12 @@ export const newTab = async (
   })
   const page = await context.newPage()
   page.on("pageerror", (error) => console.log(`[${label} pageerror]`, error.message))
+  const logged: string[] = []
   page.on("console", (message) => {
     if (message.type() === "error") console.log(`[${label} console.error]`, message.text().slice(0, 200))
+    // The app's log lines start with their code.
+    const code = /^([a-z][A-Za-z]*\.[a-z][A-Za-z]*): /.exec(message.text())?.[1]
+    if (code) logged.push(code)
   })
-  return new Tab(page, baseUrl, refused)
+  return new Tab(page, baseUrl, refused, logged)
 }

@@ -1,6 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi"
 import { ActivitySchema } from "@taxa/shared/activity/activity"
 import type { Clock } from "@taxa/shared/clock"
+import type { ServerLogger } from "../telemetry/log.ts"
 import {
   ChangeStatusRequestSchema,
   CreateTaskRequestSchema,
@@ -97,14 +98,16 @@ const routes = {
   })
 }
 
-export const taskRoutes = (app: TaxaApp, db: Db, clock: Clock): void => {
+export const taskRoutes = (app: TaxaApp, db: Db, log: ServerLogger, clock: Clock): void => {
   app.openapi(routes.list, async (context) =>
     context.json({ items: await listTasks(db, context.var.caller, context.req.valid("query"), clock.now()) }, 200)
   )
   app.openapi(routes.create, async (context) => {
     const { caller } = context.var
     const now = clock.now()
-    const task = await onceFor(db, context, caller, now, () => createTask(db, caller, context.req.valid("json"), now))
+    const task = await onceFor(db, context, caller, now, () =>
+      createTask(db, log, caller, context.req.valid("json"), now)
+    )
     return context.json(task, 201, { etag: `"${task.version}"` })
   })
   app.openapi(routes.get, async (context) => {
@@ -114,22 +117,30 @@ export const taskRoutes = (app: TaxaApp, db: Db, clock: Clock): void => {
   app.openapi(routes.update, async (context) => {
     const ifMatch = ifMatchVersion(context.req.valid("header")["if-match"])
     const { ref } = context.req.valid("param")
-    const task = await updateTask(db, context.var.caller, ref, context.req.valid("json"), ifMatch, clock.now())
+    const task = await updateTask(db, log, context.var.caller, ref, context.req.valid("json"), ifMatch, clock.now())
     return context.json(task, 200, { etag: `"${task.version}"` })
   })
   app.openapi(routes.status, async (context) => {
     const ifMatch = ifMatchVersion(context.req.valid("header")["if-match"])
     const { ref } = context.req.valid("param")
-    const task = await changeTaskStatus(db, context.var.caller, ref, context.req.valid("json"), ifMatch, clock.now())
+    const task = await changeTaskStatus(
+      db,
+      log,
+      context.var.caller,
+      ref,
+      context.req.valid("json"),
+      ifMatch,
+      clock.now()
+    )
     return context.json(task, 200, { etag: `"${task.version}"` })
   })
   app.openapi(routes.delete, async (context) => {
     const ifMatch = ifMatchVersion(context.req.valid("header")["if-match"])
-    const task = await deleteTask(db, context.var.caller, context.req.valid("param").ref, ifMatch, clock.now())
+    const task = await deleteTask(db, log, context.var.caller, context.req.valid("param").ref, ifMatch, clock.now())
     return context.json(task, 200)
   })
   app.openapi(routes.restore, async (context) =>
-    context.json(await restoreTask(db, context.var.caller, context.req.valid("param").ref, clock.now()), 200)
+    context.json(await restoreTask(db, log, context.var.caller, context.req.valid("param").ref, clock.now()), 200)
   )
   app.openapi(routes.activity, async (context) =>
     context.json({ items: await taskActivity(db, context.var.caller, context.req.valid("param").ref) }, 200)

@@ -13,6 +13,6 @@ describe("health", () => {
   it("says so when the database is down, and logs it", async ({ server }) => {
     await server.stopDatabase()
     expect((await server.health()).status).toBe(HealthStatus.DATABASE_DOWN)
-    expect(server.logLines.map((line) => line.code)).toContain(LOG_CODES.health.databaseDown)
+    expect(server.logs.map(({ code }) => code)).toContain(LOG_CODES.health.databaseDown)
   })
 })

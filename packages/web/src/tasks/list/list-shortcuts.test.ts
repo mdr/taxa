@@ -6,6 +6,7 @@ import { ListSessionService } from "./list-session-service.ts"
 import { ShortcutScope, ShortcutService } from "../../shortcuts/shortcut-service.ts"
 import type { TaskChangesActions } from "../changes/task-changes-service.ts"
 import { FakeScheduler } from "../../test-support/fake-scheduler.ts"
+import { testTelemetry } from "../../test-support/test-telemetry.ts"
 
 const first = makeTask({ number: 1, title: "Fix the tap" })
 const second = makeTask({ number: 2, title: "Bleed the radiators" })
@@ -28,13 +29,14 @@ const setUp = (
     },
     clearProblems: () => undefined
   }
-  const session = new ListSessionService(changes, new FakeScheduler())
+  const session = new ListSessionService(changes, new FakeScheduler(), testTelemetry().analytics)
   const opened: Task[] = []
   const left: number[] = []
-  const shortcuts = new ShortcutService(new FakeScheduler(), {
-    loadSingleKeys: () => true,
-    saveSingleKeys: () => undefined
-  })
+  const shortcuts = new ShortcutService(
+    new FakeScheduler(),
+    { loadSingleKeys: () => true, saveSingleKeys: () => undefined },
+    testTelemetry().analytics
+  )
   shortcuts.register(ShortcutScope.PAGE, () =>
     listShortcuts(
       listed,

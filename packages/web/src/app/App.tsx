@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { TaxaApiError } from "@taxa/shared/api/taxa-client"
 import { useEffect, useState } from "react"
 import { Route, Switch, useLocation } from "wouter"
 import styles from "./App.module.css"
@@ -13,6 +14,9 @@ import { taxaApi } from "../api/taxa-api.ts"
 import { queryTaskCache } from "../tasks/changes/task-cache.ts"
 import { TaskChangesContext, TaskChangesService, useTaskChanges } from "../tasks/changes/task-changes-service.ts"
 import { realScheduler } from "../services/scheduler.ts"
+import { appAnalytics, appLogger } from "../telemetry/app-telemetry.ts"
+import { ANALYTICS_CODES, LOG_CODES } from "../telemetry/codes.ts"
+import { pageOpened } from "../telemetry/page-opened.ts"
 import { appShortcuts } from "../shortcuts/app-shortcuts.ts"
 import { ShortcutsHelp } from "../shortcuts/ShortcutsHelp.tsx"
 import { CommandMenu } from "../shortcuts/CommandMenu.tsx"
@@ -28,7 +32,16 @@ import {
   useShortcuts
 } from "../shortcuts/shortcut-service.ts"
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 } } })
+const requestFailed = (error: Error): void =>
+  appLogger.warn(LOG_CODES.api.requestFailed, "a request to the API failed", {
+    problem: error instanceof TaxaApiError ? error.problem.type : error instanceof Error ? error.name : typeof error
+  })
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1 } },
+  queryCache: new QueryCache({ onError: requestFailed }),
+  mutationCache: new MutationCache({ onError: requestFailed })
+})
 
 const NotFound = () => (
   <section data-testid={appTestIds.notFound}>
@@ -57,6 +70,10 @@ const Layout = () => {
   const { clearProblems } = useTaskChanges()
   // A refused change is about the page it was made on.
   useEffect(() => clearProblems(), [location, clearProblems])
+  useEffect(
+    () => appAnalytics.track(ANALYTICS_CODES.nav.pageOpened, `opened ${location}`, pageOpened(location)),
+    [location]
+  )
   const shortcuts = useShortcutActions()
   const helpOpen = useHelpOpen()
   const menuOpen = useMenuOpen()
@@ -82,8 +99,10 @@ const Layout = () => {
 }
 
 export const App = () => {
-  const [taskChanges] = useState(() => new TaskChangesService(taxaApi, queryTaskCache(queryClient)))
-  const [shortcuts] = useState(() => new ShortcutService(realScheduler, localShortcutSettings))
+  const [taskChanges] = useState(
+    () => new TaskChangesService(taxaApi, queryTaskCache(queryClient), appAnalytics, appLogger)
+  )
+  const [shortcuts] = useState(() => new ShortcutService(realScheduler, localShortcutSettings, appAnalytics))
   useEffect(() => shortcuts.dispose, [shortcuts])
   useKeyboardShortcuts(shortcuts)
   return (

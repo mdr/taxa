@@ -1,6 +1,8 @@
 import { normaliseNotes } from "./notes-markdown.ts"
 import { NotesMode, type NotesModeStore } from "./notes-mode.ts"
 import { AbstractService } from "../services/abstract-service.ts"
+import type { Analytics } from "../telemetry/analytics.ts"
+import { ANALYTICS_CODES } from "../telemetry/codes.ts"
 
 /** Notes for the formatted editor to show in place of what it has: a new object each time. */
 interface ShownNotes {
@@ -42,14 +44,16 @@ interface NotesDraftActions {
 export class NotesDraftService extends AbstractService<NotesDraftState> implements NotesDraftActions {
   readonly #save: (notes: string) => void
   readonly #modes: NotesModeStore
+  readonly #analytics: Analytics
   /** The draft when the person went into the notes, to tell whether they wrote anything. */
   #draftOnEntering = ""
 
-  constructor(notes: string, save: (notes: string) => void, modes: NotesModeStore) {
+  constructor(notes: string, save: (notes: string) => void, modes: NotesModeStore, analytics: Analytics) {
     const saved = normaliseNotes(notes)
     super({ mode: modes.load(), saved, draft: saved, source: saved, writing: false, shown: { notes: saved } })
     this.#save = save
     this.#modes = modes
+    this.#analytics = analytics
   }
 
   readonly startWriting = (): void => {
@@ -90,6 +94,7 @@ export class NotesDraftService extends AbstractService<NotesDraftState> implemen
     if (mode === NotesMode.MARKDOWN) this.setState({ mode, source: this.state.draft })
     else this.setState({ mode, shown: { notes: this.state.draft } })
     this.#modes.save(mode)
+    this.#analytics.track(ANALYTICS_CODES.notes.modeSwitched, "switched how notes are written", { mode })
   }
 
   readonly dispose = (): void => this.#saveDraft()

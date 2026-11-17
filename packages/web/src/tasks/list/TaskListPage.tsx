@@ -12,6 +12,7 @@ import { ListSessionContext, ListSessionService } from "./list-session-service.t
 import { listShortcuts } from "./list-shortcuts.ts"
 import { useLocation } from "wouter"
 import { realScheduler } from "../../services/scheduler.ts"
+import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { useServiceState } from "../../services/service-hooks.ts"
 import { useTaskChanges } from "../changes/task-changes-service.ts"
 import { ShortcutScope, useShortcuts } from "../../shortcuts/shortcut-service.ts"
@@ -25,7 +26,7 @@ import { useTasks } from "../task-queries.ts"
 export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
   // A session for each visit: the routes give each list its own page.
   const changes = useTaskChanges()
-  const [session] = useState(() => new ListSessionService(changes, realScheduler))
+  const [session] = useState(() => new ListSessionService(changes, realScheduler, appAnalytics))
   useEffect(() => session.dispose, [session])
   const ticked = useServiceState(session, (state) => state.ticked)
   const undoable = useServiceState(session, (state) => state.undoable)

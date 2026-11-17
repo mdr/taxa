@@ -9,6 +9,8 @@ import {
 } from "./shortcut-service.ts"
 import type { ShortcutSettingsStore } from "./shortcut-settings.ts"
 import { FakeScheduler } from "../test-support/fake-scheduler.ts"
+import { testTelemetry, type TestTelemetry } from "../test-support/test-telemetry.ts"
+import { ANALYTICS_CODES } from "../telemetry/codes.ts"
 
 class FakeSettings implements ShortcutSettingsStore {
   constructor(public singleKeys = true) {}
@@ -22,6 +24,7 @@ interface Setup {
   scheduler: FakeScheduler
   settings: FakeSettings
   shortcuts: ShortcutService
+  telemetry: TestTelemetry
   /** What the shortcuts did, in order. */
   ran: string[]
   /** A shortcut that records its name when it runs. */
@@ -31,11 +34,13 @@ interface Setup {
 const makeShortcutService = (settings = new FakeSettings()): Setup => {
   const scheduler = new FakeScheduler()
   const ran: string[] = []
+  const telemetry = testTelemetry()
   return {
     scheduler,
     settings,
     ran,
-    shortcuts: new ShortcutService(scheduler, settings),
+    telemetry,
+    shortcuts: new ShortcutService(scheduler, settings, telemetry.analytics),
     shortcut: (keys, name, group = ShortcutGroup.GENERAL) => ({
       keys: keys.split(" "),
       description: name,
@@ -54,6 +59,28 @@ describe("ShortcutService", () => {
     expect(shortcuts.press("c")).toBe(true)
     expect(shortcuts.press("x")).toBe(false)
     expect(ran).toEqual(["capture"])
+  })
+
+  it("tracks the shortcuts used, and opening the list and the menu", () => {
+    const { shortcuts, shortcut, scheduler, telemetry } = makeShortcutService()
+    shortcuts.register(ShortcutScope.APP, () => [
+      shortcut("c", "capture"),
+      shortcut("g h", "home"),
+      shortcut("g h o", "hobbies")
+    ])
+    shortcuts.press("c")
+    shortcuts.press("g")
+    shortcuts.press("h")
+    scheduler.advance(SEQUENCE_MS)
+    shortcuts.openHelp()
+    shortcuts.closeHelp()
+    shortcuts.openMenu()
+    expect(telemetry.tracked()).toEqual([
+      [ANALYTICS_CODES.shortcut.used, { keys: "c", description: "capture" }],
+      [ANALYTICS_CODES.shortcut.used, { keys: "g h", description: "home" }],
+      [ANALYTICS_CODES.shortcutsHelp.opened, {}],
+      [ANALYTICS_CODES.commandMenu.opened, {}]
+    ])
   })
 
   it("runs a sequence of keys pressed in turn", () => {

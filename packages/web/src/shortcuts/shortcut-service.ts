@@ -5,6 +5,8 @@ import type { ShortcutSettingsStore } from "./shortcut-settings.ts"
 import { AbstractService } from "../services/abstract-service.ts"
 import type { Scheduler } from "../services/scheduler.ts"
 import { createServiceContext, useService, useServiceState } from "../services/service-hooks.ts"
+import type { Analytics } from "../telemetry/analytics.ts"
+import { ANALYTICS_CODES } from "../telemetry/codes.ts"
 
 /** How long the app waits for the next key of a sequence like `G H`. */
 export const SEQUENCE_MS: Ms = 1200
@@ -89,9 +91,10 @@ const startsWith = (keys: readonly string[], start: readonly string[]): boolean 
 export class ShortcutService extends AbstractService<ShortcutState> implements ShortcutActions {
   readonly #scheduler: Scheduler
   readonly #settings: ShortcutSettingsStore
+  readonly #analytics: Analytics
   #cancelWait: (() => void) | undefined
 
-  constructor(scheduler: Scheduler, settings: ShortcutSettingsStore) {
+  constructor(scheduler: Scheduler, settings: ShortcutSettingsStore, analytics: Analytics) {
     super({
       layers: [],
       pending: [],
@@ -102,6 +105,15 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
     })
     this.#scheduler = scheduler
     this.#settings = settings
+    this.#analytics = analytics
+  }
+
+  #run(shortcut: Shortcut): void {
+    this.#analytics.track(ANALYTICS_CODES.shortcut.used, "used a shortcut", {
+      keys: shortcut.keys.join(" "),
+      description: shortcut.description
+    })
+    shortcut.run()
   }
 
   readonly register = (scope: ShortcutScope, shortcuts: () => readonly Shortcut[]): (() => void) => {
@@ -148,13 +160,13 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
       this.#cancelWait = this.#scheduler.after(SEQUENCE_MS, () => {
         this.#cancelWait = undefined
         this.setState({ pending: [] })
-        exact?.run()
+        if (exact) this.#run(exact)
       })
       return true
     }
     if (pending.length > 0) this.setState({ pending: [] })
     if (exact && exact.available?.() !== false) {
-      exact.run()
+      this.#run(exact)
       return true
     }
     // A key that doesn't go on from the keys before it starts afresh.
@@ -164,6 +176,7 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
   readonly openHelp = (): void => {
     this.#stopWaiting()
     this.setState({ helpOpen: true, pending: [] })
+    this.#analytics.track(ANALYTICS_CODES.shortcutsHelp.opened, "opened the list of shortcuts")
   }
 
   readonly closeHelp = (): void => this.setState({ helpOpen: false })
@@ -171,6 +184,7 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
   readonly openMenu = (): void => {
     this.#stopWaiting()
     this.setState({ menuOpen: true, pending: [] })
+    this.#analytics.track(ANALYTICS_CODES.commandMenu.opened, "opened the command menu")
   }
 
   readonly closeMenu = (): void => this.setState({ menuOpen: false })

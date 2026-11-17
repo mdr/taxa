@@ -11,12 +11,26 @@ export class Tab extends PageObject {
   readonly #baseUrl: string
   /** Requests the page made beyond localhost, which the tab refused. */
   readonly #refused: string[]
+  /** The codes of what the app logged, in order. */
+  readonly #logged: string[]
 
-  constructor(page: Page, baseUrl: string, refused: string[]) {
+  constructor(page: Page, baseUrl: string, refused: string[], logged: string[]) {
     super()
     this.#page = page
     this.#baseUrl = baseUrl.replace(/\/$/, "")
     this.#refused = refused
+    this.#logged = logged
+  }
+
+  /** The app logged these codes, in this order, among others. */
+  async expectLogged(codes: string[]): Promise<void> {
+    await expect
+      .poll(() => {
+        let next = 0
+        for (const code of this.#logged) if (code === codes[next]) next++
+        return codes.slice(next)
+      }, "codes not yet logged")
+      .toEqual([])
   }
 
   /** The app's front page before there are any domains. */

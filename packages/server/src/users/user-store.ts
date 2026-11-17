@@ -6,6 +6,7 @@ import type { Instant } from "@taxa/shared/units"
 import type { CallerUser } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
 import { users } from "../database/schema.ts"
+import { LOG_CODES, type ServerLogger } from "../telemetry/log.ts"
 
 type UserRow = typeof users.$inferSelect
 
@@ -15,12 +16,20 @@ export const callerUserOf = (row: UserRow): CallerUser => ({
   timeZone: row.timeZone
 })
 
-export const createUser = async (db: Db, name: string, timeZone: TimeZone, now: Instant): Promise<CallerUser> => {
+export const createUser = async (
+  db: Db,
+  log: ServerLogger,
+  name: string,
+  timeZone: TimeZone,
+  now: Instant
+): Promise<CallerUser> => {
   const [row] = await db
     .insert(users)
     .values({ id: newUserId(uuidv7(now)), name, timeZone, createdAt: new Date(now) })
     .returning()
-  return callerUserOf(row!)
+  const user = callerUserOf(row!)
+  log.info(LOG_CODES.user.created, "person created", { userId: user.id })
+  return user
 }
 
 export const userById = async (db: Db, id: UserId): Promise<CallerUser | undefined> => {
@@ -29,7 +38,13 @@ export const userById = async (db: Db, id: UserId): Promise<CallerUser | undefin
 }
 
 /** The development login's person, made the first time. */
-export const ensureUserNamed = async (db: Db, name: string, timeZone: TimeZone, now: Instant): Promise<CallerUser> => {
+export const ensureUserNamed = async (
+  db: Db,
+  log: ServerLogger,
+  name: string,
+  timeZone: TimeZone,
+  now: Instant
+): Promise<CallerUser> => {
   const [row] = await db.select().from(users).where(eq(users.name, name))
-  return row ? callerUserOf(row) : createUser(db, name, timeZone, now)
+  return row ? callerUserOf(row) : createUser(db, log, name, timeZone, now)
 }

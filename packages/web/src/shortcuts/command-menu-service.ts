@@ -2,6 +2,8 @@ import { TaskRefSchema } from "@taxa/shared/tasks/task-ref"
 import { GROUP_TEXT } from "./shortcut-list.ts"
 import { ShortcutGroup, type Shortcut } from "./shortcut-service.ts"
 import { AbstractService } from "../services/abstract-service.ts"
+import type { Analytics } from "../telemetry/analytics.ts"
+import { ANALYTICS_CODES } from "../telemetry/codes.ts"
 
 /** Something the menu offers: a shortcut's action, or opening a task by its ref. */
 export interface Command {
@@ -61,11 +63,21 @@ export interface CommandMenuState {
 export class CommandMenuService extends AbstractService<CommandMenuState> {
   readonly #commands: readonly Command[]
   readonly #openTask: (ref: string) => void
+  readonly #analytics: Analytics
 
-  constructor(commands: readonly Command[], openTask: (ref: string) => void) {
+  constructor(commands: readonly Command[], openTask: (ref: string) => void, analytics: Analytics) {
     super({ query: "", selected: 0 })
     this.#commands = commands
     this.#openTask = openTask
+    this.#analytics = analytics
+  }
+
+  /** Runs a command from the menu. */
+  readonly run = (command: Command): void => {
+    this.#analytics.track(ANALYTICS_CODES.commandMenu.commandRun, "ran a command from the menu", {
+      description: command.description
+    })
+    command.run()
   }
 
   /** What the menu lists for what's typed. */

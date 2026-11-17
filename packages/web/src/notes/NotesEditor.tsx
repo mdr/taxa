@@ -8,6 +8,7 @@ import { NotesDraftService } from "./notes-draft-service.ts"
 import { documentToNotes, notesToDocument, NOTES_EXTENSIONS } from "./notes-markdown.ts"
 import { localNotesModeStore, NotesMode } from "./notes-mode.ts"
 import { useServiceState } from "../services/service-hooks.ts"
+import { appAnalytics } from "../telemetry/app-telemetry.ts"
 import { FocusTarget, useFocusRequested, useShortcutActions } from "../shortcuts/shortcut-service.ts"
 import { TaskChangeType, type TaskChange } from "../tasks/changes/task-changes-service.ts"
 
@@ -35,7 +36,8 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
       new NotesDraftService(
         notes,
         (saved) => change({ type: TaskChangeType.UPDATE, request: { set: { notes: saved } } }),
-        localNotesModeStore
+        localNotesModeStore,
+        appAnalytics
       )
   )
   const mode = useServiceState(draft, (state) => state.mode)

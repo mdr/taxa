@@ -7,6 +7,11 @@ import { useInProcessServer } from "../../../../server/src/test-support/use-in-p
 import type { TestUser } from "../../../../server/src/test-support/test-user.ts"
 import type { TaskCache } from "./task-cache.ts"
 import { CONFLICT_NOTICE, TaskChangesService, TaskChangeType, type TaskChange } from "./task-changes-service.ts"
+import { ProblemType } from "@taxa/shared/api/problem"
+import { ClearableField } from "@taxa/shared/tasks/task-requests"
+import { LogLevel } from "@taxa/shared/telemetry/log"
+import { ANALYTICS_CODES, LOG_CODES } from "../../telemetry/codes.ts"
+import { testTelemetry, type TestTelemetry } from "../../test-support/test-telemetry.ts"
 
 /** The page's cache, in memory: what it was last shown of each task. */
 class FakeTaskCache implements TaskCache {
@@ -28,6 +33,7 @@ interface Setup {
   task: Task
   cache: FakeTaskCache
   service: TaskChangesService
+  telemetry: TestTelemetry
 }
 
 /** Matt with a task, and a service making his changes through a cache of its own. */
@@ -36,7 +42,14 @@ const makeTaskChangesService = async (server: InProcessServer): Promise<Setup> =
   await matt.addDomain("Home", "H")
   const task = await matt.addTask("Fix the tap", { domain: "H" })
   const cache = new FakeTaskCache()
-  return { matt, task, cache, service: new TaskChangesService(matt.client, cache) }
+  const telemetry = testTelemetry()
+  return {
+    matt,
+    task,
+    cache,
+    telemetry,
+    service: new TaskChangesService(matt.client, cache, telemetry.analytics, telemetry.logger)
+  }
 }
 
 describe("TaskChangesService", () => {
@@ -48,6 +61,33 @@ describe("TaskChangesService", () => {
     expect(changed).toMatchObject({ priority: Priority.HIGH, version: task.version + 1 })
     expect(cache.latest(task.id)).toEqual(changed)
     expect(service.state.problems).toEqual({ [task.id]: undefined })
+  })
+
+  it("tracks each change made, with the fields it touched, and logs those refused", async ({ server }) => {
+    const { task, service, telemetry } = await makeTaskChangesService(server)
+    await service.change(task, {
+      type: TaskChangeType.UPDATE,
+      request: { set: { priority: Priority.HIGH }, clear: [ClearableField.DUE] }
+    })
+    await service.change(task, { type: TaskChangeType.STATUS, request: { status: TaskStatus.DONE } })
+    await service.change(task, rename("x".repeat(501)))
+    expect(telemetry.records.map(({ level, code, fields }) => [level, code, fields])).toEqual([
+      [
+        LogLevel.INFO,
+        ANALYTICS_CODES.task.changed,
+        { taskId: task.id, taskRef: "H-1", change: TaskChangeType.UPDATE, fields: "priority,due" }
+      ],
+      [
+        LogLevel.INFO,
+        ANALYTICS_CODES.task.changed,
+        { taskId: task.id, taskRef: "H-1", change: TaskChangeType.STATUS, status: TaskStatus.DONE }
+      ],
+      [
+        LogLevel.WARN,
+        LOG_CODES.task.changeRefused,
+        { taskId: task.id, change: TaskChangeType.UPDATE, problem: ProblemType.INVALID_REQUEST }
+      ]
+    ])
   })
 
   it("makes quick changes to a task one after another, each on the version the last one left", async ({ server }) => {

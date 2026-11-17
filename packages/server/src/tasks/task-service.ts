@@ -21,6 +21,8 @@ import type { Db } from "../database/database.ts"
 import { tasks } from "../database/schema.ts"
 import { findDomain } from "../domains/domain-store.ts"
 import { ProblemError } from "../http/problem-error.ts"
+import { callerFields } from "../telemetry/change-fields.ts"
+import { LOG_CODES, type ServerLogCode, type ServerLogger } from "../telemetry/log.ts"
 import { Deletion, deletedAtFor, inProgressIdsOf, stateOf, taskOf, valuesOf, type TaskRow } from "./task-rows.ts"
 import { changeStatus, changesFromNothing, editTask, type Outcome, type TaskState } from "./task-state.ts"
 import { findTask, findTasks, taskIdExists, type FoundTask } from "./task-store.ts"
@@ -77,13 +79,31 @@ export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, n
 export const getTask = async (db: Db, caller: Caller, ref: string): Promise<Task> =>
   taskFrom(db, await findTask(db, caller.user.id, lookupOf(ref)))
 
+/** A change's log line: who, which task, where it is now, and which fields changed, never their values. */
+const logChange = (
+  log: ServerLogger,
+  code: ServerLogCode,
+  caller: Caller,
+  task: Task,
+  changes: Record<string, FieldChange>
+): void =>
+  log.info(code, `${task.ref} changed`, {
+    ...callerFields(caller),
+    taskId: task.id,
+    taskRef: task.ref,
+    domainId: task.domainId,
+    version: task.version,
+    fields: Object.keys(changes).join(",")
+  })
+
 export const createTask = async (
   db: Db,
+  log: ServerLogger,
   caller: Caller,
   { id, domain, title, ...fields }: z.infer<typeof CreateTaskRequestSchema>,
   now: Instant
-): Promise<Task> =>
-  db.transaction(async (tx) => {
+): Promise<Task> => {
+  const { task, changes } = await db.transaction(async (tx) => {
     const taskId = id ?? newTaskId(uuidv7(now))
     if (await taskIdExists(tx, taskId))
       throw new ProblemError(ProblemType.INVALID_REQUEST, `A task with id ${taskId} already exists.`)
@@ -92,14 +112,21 @@ export const createTask = async (
     const state = editTask(blankState(domainId, inboxUserId, title), { set: fields, clear: [] }).state
     const at = new Date(now)
     await tx.insert(tasks).values({ id: taskId, ...valuesOf(state), createdAt: at, updatedAt: at, version: 1 })
+    const created = changesFromNothing(state)
     await recordActivity(tx, caller, now, {
       type: ActivityType.TASK_CREATED,
       entityId: taskId,
       domainId,
-      changes: changesFromNothing(state)
+      changes: created
     })
-    return taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: taskId }))
+    return {
+      task: await taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: taskId })),
+      changes: created
+    }
   })
+  logChange(log, LOG_CODES.task.created, caller, task, changes)
+  return task
+}
 
 const blankState = (domainId: DomainId | undefined, inboxUserId: UserId | undefined, title: string): TaskState => ({
   domainId,
@@ -126,6 +153,7 @@ const NO_CHANGES: Record<string, FieldChange> = {}
 
 interface Change {
   type: ActivityType
+  code: ServerLogCode
   /** What the change does to the task's state, and whether it deletes or restores it. */
   apply: (state: TaskState, row: TaskRow, tx: Db) => Promise<Outcome & { deletion?: Deletion }>
 }
@@ -137,13 +165,14 @@ interface Change {
  */
 const changeTask = async (
   db: Db,
+  log: ServerLogger,
   caller: Caller,
   ref: string,
   ifMatch: number | undefined,
   now: Instant,
-  { type, apply }: Change
-): Promise<Task> =>
-  db.transaction(async (tx) => {
+  { type, code, apply }: Change
+): Promise<Task> => {
+  const { task, changes } = await db.transaction(async (tx) => {
     const found = await findTask(tx, caller.user.id, lookupOf(ref), true)
     const { row } = found
     if (ifMatch !== undefined && ifMatch !== row.version) {
@@ -154,7 +183,7 @@ const changeTask = async (
       )
     }
     const { state, changes, deletion } = await apply(stateOf(row), row, tx)
-    if (Object.keys(changes).length === 0) return taskFrom(tx, found)
+    if (Object.keys(changes).length === 0) return { task: await taskFrom(tx, found), changes }
     await tx
       .update(tasks)
       .set({
@@ -165,19 +194,25 @@ const changeTask = async (
       })
       .where(eq(tasks.id, row.id))
     await recordActivity(tx, caller, now, { type, entityId: row.id, domainId: state.domainId, changes })
-    return taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: row.id }))
+    return { task: await taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: row.id })), changes }
   })
+  // Only changes that changed something: an edit that matches the task as it is has no effect to log.
+  if (Object.keys(changes).length > 0) logChange(log, code, caller, task, changes)
+  return task
+}
 
 export const updateTask = (
   db: Db,
+  log: ServerLogger,
   caller: Caller,
   ref: string,
   { set: { domain, inbox, ...set }, clear }: z.infer<typeof UpdateTaskRequestSchema>,
   ifMatch: number | undefined,
   now: Instant
 ): Promise<Task> =>
-  changeTask(db, caller, ref, ifMatch, now, {
+  changeTask(db, log, caller, ref, ifMatch, now, {
     type: ActivityType.TASK_UPDATED,
+    code: LOG_CODES.task.updated,
     apply: async (state, _row, tx) => {
       if (domain !== undefined && inbox)
         throw new ProblemError(ProblemType.INVALID_REQUEST, "A task is either in a domain or in the Inbox, not both.")
@@ -192,27 +227,31 @@ export const updateTask = (
 
 export const changeTaskStatus = (
   db: Db,
+  log: ServerLogger,
   caller: Caller,
   ref: string,
   request: z.infer<typeof ChangeStatusRequestSchema>,
   ifMatch: number | undefined,
   now: Instant
 ): Promise<Task> =>
-  changeTask(db, caller, ref, ifMatch, now, {
+  changeTask(db, log, caller, ref, ifMatch, now, {
     type: ActivityType.TASK_STATUS_CHANGED,
+    code: LOG_CODES.task.statusChanged,
     apply: async (state) =>
       changeStatus(state, request, { actor: idsOf(caller), today: dateIn(caller.user.timeZone, now), now })
   })
 
 export const deleteTask = (
   db: Db,
+  log: ServerLogger,
   caller: Caller,
   ref: string,
   ifMatch: number | undefined,
   now: Instant
 ): Promise<Task> =>
-  changeTask(db, caller, ref, ifMatch, now, {
+  changeTask(db, log, caller, ref, ifMatch, now, {
     type: ActivityType.TASK_DELETED,
+    code: LOG_CODES.task.deleted,
     apply: async (state, row) => ({
       state,
       changes: row.deletedAt ? NO_CHANGES : { deletedAt: { to: new Date(now).toISOString() } },
@@ -220,9 +259,10 @@ export const deleteTask = (
     })
   })
 
-export const restoreTask = (db: Db, caller: Caller, ref: string, now: Instant): Promise<Task> =>
-  changeTask(db, caller, ref, undefined, now, {
+export const restoreTask = (db: Db, log: ServerLogger, caller: Caller, ref: string, now: Instant): Promise<Task> =>
+  changeTask(db, log, caller, ref, undefined, now, {
     type: ActivityType.TASK_RESTORED,
+    code: LOG_CODES.task.restored,
     apply: async (state, row) => ({
       state,
       changes: row.deletedAt ? { deletedAt: { from: row.deletedAt.toISOString() } } : NO_CHANGES,

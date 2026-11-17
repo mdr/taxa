@@ -4,7 +4,8 @@ import { realClock } from "@taxa/shared/clock"
 import { createApp } from "./app.ts"
 import { configFrom, type Config } from "./config.ts"
 import { connectPostgres } from "./database/postgres-database.ts"
-import { LOG_CODES, logToStdout } from "./telemetry/log.ts"
+import { createLogger } from "@taxa/shared/telemetry/log"
+import { LOG_CODES, stdoutDestination, type ServerLogCode } from "./telemetry/log.ts"
 
 const readConfig = (): Config => {
   try {
@@ -17,17 +18,18 @@ const readConfig = (): Config => {
 }
 
 const config = readConfig()
+const logger = createLogger<ServerLogCode>(realClock, [stdoutDestination])
 const database = await connectPostgres(config.DATABASE_URL)
 const app = await createApp({
   database,
   clock: realClock,
   build: config.TAXA_BUILD,
-  logEvent: logToStdout,
+  logger,
   devLogin: config.TAXA_DEV_USER ? { name: config.TAXA_DEV_USER, timeZone: config.TAXA_TIME_ZONE } : undefined
 })
 
 serve({ fetch: app.fetch, port: config.PORT }, ({ port }) =>
-  logToStdout(LOG_CODES.server.started, "listening", {
+  logger.info(LOG_CODES.server.started, "listening", {
     port,
     build: config.TAXA_BUILD,
     devLogin: config.TAXA_DEV_USER !== undefined

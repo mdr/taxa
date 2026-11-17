@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vite-plus/test"
 import { CommandMenuService, matchCommands, menuCommands, type Command } from "./command-menu-service.ts"
 import { ShortcutGroup, type Shortcut } from "./shortcut-service.ts"
+import { ANALYTICS_CODES } from "../telemetry/codes.ts"
+import { testTelemetry } from "../test-support/test-telemetry.ts"
 
 const shortcut = (keys: string, description: string, group: ShortcutGroup, available?: () => boolean): Shortcut => ({
   keys: keys.split(" "),
@@ -66,8 +68,17 @@ describe("matchCommands", () => {
 })
 
 describe("CommandMenuService", () => {
+  it("runs a command, tracking which", () => {
+    const telemetry = testTelemetry()
+    const ran: string[] = []
+    const menu = new CommandMenuService([], () => undefined, telemetry.analytics)
+    menu.run({ description: "Home", group: ShortcutGroup.GO, keys: ["g", "h"], run: () => ran.push("home") })
+    expect(ran).toEqual(["home"])
+    expect(telemetry.tracked()).toEqual([[ANALYTICS_CODES.commandMenu.commandRun, { description: "Home" }]])
+  })
+
   it("picks the first match as you type, and moves the pick round the matches", () => {
-    const menu = new CommandMenuService(commands, () => undefined)
+    const menu = new CommandMenuService(commands, () => undefined, testTelemetry().analytics)
     menu.type("go")
     expect(menu.chosen()?.description).toBe("Home")
     menu.move(1)
@@ -81,14 +92,14 @@ describe("CommandMenuService", () => {
   })
 
   it("picks nothing when nothing matches", () => {
-    const menu = new CommandMenuService(commands, () => undefined)
+    const menu = new CommandMenuService(commands, () => undefined, testTelemetry().analytics)
     menu.type("zebra")
     menu.move(1)
     expect(menu.chosen()).toBeUndefined()
   })
 
   it("picks a command pointed at", () => {
-    const menu = new CommandMenuService(commands, () => undefined)
+    const menu = new CommandMenuService(commands, () => undefined, testTelemetry().analytics)
     menu.select(3)
     expect(menu.chosen()?.description).toBe("Set priority")
   })

@@ -9,6 +9,8 @@ import { hashSecret, newSecret, shownPartOf } from "../auth/secrets.ts"
 import type { Db } from "../database/database.ts"
 import { agents, apiKeys } from "../database/schema.ts"
 import { ProblemError } from "../http/problem-error.ts"
+import { callerFields } from "../telemetry/change-fields.ts"
+import { LOG_CODES, type ServerLogger } from "../telemetry/log.ts"
 
 type AgentRow = typeof agents.$inferSelect
 type KeyRow = typeof apiKeys.$inferSelect
@@ -35,13 +37,21 @@ export const agentsOf = async (db: Db, caller: Caller): Promise<Agent[]> => {
   return rows.map(agentOf)
 }
 
-export const createAgent = async (db: Db, caller: Caller, name: string, now: Instant): Promise<Agent> => {
+export const createAgent = async (
+  db: Db,
+  log: ServerLogger,
+  caller: Caller,
+  name: string,
+  now: Instant
+): Promise<Agent> => {
   requirePerson(caller)
   const [row] = await db
     .insert(agents)
     .values({ id: agentId(uuidv7(now)), ownerId: caller.user.id, name, createdAt: new Date(now) })
     .returning()
-  return agentOf(row!)
+  const agent = agentOf(row!)
+  log.info(LOG_CODES.agent.created, "agent created", { ...callerFields(caller), createdAgentId: agent.id })
+  return agent
 }
 
 export const keysOf = async (db: Db, caller: Caller): Promise<ApiKey[]> => {
@@ -53,6 +63,7 @@ export const keysOf = async (db: Db, caller: Caller): Promise<ApiKey[]> => {
 /** A new key for you, or for one of your agents. Its secret is in the answer and nowhere else. */
 export const createKey = async (
   db: Db,
+  log: ServerLogger,
   caller: Caller,
   { name, agentId }: { name: string; agentId?: AgentId | undefined },
   now: Instant
@@ -78,10 +89,22 @@ export const createKey = async (
       createdAt: new Date(now)
     })
     .returning()
-  return { ...keyOf(row!), secret }
+  const key = keyOf(row!)
+  log.info(LOG_CODES.apiKey.created, "API key created", {
+    ...callerFields(caller),
+    apiKeyId: key.id,
+    keyAgentId: agentId
+  })
+  return { ...key, secret }
 }
 
-export const revokeKey = async (db: Db, caller: Caller, id: ApiKeyId, now: Instant): Promise<ApiKey> => {
+export const revokeKey = async (
+  db: Db,
+  log: ServerLogger,
+  caller: Caller,
+  id: ApiKeyId,
+  now: Instant
+): Promise<ApiKey> => {
   requirePerson(caller)
   const mine = and(eq(apiKeys.id, id), eq(apiKeys.userId, caller.user.id))
   const [existing] = await db.select().from(apiKeys).where(mine)
@@ -92,5 +115,6 @@ export const revokeKey = async (db: Db, caller: Caller, id: ApiKeyId, now: Insta
     .set({ revokedAt: new Date(now) })
     .where(mine)
     .returning()
+  log.info(LOG_CODES.apiKey.revoked, "API key revoked", { ...callerFields(caller), apiKeyId: id })
   return keyOf(row!)
 }

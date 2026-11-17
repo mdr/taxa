@@ -1,6 +1,7 @@
 import { ApiKeyIdSchema } from "@taxa/shared/ids"
 import { createRoute, z } from "@hono/zod-openapi"
 import type { Clock } from "@taxa/shared/clock"
+import type { ServerLogger } from "../telemetry/log.ts"
 import {
   AGENTS_PATH,
   AgentSchema,
@@ -65,7 +66,7 @@ const routes = {
   })
 }
 
-export const agentRoutes = (app: TaxaApp, db: Db, clock: Clock): void => {
+export const agentRoutes = (app: TaxaApp, db: Db, log: ServerLogger, clock: Clock): void => {
   app.openapi(routes.me, (context) => {
     const { user, agent } = context.var.caller
     return context.json(
@@ -82,13 +83,13 @@ export const agentRoutes = (app: TaxaApp, db: Db, clock: Clock): void => {
   })
   app.openapi(routes.agents, async (context) => context.json({ items: await agentsOf(db, context.var.caller) }, 200))
   app.openapi(routes.createAgent, async (context) =>
-    context.json(await createAgent(db, context.var.caller, context.req.valid("json").name, clock.now()), 201)
+    context.json(await createAgent(db, log, context.var.caller, context.req.valid("json").name, clock.now()), 201)
   )
   app.openapi(routes.keys, async (context) => context.json({ items: await keysOf(db, context.var.caller) }, 200))
   app.openapi(routes.createKey, async (context) =>
-    context.json(await createKey(db, context.var.caller, context.req.valid("json"), clock.now()), 201)
+    context.json(await createKey(db, log, context.var.caller, context.req.valid("json"), clock.now()), 201)
   )
   app.openapi(routes.revokeKey, async (context) =>
-    context.json(await revokeKey(db, context.var.caller, context.req.valid("param").id, clock.now()), 200)
+    context.json(await revokeKey(db, log, context.var.caller, context.req.valid("param").id, clock.now()), 200)
   )
 }

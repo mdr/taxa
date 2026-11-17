@@ -28,9 +28,13 @@ Taxa is a task manager for people and their agents. What it does and why is in `
 - `shared`: types, Zod schemas and pure logic used by the others, and `TaxaClient`, the typed API client, which is its only I/O (through the `fetch` it's given). It imports none of the others.
 - `server`: the Hono API over Postgres (Drizzle). `web`: the React app. `cli`: `taxa`. Each imports only `shared`; tests may start an in-process server through `server/src/test-support/`. Lint enforces both (`lint/boundaries`).
 
-## Logs
+## Logs and analytics
 
-- Server logs are flat JSON lines through a `LogEvent`: a `code` from `LOG_CODES` (constants, not an enum: `LOG_CODES.group.event`, valued `"group.event"`, lowerCamel, grouped by subject), a short human `msg`, and camelCase fields with units in their names (`openMs`). Errors go in `err`. Never log task content, tokens or API keys.
+- Both server and web log through `createLogger` (`@taxa/shared/telemetry/log`): a record has a `time` (from the injected `Clock`), a `level` (`ERROR`, `WARN`, `INFO`, `DEBUG`), a `code`, a short human `msg` that nothing matches on, and `fields`. The logger sends each record to its destinations: standard output as flat JSON lines on the server, the console in the browser for now.
+- A `code` is unique and `group.event`, lowerCamel, from a package's registry (`LOG_CODES.group.event`, constants, not an enum; a test checks each code matches where it's filed). Fields are camelCase with units in their names (`openMs`); errors go in `err`.
+- Fields carry identifiers for cross-referencing (`userId`, `agentId`, `taskId`, `taskRef`, `domainId`…) and small facts (a status, the names of the fields changed). Never what people wrote (titles, notes, names), nor tokens or API keys.
+- Server: every request that changes data logs one `INFO` line once it's committed, saying who changed what (`task.updated`, with `userId`, `agentId`, `taskId`, `version` and the changed fields' names). Reads log nothing unless something goes wrong. A change that changed nothing isn't logged.
+- Web: logs are for what happens to the app (`app.started`, uncaught errors, failed requests). Analytics are for what people do (`nav.pageOpened`, `task.captured`, `task.changed`, `shortcut.used`…), through `Analytics.track`, which writes them to the log at `INFO`. Their codes are in `ANALYTICS_CODES`, apart from `LOG_CODES`. Services take `Analytics` and a logger through their constructors; tests use `testTelemetry()` and assert on what was tracked.
 
 ## Folders
 

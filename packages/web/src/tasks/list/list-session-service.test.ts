@@ -3,6 +3,8 @@ import { makeTask } from "@taxa/shared/test-support/make-task"
 import { describe, expect, it } from "vite-plus/test"
 import { isCelebrated, isShownDone, ListSessionService, Step, UNDO_OFFERED_MS } from "./list-session-service.ts"
 import { FakeScheduler } from "../../test-support/fake-scheduler.ts"
+import { testTelemetry, type TestTelemetry } from "../../test-support/test-telemetry.ts"
+import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { TaskChangeType, type TaskChange, type TaskChangesActions } from "../changes/task-changes-service.ts"
 
 /** Task changes the test answers itself, one at a time, as the server would. */
@@ -29,10 +31,12 @@ const makeListSessionService = (): {
   changes: FakeTaskChanges
   scheduler: FakeScheduler
   session: ListSessionService
+  telemetry: TestTelemetry
 } => {
   const changes = new FakeTaskChanges()
   const scheduler = new FakeScheduler()
-  return { changes, scheduler, session: new ListSessionService(changes, scheduler) }
+  const telemetry = testTelemetry()
+  return { changes, scheduler, telemetry, session: new ListSessionService(changes, scheduler, telemetry.analytics) }
 }
 
 describe("ListSessionService", () => {
@@ -64,13 +68,14 @@ describe("ListSessionService", () => {
   })
 
   it("undoes a tick, which reopens the task", async () => {
-    const { changes, session } = makeListSessionService()
+    const { changes, session, telemetry } = makeListSessionService()
     const task = makeTask()
     const ticking = session.toggle(task)
     await changes.answer()
     await ticking
 
     const undoing = session.undo()
+    expect(telemetry.tracked()).toEqual([[ANALYTICS_CODES.task.undone, { taskId: task.id }]])
     expect(session.state.undoable).toBeUndefined()
     expect(isShownDone(session.state, task)).toBe(false)
     expect(changes.asked[0]?.change).toEqual({ type: TaskChangeType.STATUS, request: { status: TaskStatus.OPEN } })

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vite-plus/test"
 import { NotesDraftService } from "./notes-draft-service.ts"
 import { NotesMode, type NotesModeStore } from "./notes-mode.ts"
+import { ANALYTICS_CODES } from "../telemetry/codes.ts"
+import { testTelemetry, type TestTelemetry } from "../test-support/test-telemetry.ts"
 
 class FakeModeStore implements NotesModeStore {
   constructor(public mode = NotesMode.RICH) {}
@@ -13,9 +15,15 @@ class FakeModeStore implements NotesModeStore {
 const makeNotesDraftService = (
   notes = "",
   modes = new FakeModeStore()
-): { saves: string[]; modes: FakeModeStore; service: NotesDraftService } => {
+): { saves: string[]; modes: FakeModeStore; service: NotesDraftService; telemetry: TestTelemetry } => {
   const saves: string[] = []
-  return { saves, modes, service: new NotesDraftService(notes, (saved) => saves.push(saved), modes) }
+  const telemetry = testTelemetry()
+  return {
+    saves,
+    modes,
+    telemetry,
+    service: new NotesDraftService(notes, (saved) => saves.push(saved), modes, telemetry.analytics)
+  }
 }
 
 describe("NotesDraftService", () => {
@@ -104,7 +112,7 @@ describe("NotesDraftService", () => {
   })
 
   it("carries the draft across a change of mode, and remembers the mode", () => {
-    const { modes, service } = makeNotesDraftService("**Bold**")
+    const { modes, service, telemetry } = makeNotesDraftService("**Bold**")
     service.write("**Bold** move")
     service.switchMode()
     expect(service.state).toMatchObject({ mode: NotesMode.MARKDOWN, source: "**Bold** move" })
@@ -113,6 +121,10 @@ describe("NotesDraftService", () => {
     service.switchMode()
     expect(service.state).toMatchObject({ mode: NotesMode.RICH, shown: { notes: "**Bolder**" } })
     expect(modes.mode).toBe(NotesMode.RICH)
+    expect(telemetry.tracked()).toEqual([
+      [ANALYTICS_CODES.notes.modeSwitched, { mode: NotesMode.MARKDOWN }],
+      [ANALYTICS_CODES.notes.modeSwitched, { mode: NotesMode.RICH }]
+    ])
   })
 
   it("opens in the remembered mode, with the notes normalised in both editors", () => {

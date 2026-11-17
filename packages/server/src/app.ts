@@ -12,7 +12,7 @@ import { healthRoute } from "./health.ts"
 import { ProblemError } from "./http/problem-error.ts"
 import { taxaHono, type TaxaApp } from "./http/taxa-hono.ts"
 import { taskRoutes } from "./tasks/task-routes.ts"
-import { LOG_CODES, type LogEvent } from "./telemetry/log.ts"
+import { LOG_CODES, type ServerLogger } from "./telemetry/log.ts"
 import { ensureUserNamed, userById } from "./users/user-store.ts"
 
 export const OPENAPI_PATH = "/api/openapi.json"
@@ -28,7 +28,7 @@ export interface AppOptions {
   clock: Clock
   /** The commit the server was built from. */
   build: string
-  logEvent: LogEvent
+  logger: ServerLogger
   /** Pages on other origins allowed to call the API, as the browser tests' pages are. */
   corsOrigins?: string[]
   /** Development only: no sign-in, everyone is this person. */
@@ -39,12 +39,12 @@ export const createApp = async ({
   database,
   clock,
   build,
-  logEvent,
+  logger,
   corsOrigins,
   devLogin
 }: AppOptions): Promise<TaxaApp> => {
   const { db } = database
-  const devUserId = devLogin && (await ensureUserNamed(db, devLogin.name, devLogin.timeZone, clock.now())).id
+  const devUserId = devLogin && (await ensureUserNamed(db, logger, devLogin.name, devLogin.timeZone, clock.now())).id
   const devUser = devUserId
     ? async () => {
         const user = await userById(db, devUserId)
@@ -57,16 +57,16 @@ export const createApp = async ({
   if (corsOrigins) {
     app.use("/api/*", cors({ origin: corsOrigins, credentials: true, exposeHeaders: ["ETag"] }))
   }
-  app.get(HEALTH_PATH, healthRoute(database, build, logEvent))
+  app.get(HEALTH_PATH, healthRoute(database, build, logger))
   app.openAPIRegistry.registerComponent("securitySchemes", "bearer", { type: "http", scheme: "bearer" })
   app.doc31(OPENAPI_PATH, {
     openapi: "3.1.0",
     info: { title: "Taxa", version: build, description: "Tasks for people and their agents." }
   })
   app.use("/api/*", authenticate(db, devUser))
-  agentRoutes(app, db, clock)
-  domainRoutes(app, db, clock)
-  taskRoutes(app, db, clock)
+  agentRoutes(app, db, logger, clock)
+  domainRoutes(app, db, logger, clock)
+  taskRoutes(app, db, logger, clock)
 
   app.notFound((context) =>
     context.json<Problem>(
@@ -78,7 +78,11 @@ export const createApp = async ({
     if (error instanceof ProblemError) return context.json(error.problem, error.status)
     if (error instanceof HTTPException)
       return context.json<Problem>({ type: ProblemType.INVALID_REQUEST, message: error.message }, 400)
-    logEvent(LOG_CODES.request.failed, "a request failed", { err: String(error), path: context.req.path })
+    logger.error(LOG_CODES.request.failed, "a request failed", {
+      err: String(error),
+      method: context.req.method,
+      path: context.req.path
+    })
     return context.json({ type: ProblemType.INVALID_REQUEST, message: "Something went wrong on the server." }, 500)
   })
   return app

@@ -11,7 +11,8 @@ import type { Instant, Ms } from "@taxa/shared/units"
 import { createKey } from "../agents/agent-store.ts"
 import { createApp, type DevLogin } from "../app.ts"
 import type { Database } from "../database/database.ts"
-import type { LogFields } from "../telemetry/log.ts"
+import { createLogger, type LogRecord } from "@taxa/shared/telemetry/log"
+import type { ServerLogCode, ServerLogger } from "../telemetry/log.ts"
 import type { CallerUser } from "../auth/caller.ts"
 import { createUser, ensureUserNamed } from "../users/user-store.ts"
 import { pgliteDatabase } from "./pglite-database.ts"
@@ -32,18 +33,15 @@ export interface InProcessOptions {
   devLogin?: DevLogin
 }
 
-export interface LogLine extends LogFields {
-  code: string
-  msg: string
-}
-
 const listen = (server: ServerType): Promise<number> =>
   new Promise((resolve) => server.once("listening", () => resolve((server.address() as AddressInfo).port)))
 
 export class InProcessServer {
   readonly clock: FakeClock
   readonly httpUrl: string
-  readonly logLines: LogLine[]
+  /** Everything the server logged, in order. */
+  readonly logs: LogRecord[]
+  readonly #logger: ServerLogger
   readonly #server: ServerType
   readonly #database: Database
   readonly #devLogin: DevLogin | undefined
@@ -55,43 +53,46 @@ export class InProcessServer {
     database: Database,
     clock: FakeClock,
     port: number,
-    logLines: LogLine[],
+    logs: LogRecord[],
+    logger: ServerLogger,
     devLogin: DevLogin | undefined
   ) {
     this.#server = server
     this.#database = database
     this.#devLogin = devLogin
     this.clock = clock
-    this.logLines = logLines
+    this.logs = logs
+    this.#logger = logger
     this.httpUrl = `http://127.0.0.1:${port}`
   }
 
   static async start({ startAt = TEST_START, corsOrigins, devLogin }: InProcessOptions = {}): Promise<InProcessServer> {
     const clock = new FakeClock(startAt)
     const database = await pgliteDatabase()
-    const logLines: LogLine[] = []
+    const logs: LogRecord[] = []
+    const logger = createLogger<ServerLogCode>(clock, [(record) => logs.push(record)])
     const app = await createApp({
       database,
       clock,
       build: "test",
       corsOrigins,
       devLogin,
-      logEvent: (code, msg, fields) => logLines.push({ code, msg, ...fields })
+      logger
     })
     const server = serve({ fetch: app.fetch, port: 0, hostname: "127.0.0.1" })
-    return new InProcessServer(server, database, clock, await listen(server), logLines, devLogin)
+    return new InProcessServer(server, database, clock, await listen(server), logs, logger, devLogin)
   }
 
   /** A person with an API key of their own, who calls the API as themselves. */
   async user(name: string, timeZone: TimeZone = LONDON): Promise<TestUser> {
-    return this.#withKey(await createUser(this.#database.db, name, timeZone, this.clock.now()))
+    return this.#withKey(await createUser(this.#database.db, this.#logger, name, timeZone, this.clock.now()))
   }
 
   /** The development login's person, as the web app is in browser tests, with an API key too. */
   async devLoginUser(): Promise<TestUser> {
     if (!this.#devLogin) throw new Error("this server has no development login: start it with devLogin")
     const { name, timeZone } = this.#devLogin
-    return this.#withKey(await ensureUserNamed(this.#database.db, name, timeZone, this.clock.now()))
+    return this.#withKey(await ensureUserNamed(this.#database.db, this.#logger, name, timeZone, this.clock.now()))
   }
 
   async #withKey(user: CallerUser): Promise<TestUser> {
@@ -100,6 +101,7 @@ export class InProcessServer {
     const caller = { user, agent: undefined, agentContext: undefined }
     const { secret } = await createKey(
       this.#database.db,
+      this.#logger,
       caller,
       { name: `${name}'s test key`, agentId: undefined },
       now

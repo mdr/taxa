@@ -6,6 +6,8 @@ import { AbstractService } from "../../services/abstract-service.ts"
 import type { Scheduler } from "../../services/scheduler.ts"
 import { createServiceContext, useService, useServiceState } from "../../services/service-hooks.ts"
 import { TaskChangeType, type TaskChangesActions } from "../changes/task-changes-service.ts"
+import type { Analytics } from "../../telemetry/analytics.ts"
+import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 
 /** How long the offer to undo a tick stays. */
 export const UNDO_OFFERED_MS: Ms = 6000
@@ -56,12 +58,14 @@ export const isCelebrated = (state: ListSessionState, id: TaskId): boolean =>
 export class ListSessionService extends AbstractService<ListSessionState> implements ListSessionActions {
   readonly #changes: TaskChangesActions
   readonly #scheduler: Scheduler
+  readonly #analytics: Analytics
   #cancelUndoOffer: (() => void) | undefined
 
-  constructor(changes: TaskChangesActions, scheduler: Scheduler) {
+  constructor(changes: TaskChangesActions, scheduler: Scheduler, analytics: Analytics) {
     super({ ticked: {}, pending: {}, undoable: undefined, highlighted: undefined })
     this.#changes = changes
     this.#scheduler = scheduler
+    this.#analytics = analytics
   }
 
   readonly toggle = async (task: Task): Promise<void> => {
@@ -72,6 +76,7 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
     const task = this.state.undoable
     if (!task) return
     this.dismissUndo()
+    this.#analytics.track(ANALYTICS_CODES.task.undone, `undid ticking off ${task.ref}`, { taskId: task.id })
     await this.#setStatus(task, TaskStatus.OPEN)
   }
 

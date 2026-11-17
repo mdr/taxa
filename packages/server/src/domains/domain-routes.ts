@@ -1,5 +1,6 @@
 import { createRoute } from "@hono/zod-openapi"
 import type { Clock } from "@taxa/shared/clock"
+import type { ServerLogger } from "../telemetry/log.ts"
 import { CreateDomainRequestSchema, DOMAINS_PATH, DomainSchema } from "@taxa/shared/domains/domain"
 import type { Db } from "../database/database.ts"
 import { onceFor } from "../http/idempotency.ts"
@@ -24,7 +25,7 @@ const createDomainRoute = createRoute({
   responses: { 201: json(DomainSchema, "The new domain"), ...PROBLEMS }
 })
 
-export const domainRoutes = (app: TaxaApp, db: Db, clock: Clock): void => {
+export const domainRoutes = (app: TaxaApp, db: Db, log: ServerLogger, clock: Clock): void => {
   app.openapi(listDomainsRoute, async (context) =>
     context.json({ items: await domainsOf(db, context.var.caller.user.id) }, 200)
   )
@@ -32,7 +33,7 @@ export const domainRoutes = (app: TaxaApp, db: Db, clock: Clock): void => {
     const { caller } = context.var
     const now = clock.now()
     const domain = await onceFor(db, context, caller, now, () =>
-      createDomain(db, caller, context.req.valid("json"), now)
+      createDomain(db, log, caller, context.req.valid("json"), now)
     )
     return context.json(domain, 201)
   })
