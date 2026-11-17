@@ -1,10 +1,10 @@
 import { makeTask } from "@taxa/shared/test-support/make-task"
-import type { Task } from "@taxa/shared/tasks/task"
+import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { describe, expect, it } from "vite-plus/test"
 import { listShortcuts } from "./list-shortcuts.ts"
 import { ListSessionService } from "./list-session-service.ts"
 import { ShortcutScope, ShortcutService } from "../../shortcuts/shortcut-service.ts"
-import type { TaskChangesActions } from "../changes/task-changes-service.ts"
+import { TaskChangeType, type TaskChange, type TaskChangesActions } from "../changes/task-changes-service.ts"
 import { FakeScheduler } from "../../test-support/fake-scheduler.ts"
 import { testTelemetry } from "../../test-support/test-telemetry.ts"
 
@@ -19,12 +19,15 @@ const setUp = (
   session: ListSessionService
   opened: Task[]
   toggled: Task[]
+  made: TaskChange[]
   left: number[]
 } => {
   const toggled: Task[] = []
+  const made: TaskChange[] = []
   const changes: TaskChangesActions = {
-    change: (task) => {
+    change: (task, change) => {
       toggled.push(task)
+      made.push(change)
       return Promise.resolve(undefined)
     },
     clearProblems: () => undefined
@@ -45,7 +48,7 @@ const setUp = (
       () => left.push(1)
     )
   )
-  return { press: shortcuts.press, session, opened, toggled, left }
+  return { press: shortcuts.press, session, opened, toggled, made, left }
 }
 
 describe("listShortcuts", () => {
@@ -75,6 +78,23 @@ describe("listShortcuts", () => {
     press("x")
     expect(opened).toEqual([second])
     expect(toggled).toEqual([second])
+  })
+
+  it("starts and stops the highlighted task with I, but not a finished one", () => {
+    const done = makeTask({ number: 3, status: TaskStatus.DONE })
+    const started = makeTask({ number: 4, status: TaskStatus.IN_PROGRESS })
+    const { press, made } = setUp([first, done, started])
+    expect(press("i")).toBe(false)
+    press("j")
+    press("i")
+    press("j")
+    expect(press("i")).toBe(false)
+    press("j")
+    press("i")
+    expect(made).toEqual([
+      { type: TaskChangeType.STATUS, request: { status: TaskStatus.IN_PROGRESS } },
+      { type: TaskChangeType.STATUS, request: { status: TaskStatus.OPEN } }
+    ])
   })
 
   it("lets go of the list with Escape, which is otherwise left alone", () => {

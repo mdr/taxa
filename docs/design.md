@@ -73,6 +73,8 @@ task is in a domain or an Inbox, never both, so domain lists hold only filed
 tasks. Capture without deciding where something goes, and sort it later.
 
 - **In progress** records who is working on the task: a person or an agent.
+  Tasks in progress sort first in their lists, and the In progress view
+  gathers them from everywhere.
   For agents it works as a claim, so two agents don't pick up the same task.
   A claim with no activity for a while is flagged as stale.
 - **Waiting** records what it's waiting on and a follow-up date (by default

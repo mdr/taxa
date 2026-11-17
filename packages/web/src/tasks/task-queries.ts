@@ -11,8 +11,9 @@ import type { Task } from "@taxa/shared/tasks/task"
 import { queryKeys } from "../api/query-keys.ts"
 import { taxaApi } from "../api/taxa-api.ts"
 
-export const useTasks = (query: ListTasksQuery): UseQueryResult<Task[]> =>
-  useQuery({ queryKey: queryKeys.tasks(query), queryFn: () => taxaApi.tasks(query) })
+/** The tasks a query finds; not asked for while `enabled` is false. */
+export const useTasks = (query: ListTasksQuery, enabled = true): UseQueryResult<Task[]> =>
+  useQuery({ queryKey: queryKeys.tasks(query), queryFn: () => taxaApi.tasks(query), enabled })
 
 export const useTask = (ref: string): UseQueryResult<Task> =>
   useQuery({ queryKey: queryKeys.task(ref), queryFn: () => taxaApi.task(ref) })

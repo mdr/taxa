@@ -56,6 +56,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Previous task K or ↑",
     "Open the task Enter",
     "Tick off, or untick X",
+    "Start, or stop working on it I",
     "Leave the list Esc",
     "Undo ticking a task off ⌘Z"
   ])

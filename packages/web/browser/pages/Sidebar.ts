@@ -45,6 +45,16 @@ export class Sidebar extends PageObject {
     await (count === 0 ? expect(shown).toHaveCount(0) : expect(shown).toHaveText(String(count)))
   }
 
+  async expectInProgressCount(count: number): Promise<void> {
+    const shown = this.#page.getByTestId(sidebarTestIds.inProgressCount)
+    await (count === 0 ? expect(shown).toHaveCount(0) : expect(shown).toHaveText(String(count)))
+  }
+
+  async openInProgress(): Promise<TaskListPage> {
+    await this.#page.getByTestId(sidebarTestIds.inProgress).click()
+    return new TaskListPage(this.#page)
+  }
+
   async openInbox(): Promise<TaskListPage> {
     await this.#page.getByTestId(sidebarTestIds.inbox).click()
     return new TaskListPage(this.#page)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test"
 import { compareTasks } from "./task-order.ts"
-import { Priority } from "./task.ts"
+import { Priority, TaskStatus } from "./task.ts"
 import { makeTask } from "../test-support/make-task.ts"
 
 describe("compareTasks", () => {
@@ -13,5 +13,14 @@ describe("compareTasks", () => {
       makeTask({ number: 5, priority: Priority.URGENT })
     ]
     expect(tasks.sort(compareTasks).map((task) => task.number)).toEqual([5, 4, 2, 1, 3])
+  })
+
+  it("puts tasks in progress before everything else", () => {
+    const tasks = [
+      makeTask({ number: 1, priority: Priority.URGENT }),
+      makeTask({ number: 2, priority: Priority.LOW, status: TaskStatus.IN_PROGRESS }),
+      makeTask({ number: 3, status: TaskStatus.IN_PROGRESS })
+    ]
+    expect(tasks.sort(compareTasks).map((task) => task.number)).toEqual([3, 2, 1])
   })
 })

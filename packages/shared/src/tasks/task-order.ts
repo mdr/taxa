@@ -1,4 +1,4 @@
-import { Priority, type Task } from "./task.ts"
+import { Priority, TaskStatus, type Task } from "./task.ts"
 
 const PRIORITY_RANK: Record<Priority, number> = {
   [Priority.URGENT]: 0,
@@ -14,6 +14,8 @@ const byDue = (a: Task, b: Task): number => {
   return a.due < b.due ? -1 : 1
 }
 
-/** The order lists show tasks in: most urgent first, then soonest due, then oldest. */
+const started = (task: Task): number => (task.status === TaskStatus.IN_PROGRESS ? 0 : 1)
+
+/** The order lists show tasks in: those in progress first, then most urgent, then soonest due, then oldest. */
 export const compareTasks = (a: Task, b: Task): number =>
-  PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || byDue(a, b) || a.number - b.number
+  started(a) - started(b) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || byDue(a, b) || a.number - b.number

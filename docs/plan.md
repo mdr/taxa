@@ -39,6 +39,10 @@ key opens each picker (`S`, `P`, `M`, `D`, `T`, `H`, `E`), `R` renames, `N`
 writes notes and `Esc` goes back. `⌘K` opens a command menu that finds any of
 these by typing, shows its shortcut, and opens a task from its ref (`H-12`).
 
+Also added: `I` starts or stops working on a task, in a list or on its page.
+Tasks in progress sort first in every list, and an In progress list in the
+sidebar gathers them from the Inbox and every domain.
+
 **Feedback checkpoint:** daily use, the CLI, and how agents get on with it.
 
 ## Stage 2: Organising and deciding

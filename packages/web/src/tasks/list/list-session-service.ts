@@ -6,6 +6,7 @@ import { AbstractService } from "../../services/abstract-service.ts"
 import type { Scheduler } from "../../services/scheduler.ts"
 import { createServiceContext, useService, useServiceState } from "../../services/service-hooks.ts"
 import { TaskChangeType, type TaskChangesActions } from "../changes/task-changes-service.ts"
+import { startedOrStopped } from "../in-progress.ts"
 import type { Analytics } from "../../telemetry/analytics.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 
@@ -35,6 +36,8 @@ export enum Step {
 export interface ListSessionActions {
   /** Ticks the task off, or unticks it, as its box shows it now. */
   toggle: (task: Task) => Promise<void>
+  /** Starts working on a task, or stops if it's in progress. */
+  startOrStop: (task: Task) => Promise<void>
   undo: () => Promise<void>
   dismissUndo: () => void
   /** Puts the highlight on a task, or takes it away. */
@@ -70,6 +73,11 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
 
   readonly toggle = async (task: Task): Promise<void> => {
     await this.#setStatus(task, isShownDone(this.state, task) ? TaskStatus.OPEN : TaskStatus.DONE)
+  }
+
+  readonly startOrStop = async (task: Task): Promise<void> => {
+    const status = startedOrStopped(task.status)
+    if (status) await this.#changes.change(task, { type: TaskChangeType.STATUS, request: { status } })
   }
 
   readonly undo = async (): Promise<void> => {

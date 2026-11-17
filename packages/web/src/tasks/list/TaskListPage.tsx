@@ -1,5 +1,4 @@
 import { TaskStatus } from "@taxa/shared/tasks/task"
-import type { ListTasksQuery } from "@taxa/shared/tasks/task-requests"
 import { ChevronDown, ChevronRight, Inbox } from "lucide-react"
 import { useEffect, useState } from "react"
 import styles from "./TaskListPage.module.css"
@@ -22,9 +21,19 @@ import { useToday } from "../../dates/use-today.ts"
 import { DomainBadge } from "../../domains/DomainBadge.tsx"
 import { useDomains } from "../../domains/domain-queries.ts"
 import { useTasks } from "../task-queries.ts"
+import { StatusIcon } from "../StatusIcon.tsx"
+import { isHome, listQuery, ListType, type TaskList } from "./task-list.ts"
 
-/** A domain's tasks, or without a domain, the Inbox. */
-export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
+const HEADINGS: Record<ListType, string | undefined> = {
+  [ListType.INBOX]: "Inbox",
+  [ListType.DOMAIN]: undefined,
+  [ListType.IN_PROGRESS]: "In progress"
+}
+
+/** A list of tasks: the Inbox, a domain's, or everything in progress. */
+export const TaskListPage = ({ list }: { list: TaskList }) => {
+  const domainPrefix = list.type === ListType.DOMAIN ? list.prefix : undefined
+  const home = isHome(list)
   // A session for each visit: the routes give each list its own page.
   const changes = useTaskChanges()
   const [session] = useState(() => new ListSessionService(changes, realScheduler, appAnalytics))
@@ -32,9 +41,9 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
   const ticked = useServiceState(session, (state) => state.ticked)
   const undoable = useServiceState(session, (state) => state.undoable)
   const domains = useDomains()
-  const query: ListTasksQuery = domainPrefix ? { domain: domainPrefix } : { inbox: "true" }
+  const query = listQuery(list)
   const tasks = useTasks(query)
-  const completed = useTasks({ ...query, status: TaskStatus.DONE })
+  const completed = useTasks({ ...query, status: TaskStatus.DONE }, home)
   const today = useToday()
   const [showCompleted, setShowCompleted] = useState(false)
   const domain = domains.data?.find(({ prefix }) => prefix === domainPrefix?.toUpperCase())
@@ -54,7 +63,7 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
   )
   const openCount = tasks.data?.length ?? 0
   const filing: Filing | undefined =
-    domainPrefix || !domains.data
+    list.type !== ListType.INBOX || !domains.data
       ? undefined
       : {
           domains: domains.data,
@@ -69,29 +78,32 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
     <ListSessionContext.Provider value={session}>
       <section className={styles.page} aria-labelledby="list-heading">
         <header className={styles.header}>
-          {domainPrefix ? (
-            domain && <DomainBadge prefix={domain.prefix} />
-          ) : (
-            <Inbox size={22} className={styles.icon} aria-hidden />
-          )}
+          {list.type === ListType.DOMAIN && domain && <DomainBadge prefix={domain.prefix} />}
+          {list.type === ListType.INBOX && <Inbox size={22} className={styles.icon} aria-hidden />}
+          {list.type === ListType.IN_PROGRESS && <StatusIcon status={TaskStatus.IN_PROGRESS} size={22} />}
           <h1 id="list-heading" className={styles.heading} data-testid={taskListPageTestIds.heading}>
-            {domainPrefix ? (domain?.name ?? domainPrefix) : "Inbox"}
+            {HEADINGS[list.type] ?? domain?.name ?? domainPrefix}
           </h1>
           {openCount > 0 && <span className={styles.count}>{openCount}</span>}
         </header>
-        <QuickCapture domainPrefix={domain?.prefix} />
+        {home && <QuickCapture domainPrefix={domain?.prefix} />}
         {tasks.isError ? (
           <p className={styles.problem} role="alert" data-testid={taskListPageTestIds.error}>
             {problemMessage(tasks.error)}
           </p>
         ) : shown?.length === 0 ? (
           <div className={styles.empty} data-testid={taskListPageTestIds.empty}>
-            {domainPrefix ? (
-              <p>Nothing to do here. Enjoy it.</p>
-            ) : (
+            {list.type === ListType.DOMAIN && <p>Nothing to do here. Enjoy it.</p>}
+            {list.type === ListType.INBOX && (
               <>
                 <p className={styles.emptyTitle}>Your Inbox is clear</p>
                 <p>Capture anything above as it occurs to you, and file it into a domain later.</p>
+              </>
+            )}
+            {list.type === ListType.IN_PROGRESS && (
+              <>
+                <p className={styles.emptyTitle}>Nothing in progress</p>
+                <p>Press I on a task to start working on it, and it shows here until you stop.</p>
               </>
             )}
           </div>

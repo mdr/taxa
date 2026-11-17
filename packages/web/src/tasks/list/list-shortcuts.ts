@@ -1,8 +1,9 @@
 import type { Task } from "@taxa/shared/tasks/task"
 import { Step, type ListSessionActions, type ListSessionState } from "./list-session-service.ts"
 import { ShortcutGroup, type Shortcut } from "../../shortcuts/shortcut-service.ts"
+import { START_OR_STOP, startedOrStopped } from "../in-progress.ts"
 
-type Session = Pick<ListSessionActions, "moveHighlight" | "highlight" | "toggle" | "undo"> & {
+type Session = Pick<ListSessionActions, "moveHighlight" | "highlight" | "toggle" | "startOrStop" | "undo"> & {
   readonly state: Pick<ListSessionState, "highlighted" | "undoable">
 }
 
@@ -51,6 +52,19 @@ export const listShortcuts = (
       run: () => {
         const task = highlighted()
         if (task) void session.toggle(task)
+      }
+    },
+    {
+      keys: ["i"],
+      description: START_OR_STOP,
+      group: ShortcutGroup.TASKS,
+      available: () => {
+        const task = highlighted()
+        return task !== undefined && startedOrStopped(task.status) !== undefined
+      },
+      run: () => {
+        const task = highlighted()
+        if (task) void session.startOrStop(task)
       }
     },
     {

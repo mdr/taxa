@@ -6,12 +6,17 @@ import { DomainBadge } from "../domains/DomainBadge.tsx"
 import { NewDomainForm } from "../domains/NewDomainForm.tsx"
 import { useDomains } from "../domains/domain-queries.ts"
 import { useTasks } from "../tasks/task-queries.ts"
+import { StatusIcon } from "../tasks/StatusIcon.tsx"
+import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
+import { TaskStatus } from "@taxa/shared/tasks/task"
 import { useShortcutActions } from "../shortcuts/shortcut-service.ts"
 
 export const Sidebar = () => {
   const [location] = useLocation()
   const domains = useDomains()
   const inbox = useTasks({ inbox: "true" })
+  const inProgress = useTasks({ status: TaskStatus.IN_PROGRESS })
+  const inProgressCount = inProgress.data?.length ?? 0
   const current = (href: string) => (location === href ? "page" : undefined)
   const inboxCount = inbox.data?.length ?? 0
   const { openHelp } = useShortcutActions()
@@ -27,6 +32,22 @@ export const Sidebar = () => {
         {inboxCount > 0 && (
           <span className={styles.count} data-testid={sidebarTestIds.inboxCount}>
             {inboxCount}
+          </span>
+        )}
+      </Link>
+      <Link
+        href={IN_PROGRESS_PATH}
+        className={styles.link}
+        aria-current={current(IN_PROGRESS_PATH)}
+        data-testid={sidebarTestIds.inProgress}
+      >
+        <span className={styles.linkIcon}>
+          <StatusIcon status={TaskStatus.IN_PROGRESS} size={16} />
+        </span>
+        <span className={styles.name}>In progress</span>
+        {inProgressCount > 0 && (
+          <span className={styles.count} data-testid={sidebarTestIds.inProgressCount}>
+            {inProgressCount}
           </span>
         )}
       </Link>

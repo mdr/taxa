@@ -20,6 +20,7 @@ import {
   useShortcuts
 } from "../../shortcuts/shortcut-service.ts"
 import { TaskChangeType, useTaskChanges, useTaskProblem, type TaskChange } from "../changes/task-changes-service.ts"
+import { START_OR_STOP, startedOrStopped } from "../in-progress.ts"
 
 export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
   const query = useTask(taskRef)
@@ -41,7 +42,17 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
     },
     { keys: ["Escape"], description: "Back to the list", group: ShortcutGroup.GO, run: () => navigate(listPath) },
     { keys: ["r"], description: "Rename", group: ShortcutGroup.TASKS, run: () => requestFocus(FocusTarget.TITLE) },
-    { keys: ["n"], description: "Write notes", group: ShortcutGroup.TASKS, run: () => requestFocus(FocusTarget.NOTES) }
+    { keys: ["n"], description: "Write notes", group: ShortcutGroup.TASKS, run: () => requestFocus(FocusTarget.NOTES) },
+    {
+      keys: ["i"],
+      description: START_OR_STOP,
+      group: ShortcutGroup.TASKS,
+      available: () => query.data !== undefined && startedOrStopped(query.data.status) !== undefined,
+      run: () => {
+        const status = query.data && startedOrStopped(query.data.status)
+        if (query.data && status) void changeTask(query.data, { type: TaskChangeType.STATUS, request: { status } })
+      }
+    }
   ])
   if (query.isPending) return undefined
   if (query.isError) {

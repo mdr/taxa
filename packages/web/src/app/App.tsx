@@ -7,6 +7,11 @@ import { appTestIds } from "./AppTestIds.ts"
 import { Sidebar } from "./Sidebar.tsx"
 import { TaskDetailPage } from "../tasks/detail/TaskDetailPage.tsx"
 import { TaskListPage } from "../tasks/list/TaskListPage.tsx"
+import { ListType, type TaskList } from "../tasks/list/task-list.ts"
+import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
+
+const INBOX_LIST: TaskList = { type: ListType.INBOX }
+const IN_PROGRESS_LIST: TaskList = { type: ListType.IN_PROGRESS }
 import { useDomains } from "../domains/domain-queries.ts"
 import { Onboarding } from "../onboarding/Onboarding.tsx"
 import { problemMessage } from "../api/problem-message.ts"
@@ -53,9 +58,14 @@ const NotFound = () => (
 const Pages = () => (
   <Switch>
     <Route path="/">
-      <TaskListPage />
+      <TaskListPage list={INBOX_LIST} />
     </Route>
-    <Route path="/domains/:prefix">{({ prefix }) => <TaskListPage key={prefix} domainPrefix={prefix} />}</Route>
+    <Route path={IN_PROGRESS_PATH}>
+      <TaskListPage list={IN_PROGRESS_LIST} />
+    </Route>
+    <Route path="/domains/:prefix">
+      {({ prefix }) => <TaskListPage key={prefix} list={{ type: ListType.DOMAIN, prefix }} />}
+    </Route>
     <Route path="/tasks/:ref">{({ ref }) => <TaskDetailPage key={ref} taskRef={ref} />}</Route>
     <Route>
       <NotFound />
