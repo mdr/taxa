@@ -4,8 +4,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import styles from "./NotesEditor.module.css"
 import { notesEditorTestIds } from "./NotesEditorTestIds.ts"
 import { NotesToolbar } from "./NotesToolbar.tsx"
-import { documentToNotes, normaliseNotes, notesToDocument, NOTES_EXTENSIONS } from "./notes-markdown.ts"
-import { loadNotesMode, NotesMode, saveNotesMode } from "./notes-mode.ts"
+import { NotesDraftService } from "./notes-draft-service.ts"
+import { documentToNotes, notesToDocument, NOTES_EXTENSIONS } from "./notes-markdown.ts"
+import { localNotesModeStore, NotesMode } from "./notes-mode.ts"
+import { useServiceState } from "../services/service-hooks.ts"
 import { TaskChangeType, type TaskChange } from "../tasks/changes/task-changes-service.ts"
 
 const PLACEHOLDER = "Add notes…"
@@ -27,24 +29,21 @@ const useAutoHeight = (text: string) => {
  * leave them. Opening notes an agent wrote never rewrites them; only an edit does.
  */
 export const NotesEditor = ({ notes, change }: { notes: string; change: (change: TaskChange) => void }) => {
-  const [mode, setMode] = useState(loadNotesMode)
-  const [source, setSource] = useState("")
+  const [draft] = useState(
+    () =>
+      new NotesDraftService(
+        notes,
+        (saved) => change({ type: TaskChangeType.UPDATE, request: { set: { notes: saved } } }),
+        localNotesModeStore
+      )
+  )
+  const mode = useServiceState(draft, (state) => state.mode)
+  const source = useServiceState(draft, (state) => state.source)
+  const shown = useServiceState(draft, (state) => state.shown)
   const sourceField = useAutoHeight(source)
-  // The notes as last saved or received, and as now written, both normalised.
-  const saved = useRef(normaliseNotes(notes))
-  const draft = useRef(saved.current)
-  const changeRef = useRef(change)
-  useLayoutEffect(() => {
-    changeRef.current = change
-  })
-  const save = () => {
-    if (draft.current === saved.current) return
-    saved.current = draft.current
-    changeRef.current({ type: TaskChangeType.UPDATE, request: { set: { notes: draft.current } } })
-  }
   const editor = useEditor({
     extensions: [...NOTES_EXTENSIONS, Placeholder.configure({ placeholder: PLACEHOLDER })],
-    content: notesToDocument(notes),
+    content: notesToDocument(shown.notes),
     shouldRerenderOnTransaction: false,
     editorProps: {
       attributes: {
@@ -60,35 +59,17 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
         return true
       }
     },
-    onUpdate: ({ editor: current }) => {
-      draft.current = documentToNotes(current.getJSON())
-      // Ticking a checklist item doesn't focus the editor, so there's no leaving to wait for.
-      if (!current.isFocused) save()
-    },
-    onBlur: save
+    onUpdate: ({ editor: current }) => draft.write(documentToNotes(current.getJSON())),
+    onFocus: draft.startWriting,
+    onBlur: draft.finishWriting
   })
 
-  // Leaving the page with an edit in hand.
-  useEffect(() => () => save(), [])
-
-  // Someone else's change, shown unless you're in the middle of writing.
+  useEffect(() => draft.dispose, [draft])
+  useEffect(() => draft.receive(notes), [draft, notes])
   useEffect(() => {
-    const incoming = normaliseNotes(notes)
-    if (incoming === saved.current) return
-    saved.current = incoming
-    if (editor.isFocused || document.activeElement === sourceField.current) return
-    draft.current = incoming
-    editor.commands.setContent(notesToDocument(incoming), { emitUpdate: false })
-    setSource(incoming)
-  }, [notes, editor, sourceField])
-
-  const switchMode = () => {
-    const next = mode === NotesMode.RICH ? NotesMode.MARKDOWN : NotesMode.RICH
-    if (next === NotesMode.MARKDOWN) setSource(draft.current)
-    else editor.commands.setContent(notesToDocument(draft.current), { emitUpdate: false })
-    setMode(next)
-    saveNotesMode(next)
-  }
+    if (documentToNotes(editor.getJSON()) === shown.notes) return
+    editor.commands.setContent(notesToDocument(shown.notes), { emitUpdate: false })
+  }, [editor, shown])
 
   return (
     <section className={styles.notes} aria-label="Notes">
@@ -98,7 +79,7 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
           type="button"
           className={styles.mode}
           aria-pressed={mode === NotesMode.MARKDOWN}
-          onClick={switchMode}
+          onClick={draft.switchMode}
           title="Write the notes as Markdown"
           data-testid={notesEditorTestIds.markdownMode}
         >
@@ -111,14 +92,9 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
           ref={sourceField}
           className={styles.source}
           value={source}
-          onChange={(event) => {
-            setSource(event.target.value)
-            draft.current = normaliseNotes(event.target.value)
-          }}
-          onBlur={() => {
-            save()
-            setSource(draft.current)
-          }}
+          onChange={(event) => draft.writeSource(event.target.value)}
+          onFocus={draft.startWriting}
+          onBlur={draft.finishWriting}
           onKeyDown={(event) => {
             if (event.key === "Escape" || (event.key === "Enter" && (event.metaKey || event.ctrlKey)))
               event.currentTarget.blur()

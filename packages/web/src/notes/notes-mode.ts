@@ -4,21 +4,28 @@ export enum NotesMode {
   MARKDOWN = "MARKDOWN"
 }
 
-const KEY = "taxa.notesMode"
-
-/** Each person's choice, remembered in their browser; formatted unless they chose otherwise. */
-export const loadNotesMode = (): NotesMode => {
-  try {
-    return localStorage.getItem(KEY) === NotesMode.MARKDOWN ? NotesMode.MARKDOWN : NotesMode.RICH
-  } catch {
-    return NotesMode.RICH
-  }
+/** Where each person's choice of mode is remembered. */
+export interface NotesModeStore {
+  load: () => NotesMode
+  save: (mode: NotesMode) => void
 }
 
-export const saveNotesMode = (mode: NotesMode): void => {
-  try {
-    localStorage.setItem(KEY, mode)
-  } catch {
-    // Not remembered, then; it still applies to this page.
+const KEY = "taxa.notesMode"
+
+/** In their browser; formatted unless they chose otherwise. */
+export const localNotesModeStore: NotesModeStore = {
+  load: () => {
+    try {
+      return localStorage.getItem(KEY) === NotesMode.MARKDOWN ? NotesMode.MARKDOWN : NotesMode.RICH
+    } catch {
+      return NotesMode.RICH
+    }
+  },
+  save: (mode) => {
+    try {
+      localStorage.setItem(KEY, mode)
+    } catch {
+      // Not remembered, then; it still applies to this page.
+    }
   }
 }

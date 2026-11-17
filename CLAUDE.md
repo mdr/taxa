@@ -45,9 +45,9 @@ Taxa is a task manager for people and their agents. What it does and why is in `
 ## Services
 
 - Web state with side effects lives in a service (`web/src/services/`), not in components or hooks. A service extends `AbstractService<XState>` and `implements XActions`; actions are arrow-function fields, so they survive being destructured.
-- Its outside world comes in through the constructor as interfaces (`TaskChangesApi`, `TaskCache`, a `Clock`), so tests can give it the real in-process server or a fake.
-- Each module exports its state and actions interfaces, the class, a context, and hooks: `useXActions()` / `useX()` for actions, and selector hooks that pick one value from the state (`useServiceState` throws if a selector builds a new value).
-- Build a service once (`useState(() => new XService(…))` or a module constant), never inline in JSX.
+- Its outside world comes in through the constructor as interfaces (`TaskChangesApi`, `TaskCache`, a `Scheduler` for timers, a `Clock`), so tests can give it the real in-process server or a fake.
+- Components read state through `useServiceState(service, selector)`, one value per call (it throws if a selector builds a new value). A service that components below its owner use also has a context and hooks: `useX()` for its actions, and selector hooks.
+- Build a service once, where its lifetime begins (`useState(() => new XService(…))`, with `useEffect(() => service.dispose, [service])` if it holds anything), never inline in JSX. The app owns app-wide ones; a page or component owns its own, and its key decides when a new one starts.
 - Test a service by calling its actions and asserting on `service.state`; with the in-process server that's a `*.iwbt.ts` beside it.
 
 ## Tests

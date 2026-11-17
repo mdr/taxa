@@ -39,3 +39,13 @@ test("an agent's notes show formatted, and aren't rewritten by being looked at",
   await detail.expectActivity(["Matt created this", "Claude Code for Matt edited the notes"])
   expect((await taxa.matt.client.task("H-1")).notes).toBe("## Shortlist\n\n- Worcester Bosch")
 })
+
+test("having chosen Markdown, notes open as Markdown", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H", notes: "Buy **washers**" })
+  await taxa.matt.addTask("Bleed the radiators", { domain: "H", notes: "- [ ] *Key* from the shed" })
+  const tab = await taxa.openTab("Matt")
+  await (await tab.openTask("H-1")).expectNotesMarkdown("Buy **washers**")
+
+  await (await tab.openTask("H-2")).expectNotesMarkdown("- [ ] *Key* from the shed")
+})

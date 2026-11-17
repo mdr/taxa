@@ -1,0 +1,102 @@
+import type { TaskId } from "@taxa/shared/ids"
+import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
+import type { Ms } from "@taxa/shared/units"
+import { AbstractService } from "../../services/abstract-service.ts"
+import type { Scheduler } from "../../services/scheduler.ts"
+import { createServiceContext, useService, useServiceState } from "../../services/service-hooks.ts"
+import { TaskChangeType, type TaskChangesActions } from "../changes/task-changes-service.ts"
+
+/** How long the offer to undo a tick stays. */
+export const UNDO_OFFERED_MS: Ms = 6000
+
+/** Tasks ticked off here, by id. */
+export type TickedTasks = Readonly<Partial<Record<TaskId, Task>>>
+
+export interface ListSessionState {
+  /** Ticked off since the list opened: they stay in place, ticked, until you leave. */
+  ticked: TickedTasks
+  /** What a box shows while the server hasn't answered yet: ticked or not. */
+  pending: Readonly<Partial<Record<TaskId, boolean>>>
+  /** The task ticked off last, with a chance to undo it. */
+  undoable: Task | undefined
+}
+
+export interface ListSessionActions {
+  /** Ticks the task off, or unticks it, as its box shows it now. */
+  toggle: (task: Task) => Promise<void>
+  undo: () => Promise<void>
+  dismissUndo: () => void
+  dispose: () => void
+}
+
+/** Whether a task's box shows it ticked. */
+export const isShownDone = (state: ListSessionState, task: Task): boolean =>
+  state.pending[task.id] ?? (state.ticked[task.id] !== undefined || task.status === TaskStatus.DONE)
+
+/** Whether it was ticked here and now, and deserves a little celebration. */
+export const isCelebrated = (state: ListSessionState, id: TaskId): boolean =>
+  state.pending[id] === true || (state.pending[id] === undefined && state.ticked[id] !== undefined)
+
+/** One visit to a list: what's been ticked off on it, and the chance to take a tick back. */
+export class ListSessionService extends AbstractService<ListSessionState> implements ListSessionActions {
+  readonly #changes: TaskChangesActions
+  readonly #scheduler: Scheduler
+  #cancelUndoOffer: (() => void) | undefined
+
+  constructor(changes: TaskChangesActions, scheduler: Scheduler) {
+    super({ ticked: {}, pending: {}, undoable: undefined })
+    this.#changes = changes
+    this.#scheduler = scheduler
+  }
+
+  readonly toggle = async (task: Task): Promise<void> => {
+    await this.#setStatus(task, isShownDone(this.state, task) ? TaskStatus.OPEN : TaskStatus.DONE)
+  }
+
+  readonly undo = async (): Promise<void> => {
+    const task = this.state.undoable
+    if (!task) return
+    this.dismissUndo()
+    await this.#setStatus(task, TaskStatus.OPEN)
+  }
+
+  readonly dismissUndo = (): void => {
+    this.#cancelUndoOffer?.()
+    this.#cancelUndoOffer = undefined
+    if (this.state.undoable) this.setState({ undoable: undefined })
+  }
+
+  readonly dispose = (): void => {
+    this.#cancelUndoOffer?.()
+    this.#cancelUndoOffer = undefined
+  }
+
+  async #setStatus(task: Task, status: TaskStatus.OPEN | TaskStatus.DONE): Promise<void> {
+    const done = status === TaskStatus.DONE
+    this.updateState((state) => ({ ...state, pending: { ...state.pending, [task.id]: done } }))
+    const changed = await this.#changes.change(task, { type: TaskChangeType.STATUS, request: { status } })
+    this.updateState((state) => ({ ...state, pending: { ...state.pending, [task.id]: undefined } }))
+    if (!changed) return
+    this.updateState((state) => ({
+      ...state,
+      ticked: { ...state.ticked, [task.id]: done ? changed : undefined },
+      undoable: done ? changed : state.undoable?.id === task.id ? undefined : state.undoable
+    }))
+    if (done) this.#offerUndo()
+  }
+
+  #offerUndo(): void {
+    this.#cancelUndoOffer?.()
+    this.#cancelUndoOffer = this.#scheduler.after(UNDO_OFFERED_MS, this.dismissUndo)
+  }
+}
+
+export const ListSessionContext = createServiceContext<ListSessionService>()
+
+export const useListSession = (): ListSessionActions => useService(ListSessionContext)
+
+export const useShownDone = (task: Task): boolean =>
+  useServiceState(useService(ListSessionContext), (state) => isShownDone(state, task))
+
+export const useCelebrated = (id: TaskId): boolean =>
+  useServiceState(useService(ListSessionContext), (state) => isCelebrated(state, id))

@@ -1,0 +1,116 @@
+import { describe, expect, it } from "vite-plus/test"
+import { NotesDraftService } from "./notes-draft-service.ts"
+import { NotesMode, type NotesModeStore } from "./notes-mode.ts"
+
+class FakeModeStore implements NotesModeStore {
+  constructor(public mode = NotesMode.RICH) {}
+  readonly load = (): NotesMode => this.mode
+  readonly save = (mode: NotesMode): void => {
+    this.mode = mode
+  }
+}
+
+const makeNotesDraftService = (
+  notes = "",
+  modes = new FakeModeStore()
+): { saves: string[]; modes: FakeModeStore; service: NotesDraftService } => {
+  const saves: string[] = []
+  return { saves, modes, service: new NotesDraftService(notes, (saved) => saves.push(saved), modes) }
+}
+
+describe("NotesDraftService", () => {
+  it("saves what was written on leaving the notes, once", () => {
+    const { saves, service } = makeNotesDraftService()
+    service.startWriting()
+    service.write("Ring the plumber")
+    service.write("Ring the plumber first")
+    expect(saves).toEqual([])
+    service.finishWriting()
+    service.finishWriting()
+    expect(saves).toEqual(["Ring the plumber first"])
+  })
+
+  it("doesn't rewrite notes that were only looked at, however they were written", () => {
+    const { saves, service } = makeNotesDraftService("* one\n* two")
+    service.startWriting()
+    service.write("- one\n- two")
+    service.finishWriting()
+    service.dispose()
+    expect(saves).toEqual([])
+  })
+
+  it("saves a checklist tick at once, since ticking doesn't enter the notes", () => {
+    const { saves, service } = makeNotesDraftService("- [ ] Buy washers")
+    service.write("- [x] Buy washers")
+    expect(saves).toEqual(["- [x] Buy washers"])
+  })
+
+  it("saves what was written when the page goes", () => {
+    const { saves, service } = makeNotesDraftService()
+    service.startWriting()
+    service.write("Half a thought")
+    service.dispose()
+    expect(saves).toEqual(["Half a thought"])
+  })
+
+  it("shows someone else's change at once, unless you're writing", () => {
+    const { service } = makeNotesDraftService("Old")
+    const shown = service.state.shown
+    service.receive("From Claude")
+    expect(service.state.shown).not.toBe(shown)
+    expect(service.state).toMatchObject({
+      draft: "From Claude",
+      source: "From Claude",
+      shown: { notes: "From Claude" }
+    })
+
+    service.startWriting()
+    service.write("Mine")
+    service.receive("From Claude again")
+    expect(service.state).toMatchObject({ draft: "Mine", shown: { notes: "From Claude" } })
+  })
+
+  it("keeps your writing over a change received meanwhile, and saves it", () => {
+    const { saves, service } = makeNotesDraftService("Old")
+    service.startWriting()
+    service.receive("From Claude")
+    service.write("Mine")
+    service.finishWriting()
+    expect(saves).toEqual(["Mine"])
+  })
+
+  it("ignores receiving its own save back", () => {
+    const { service } = makeNotesDraftService()
+    service.startWriting()
+    service.write("Mine")
+    service.finishWriting()
+    const shown = service.state.shown
+    service.receive("Mine")
+    expect(service.state.shown).toBe(shown)
+  })
+
+  it("writes Markdown as typed, normalising it on leaving", () => {
+    const { saves, service } = makeNotesDraftService("", new FakeModeStore(NotesMode.MARKDOWN))
+    service.startWriting()
+    service.writeSource("* one\n* two")
+    expect(service.state.source).toBe("* one\n* two")
+    service.finishWriting()
+    expect(saves).toEqual(["- one\n- two"])
+    expect(service.state.source).toBe("- one\n- two")
+  })
+
+  it("carries the draft across a change of mode, and remembers the mode", () => {
+    const { modes, service } = makeNotesDraftService("**Bold**")
+    service.switchMode()
+    expect(service.state).toMatchObject({ mode: NotesMode.MARKDOWN, source: "**Bold**" })
+    service.writeSource("**Bolder**")
+    service.switchMode()
+    expect(service.state).toMatchObject({ mode: NotesMode.RICH, shown: { notes: "**Bolder**" } })
+    expect(modes.mode).toBe(NotesMode.RICH)
+  })
+
+  it("opens in the remembered mode, with the notes in the Markdown field", () => {
+    const { service } = makeNotesDraftService("Notes", new FakeModeStore(NotesMode.MARKDOWN))
+    expect(service.state).toMatchObject({ mode: NotesMode.MARKDOWN, source: "Notes" })
+  })
+})

@@ -3,7 +3,6 @@ import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 import { CalendarClock, CalendarDays } from "lucide-react"
-import { useState } from "react"
 import { Link } from "wouter"
 import styles from "./TaskRow.module.css"
 import { taskRowTestIds } from "./TaskRowTestIds.ts"
@@ -11,44 +10,25 @@ import { TickBox } from "./TickBox.tsx"
 import { PriorityIcon } from "../PriorityIcon.tsx"
 import { StatusIcon } from "../StatusIcon.tsx"
 import { capitalised } from "../../ui/capitalised.ts"
-import { TaskChangeType, useTaskChanges, useTaskProblem } from "../changes/task-changes-service.ts"
+import { useCelebrated, useListSession, useShownDone } from "./list-session-service.ts"
+import { useTaskProblem } from "../changes/task-changes-service.ts"
 
 const dueClass = (due: IsoDate, today: IsoDate): string | undefined =>
   due < today ? styles.overdue : due === today ? styles.dueToday : styles.meta
 
-interface TaskRowProps {
-  task: Task
-  today: IsoDate
-  /** Hears when the task is ticked off or unticked. */
-  onStatusChanged?: (task: Task) => void
-}
-
-export const TaskRow = ({ task, today, onStatusChanged }: TaskRowProps) => {
-  const { change } = useTaskChanges()
+export const TaskRow = ({ task, today }: { task: Task; today: IsoDate }) => {
+  const { toggle } = useListSession()
   const problem = useTaskProblem(task.id)
-  // The box shows the tick at once, before the server answers, and goes back if it refuses.
-  const [ticked, setTicked] = useState<boolean>()
-  const shownTick = problem === undefined ? ticked : undefined
-  const done = shownTick ?? task.status === TaskStatus.DONE
+  const done = useShownDone(task)
+  const celebrate = useCelebrated(task.id)
   return (
-    <li
-      className={styles.row}
-      data-done={done}
-      data-celebrate={done && shownTick === true}
-      data-testid={taskRowTestIds.row}
-    >
+    <li className={styles.row} data-done={done} data-celebrate={done && celebrate} data-testid={taskRowTestIds.row}>
       <TickBox
         checked={done}
-        celebrate={shownTick === true}
+        celebrate={celebrate}
         priority={task.priority}
         label={`Done: ${task.title}`}
-        onChange={() => {
-          setTicked(!done)
-          void change(task, {
-            type: TaskChangeType.STATUS,
-            request: { status: done ? TaskStatus.OPEN : TaskStatus.DONE }
-          }).then((changed) => changed && onStatusChanged?.(changed))
-        }}
+        onChange={() => void toggle(task)}
         testId={taskRowTestIds.done}
       />
       <Link href={`/tasks/${task.ref}`} className={styles.title} data-testid={taskRowTestIds.title}>
