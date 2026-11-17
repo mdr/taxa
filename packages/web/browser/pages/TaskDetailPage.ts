@@ -209,6 +209,15 @@ export class TaskDetailPage extends PageObject {
     await this.#page.keyboard.press("Escape")
   }
 
+  /** Clicks into the formatted notes, without writing anything. */
+  async enterNotes(): Promise<void> {
+    await this.#page.getByTestId(notesEditorTestIds.editor).click()
+  }
+
+  async leaveNotes(): Promise<void> {
+    await this.#page.keyboard.press("Escape")
+  }
+
   /** Types into the formatted notes and stays there. */
   async startTypingNotes(text: string): Promise<void> {
     await this.#page.getByTestId(notesEditorTestIds.editor).click()

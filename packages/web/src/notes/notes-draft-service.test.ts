@@ -32,6 +32,10 @@ describe("NotesDraftService", () => {
 
   it("doesn't rewrite notes that were only looked at, however they were written", () => {
     const { saves, service } = makeNotesDraftService("* one\n* two")
+    const shown = service.state.shown
+    service.startWriting()
+    service.finishWriting()
+    expect(service.state.shown).toBe(shown)
     service.startWriting()
     service.write("- one\n- two")
     service.finishWriting()
@@ -101,16 +105,38 @@ describe("NotesDraftService", () => {
 
   it("carries the draft across a change of mode, and remembers the mode", () => {
     const { modes, service } = makeNotesDraftService("**Bold**")
+    service.write("**Bold** move")
     service.switchMode()
-    expect(service.state).toMatchObject({ mode: NotesMode.MARKDOWN, source: "**Bold**" })
+    expect(service.state).toMatchObject({ mode: NotesMode.MARKDOWN, source: "**Bold** move" })
+    expect(modes.mode).toBe(NotesMode.MARKDOWN)
     service.writeSource("**Bolder**")
     service.switchMode()
     expect(service.state).toMatchObject({ mode: NotesMode.RICH, shown: { notes: "**Bolder**" } })
     expect(modes.mode).toBe(NotesMode.RICH)
   })
 
-  it("opens in the remembered mode, with the notes in the Markdown field", () => {
-    const { service } = makeNotesDraftService("Notes", new FakeModeStore(NotesMode.MARKDOWN))
-    expect(service.state).toMatchObject({ mode: NotesMode.MARKDOWN, source: "Notes" })
+  it("opens in the remembered mode, with the notes normalised in both editors", () => {
+    const { service } = makeNotesDraftService("* Notes", new FakeModeStore(NotesMode.MARKDOWN))
+    expect(service.state).toMatchObject({ mode: NotesMode.MARKDOWN, source: "- Notes", shown: { notes: "- Notes" } })
+  })
+})
+
+describe("NotesDraftService, with changes from elsewhere", () => {
+  it("shows a change once you've left the notes", () => {
+    const { service } = makeNotesDraftService("Old")
+    service.startWriting()
+    service.write("Mine")
+    service.finishWriting()
+    service.receive("From Claude")
+    expect(service.state.shown).toEqual({ notes: "From Claude" })
+  })
+
+  it("shows someone else's change after you only clicked into the notes, without saving over it", () => {
+    const { saves, service } = makeNotesDraftService("Old")
+    service.startWriting()
+    service.receive("From Claude")
+    service.finishWriting()
+    expect(saves).toEqual([])
+    expect(service.state.shown).toEqual({ notes: "From Claude" })
   })
 })

@@ -32,6 +32,17 @@ describe("AbstractService", () => {
     expect(listener).toHaveBeenCalledTimes(1)
   })
 
+  it("tells its listeners again about later writes", async () => {
+    const counter = new Counter()
+    const listener = vi.fn()
+    counter.subscribe(listener)
+    counter.addTwice()
+    await settled()
+    counter.addTwice()
+    await settled()
+    expect(listener).toHaveBeenCalledTimes(2)
+  })
+
   it("stops telling a listener that unsubscribed", async () => {
     const counter = new Counter()
     const listener = vi.fn()

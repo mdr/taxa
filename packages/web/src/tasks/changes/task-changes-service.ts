@@ -52,6 +52,7 @@ export interface TaskChangesActions {
 export class TaskChangesService extends AbstractService<TaskChangesState> implements TaskChangesActions {
   readonly #api: TaskChangesApi
   readonly #cache: TaskCache
+  /** Each task's latest change, which its next one waits for. */
   readonly #queues = new Map<TaskId, Promise<unknown>>()
 
   constructor(api: TaskChangesApi, cache: TaskCache) {
@@ -64,16 +65,12 @@ export class TaskChangesService extends AbstractService<TaskChangesState> implem
     this.#setProblem(task.id, undefined)
     const made = (this.#queues.get(task.id) ?? Promise.resolve()).then(() => this.#make(task, change))
     this.#queues.set(task.id, made)
-    void made.then(() => {
-      if (this.#queues.get(task.id) === made) this.#queues.delete(task.id)
-    })
     return made
   }
 
   readonly clearProblems = (): void => this.setState({ problems: {} })
 
   #setProblem(id: TaskId, problem: string | undefined): void {
-    if (this.state.problems[id] === problem) return
     this.updateState((state) => ({ ...state, problems: { ...state.problems, [id]: problem } }))
   }
 

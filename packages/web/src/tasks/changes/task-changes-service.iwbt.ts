@@ -1,5 +1,5 @@
 import type { TaskId } from "@taxa/shared/ids"
-import { Priority } from "@taxa/shared/tasks/task"
+import { Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import type { Task } from "@taxa/shared/tasks/task"
 import { describe, expect } from "vite-plus/test"
 import type { InProcessServer } from "../../../../server/src/test-support/in-process-server.ts"
@@ -58,6 +58,17 @@ describe("TaskChangesService", () => {
     ])
     expect([first?.version, second?.version]).toEqual([task.version + 1, task.version + 2])
     expect(await matt.client.task(task.id)).toMatchObject({ priority: Priority.HIGH, title: "Fix the kitchen tap" })
+  })
+
+  it("changes a task's status, deletes it and restores it", async ({ server }) => {
+    const { matt, task, cache, service } = await makeTaskChangesService(server)
+    expect(
+      await service.change(task, { type: TaskChangeType.STATUS, request: { status: TaskStatus.DONE } })
+    ).toMatchObject({ status: TaskStatus.DONE })
+    expect((await service.change(task, { type: TaskChangeType.DELETE }))?.deletedAt).toBeDefined()
+    expect((await service.change(task, { type: TaskChangeType.RESTORE }))?.deletedAt).toBeUndefined()
+    expect(await matt.client.task(task.id)).toMatchObject({ status: TaskStatus.DONE, version: task.version + 3 })
+    expect(cache.latest(task.id)?.version).toBe(task.version + 3)
   })
 
   it("refuses a change to a version someone else has moved on from, and shows theirs", async ({ server }) => {

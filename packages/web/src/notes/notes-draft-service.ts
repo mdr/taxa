@@ -42,6 +42,8 @@ interface NotesDraftActions {
 export class NotesDraftService extends AbstractService<NotesDraftState> implements NotesDraftActions {
   readonly #save: (notes: string) => void
   readonly #modes: NotesModeStore
+  /** The draft when the person went into the notes, to tell whether they wrote anything. */
+  #draftOnEntering = ""
 
   constructor(notes: string, save: (notes: string) => void, modes: NotesModeStore) {
     const saved = normaliseNotes(notes)
@@ -50,12 +52,21 @@ export class NotesDraftService extends AbstractService<NotesDraftState> implemen
     this.#modes = modes
   }
 
-  readonly startWriting = (): void => this.setState({ writing: true })
+  readonly startWriting = (): void => {
+    this.#draftOnEntering = this.state.draft
+    this.setState({ writing: true })
+  }
 
   readonly finishWriting = (): void => {
+    const { draft, saved, mode } = this.state
     this.setState({ writing: false })
+    if (draft === this.#draftOnEntering && draft !== saved) {
+      // Nothing written, so a change received meanwhile isn't overwritten: it's shown.
+      this.setState({ draft: saved, source: saved, shown: { notes: saved } })
+      return
+    }
     this.#saveDraft()
-    if (this.state.mode === NotesMode.MARKDOWN) this.setState({ source: this.state.draft })
+    if (mode === NotesMode.MARKDOWN) this.setState({ source: this.state.draft })
   }
 
   readonly write = (notes: string): void => {

@@ -49,3 +49,21 @@ test("having chosen Markdown, notes open as Markdown", async ({ taxa }) => {
 
   await (await tab.openTask("H-2")).expectNotesMarkdown("- [ ] *Key* from the shed")
 })
+
+test("an agent's change to notes you only clicked into is shown, not overwritten", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Research boilers", { domain: "H", notes: "Ask around" })
+  const detail = await (await taxa.openTab("Matt")).openTask("H-1")
+  await detail.enterNotes()
+
+  const claude = await taxa.matt.agent("Claude Code")
+  await claude.client.updateTask("H-1", { set: { notes: "Shortlist: Worcester Bosch" } })
+  await detail.returnToTab()
+  await detail.expectActivity(["Matt created this", "Claude Code for Matt edited the notes"])
+  await detail.expectNotesText("Ask around")
+
+  await detail.leaveNotes()
+  await detail.expectNotesText("Shortlist: Worcester Bosch")
+  await detail.expectActivity(["Matt created this", "Claude Code for Matt edited the notes"])
+  expect((await taxa.matt.client.task("H-1")).notes).toBe("Shortlist: Worcester Bosch")
+})

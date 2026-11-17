@@ -39,6 +39,10 @@ class FakeScheduler implements Scheduler {
     }
   }
 
+  get waiting(): number {
+    return this.#waiting.length
+  }
+
   advance(time: Ms): void {
     this.#now += time
     const due = this.#waiting.filter(({ at }) => at <= this.#now)
@@ -142,5 +146,77 @@ describe("ListSessionService", () => {
     await changes.answer()
     await unticking
     expect(session.state.undoable).toBeUndefined()
+  })
+
+  it("keeps celebrating a tick once the server takes it, but not an untick", async () => {
+    const { changes, session } = makeListSessionService()
+    const task = makeTask()
+    const ticking = session.toggle(task)
+    await changes.answer()
+    await ticking
+    expect(isCelebrated(session.state, task.id)).toBe(true)
+
+    const unticking = session.toggle(task)
+    expect(isCelebrated(session.state, task.id)).toBe(false)
+    await changes.answer()
+    await unticking
+    expect(isCelebrated(session.state, task.id)).toBe(false)
+  })
+
+  it("keeps showing one tick while another, refused, goes back", async () => {
+    const { changes, session } = makeListSessionService()
+    const [first, second] = [makeTask({ number: 1 }), makeTask({ number: 2 })]
+    const ticks = [session.toggle(first), session.toggle(second)]
+    await changes.answer(false)
+    expect(isShownDone(session.state, first)).toBe(false)
+    expect(isShownDone(session.state, second)).toBe(true)
+    await changes.answer()
+    await Promise.all(ticks)
+  })
+
+  it("still offers to undo the last tick when a later one is refused", async () => {
+    const { changes, session } = makeListSessionService()
+    const [first, second] = [makeTask({ number: 1 }), makeTask({ number: 2 })]
+    const ticking = session.toggle(first)
+    await changes.answer()
+    await ticking
+
+    const refused = session.toggle(second)
+    await changes.answer(false)
+    await refused
+    expect(session.state.undoable?.id).toBe(first.id)
+  })
+
+  it("still offers to undo the last tick when another task is unticked, for no longer", async () => {
+    const { changes, scheduler, session } = makeListSessionService()
+    const ticked = makeTask({ number: 1 })
+    const finished = makeTask({ number: 2, status: TaskStatus.DONE })
+    const ticking = session.toggle(ticked)
+    await changes.answer()
+    await ticking
+
+    scheduler.advance(UNDO_OFFERED_MS - 1000)
+    const unticking = session.toggle(finished)
+    await changes.answer()
+    await unticking
+    expect(session.state.undoable?.id).toBe(ticked.id)
+    scheduler.advance(1000)
+    expect(session.state.undoable).toBeUndefined()
+  })
+
+  it("does nothing on Undo when there's nothing to undo", async () => {
+    const { changes, session } = makeListSessionService()
+    await session.undo()
+    expect(changes.asked).toEqual([])
+  })
+
+  it("stops its timer when the list goes", async () => {
+    const { changes, scheduler, session } = makeListSessionService()
+    const ticking = session.toggle(makeTask())
+    await changes.answer()
+    await ticking
+    expect(scheduler.waiting).toBe(1)
+    session.dispose()
+    expect(scheduler.waiting).toBe(0)
   })
 })
