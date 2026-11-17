@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { PageObject } from "./steps.ts"
 import { sidebarTestIds } from "../../src/app/SidebarTestIds.ts"
 import { newDomainFormTestIds } from "../../src/domains/NewDomainFormTestIds.ts"
+import { ShortcutsHelp } from "./ShortcutsHelp.ts"
 import { TaskListPage } from "./TaskListPage.ts"
 
 /** The lists down the side, on every page. */
@@ -52,5 +53,10 @@ export class Sidebar extends PageObject {
   async openDomain(name: string): Promise<TaskListPage> {
     await this.#page.getByTestId(sidebarTestIds.domain).filter({ hasText: name }).click()
     return new TaskListPage(this.#page)
+  }
+
+  async openShortcuts(): Promise<ShortcutsHelp> {
+    await this.#page.getByTestId(sidebarTestIds.shortcuts).click()
+    return new ShortcutsHelp(this.#page)
   }
 }

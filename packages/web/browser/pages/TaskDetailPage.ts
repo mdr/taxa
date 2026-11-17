@@ -3,6 +3,7 @@ import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import type { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { PageObject } from "./steps.ts"
 import { expectAccessible } from "./accessibility.ts"
+import { Keyboard } from "./Keyboard.ts"
 import { Sidebar } from "./Sidebar.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
 import { activityListTestIds } from "../../src/tasks/detail/ActivityListTestIds.ts"
@@ -21,11 +22,13 @@ import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
 export class TaskDetailPage extends PageObject {
   readonly #page: Page
   readonly sidebar: Sidebar
+  readonly keyboard: Keyboard
 
   constructor(page: Page) {
     super()
     this.#page = page
     this.sidebar = new Sidebar(page)
+    this.keyboard = new Keyboard(page)
   }
 
   #option(value: string): Locator {

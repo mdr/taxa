@@ -1,4 +1,4 @@
-import { Inbox, Sprout } from "lucide-react"
+import { Inbox, Keyboard, Sprout } from "lucide-react"
 import { Link, useLocation } from "wouter"
 import styles from "./Sidebar.module.css"
 import { sidebarTestIds } from "./SidebarTestIds.ts"
@@ -6,6 +6,7 @@ import { DomainBadge } from "../domains/DomainBadge.tsx"
 import { NewDomainForm } from "../domains/NewDomainForm.tsx"
 import { useDomains } from "../domains/domain-queries.ts"
 import { useTasks } from "../tasks/task-queries.ts"
+import { useShortcutActions } from "../shortcuts/shortcut-service.ts"
 
 export const Sidebar = () => {
   const [location] = useLocation()
@@ -13,6 +14,7 @@ export const Sidebar = () => {
   const inbox = useTasks({ inbox: "true" })
   const current = (href: string) => (location === href ? "page" : undefined)
   const inboxCount = inbox.data?.length ?? 0
+  const { openHelp } = useShortcutActions()
   return (
     <nav className={styles.sidebar} aria-label="Lists">
       <p className={styles.brand}>
@@ -48,6 +50,17 @@ export const Sidebar = () => {
         })}
       </ul>
       <NewDomainForm />
+      <button
+        type="button"
+        className={styles.shortcuts}
+        onClick={openHelp}
+        aria-keyshortcuts="Shift+?"
+        data-testid={sidebarTestIds.shortcuts}
+      >
+        <Keyboard size={16} aria-hidden />
+        Keyboard shortcuts
+        <kbd className={styles.shortcutsKey}>?</kbd>
+      </button>
     </nav>
   )
 }

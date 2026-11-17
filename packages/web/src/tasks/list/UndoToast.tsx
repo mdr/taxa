@@ -13,7 +13,13 @@ export const UndoToast = ({ task }: { task: Task }) => {
       <span className={styles.text}>
         Done: <span className={styles.title}>{task.title}</span>
       </span>
-      <button type="button" className={styles.undo} onClick={() => void undo()} data-testid={undoToastTestIds.undo}>
+      <button
+        type="button"
+        className={styles.undo}
+        onClick={() => void undo()}
+        aria-keyshortcuts="Meta+Z Control+Z"
+        data-testid={undoToastTestIds.undo}
+      >
         Undo
       </button>
     </div>

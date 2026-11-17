@@ -1,5 +1,5 @@
 import { ChevronRight, Inbox, RotateCcw } from "lucide-react"
-import { Link } from "wouter"
+import { Link, useLocation } from "wouter"
 import styles from "./TaskDetailPage.module.css"
 import { taskDetailPageTestIds } from "./TaskDetailPageTestIds.ts"
 import { ActivityList } from "./ActivityList.tsx"
@@ -11,6 +11,14 @@ import { problemMessage } from "../../api/problem-message.ts"
 import { DomainBadge } from "../../domains/DomainBadge.tsx"
 import { useDomains } from "../../domains/domain-queries.ts"
 import { useTask } from "../task-queries.ts"
+import { taskListPath } from "../task-list-path.ts"
+import {
+  FocusTarget,
+  ShortcutGroup,
+  ShortcutScope,
+  useShortcutActions,
+  useShortcuts
+} from "../../shortcuts/shortcut-service.ts"
 import { TaskChangeType, useTaskChanges, useTaskProblem, type TaskChange } from "../changes/task-changes-service.ts"
 
 export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
@@ -18,6 +26,20 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
   const domains = useDomains()
   const { change: changeTask } = useTaskChanges()
   const problem = useTaskProblem(query.data?.id)
+  const [, navigate] = useLocation()
+  const { requestFocus } = useShortcutActions()
+  const listPath = taskListPath(query.data, domains.data)
+  useShortcuts(ShortcutScope.PAGE, [
+    {
+      keys: ["c"],
+      description: "Add a task",
+      group: ShortcutGroup.GENERAL,
+      run: () => {
+        navigate(listPath)
+        requestFocus(FocusTarget.CAPTURE)
+      }
+    }
+  ])
   if (query.isPending) return undefined
   if (query.isError) {
     return (

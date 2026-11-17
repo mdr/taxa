@@ -12,6 +12,7 @@ import { ListSessionContext, ListSessionService } from "./list-session-service.t
 import { realScheduler } from "../../services/scheduler.ts"
 import { useServiceState } from "../../services/service-hooks.ts"
 import { useTaskChanges } from "../changes/task-changes-service.ts"
+import { ShortcutGroup, ShortcutScope, useShortcuts } from "../../shortcuts/shortcut-service.ts"
 import { problemMessage } from "../../api/problem-message.ts"
 import { useToday } from "../../dates/use-today.ts"
 import { DomainBadge } from "../../domains/DomainBadge.tsx"
@@ -24,6 +25,15 @@ export const TaskListPage = ({ domainPrefix }: { domainPrefix?: string }) => {
   const changes = useTaskChanges()
   const [session] = useState(() => new ListSessionService(changes, realScheduler))
   useEffect(() => session.dispose, [session])
+  useShortcuts(ShortcutScope.PAGE, [
+    {
+      keys: ["mod+z"],
+      description: "Undo ticking a task off",
+      group: ShortcutGroup.TASKS,
+      available: () => session.state.undoable !== undefined,
+      run: () => void session.undo()
+    }
+  ])
   const ticked = useServiceState(session, (state) => state.ticked)
   const undoable = useServiceState(session, (state) => state.undoable)
   const domains = useDomains()

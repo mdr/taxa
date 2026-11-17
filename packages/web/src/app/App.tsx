@@ -12,6 +12,19 @@ import { problemMessage } from "../api/problem-message.ts"
 import { taxaApi } from "../api/taxa-api.ts"
 import { queryTaskCache } from "../tasks/changes/task-cache.ts"
 import { TaskChangesContext, TaskChangesService, useTaskChanges } from "../tasks/changes/task-changes-service.ts"
+import { realScheduler } from "../services/scheduler.ts"
+import { appShortcuts } from "../shortcuts/app-shortcuts.ts"
+import { ShortcutsHelp } from "../shortcuts/ShortcutsHelp.tsx"
+import { localShortcutSettings } from "../shortcuts/shortcut-settings.ts"
+import {
+  ShortcutContext,
+  ShortcutScope,
+  ShortcutService,
+  useHelpOpen,
+  useKeyboardShortcuts,
+  useShortcutActions,
+  useShortcuts
+} from "../shortcuts/shortcut-service.ts"
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 } } })
 
@@ -38,10 +51,13 @@ const Pages = () => (
 /** Until there's a domain to put tasks in, choosing some is all there is to do. */
 const Layout = () => {
   const domains = useDomains()
-  const [location] = useLocation()
+  const [location, navigate] = useLocation()
   const { clearProblems } = useTaskChanges()
   // A refused change is about the page it was made on.
   useEffect(() => clearProblems(), [location, clearProblems])
+  const shortcuts = useShortcutActions()
+  const helpOpen = useHelpOpen()
+  useShortcuts(ShortcutScope.APP, appShortcuts(location, navigate, domains.data ?? [], shortcuts))
   if (domains.data?.length === 0) {
     return (
       <main className={styles.onboarding}>
@@ -56,16 +72,22 @@ const Layout = () => {
         {domains.isSuccess && <Pages />}
         {domains.isError && <p role="alert">{problemMessage(domains.error)}</p>}
       </main>
+      {helpOpen && <ShortcutsHelp />}
     </div>
   )
 }
 
 export const App = () => {
   const [taskChanges] = useState(() => new TaskChangesService(taxaApi, queryTaskCache(queryClient)))
+  const [shortcuts] = useState(() => new ShortcutService(realScheduler, localShortcutSettings))
+  useEffect(() => shortcuts.dispose, [shortcuts])
+  useKeyboardShortcuts(shortcuts)
   return (
     <QueryClientProvider client={queryClient}>
       <TaskChangesContext.Provider value={taskChanges}>
-        <Layout />
+        <ShortcutContext.Provider value={shortcuts}>
+          <Layout />
+        </ShortcutContext.Provider>
       </TaskChangesContext.Provider>
     </QueryClientProvider>
   )

@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test"
 import { PageObject } from "./steps.ts"
 import { expectAccessible } from "./accessibility.ts"
+import { Keyboard } from "./Keyboard.ts"
 import { Sidebar } from "./Sidebar.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
@@ -12,11 +13,13 @@ import { undoToastTestIds } from "../../src/tasks/list/UndoToastTestIds.ts"
 export class TaskListPage extends PageObject {
   readonly #page: Page
   readonly sidebar: Sidebar
+  readonly keyboard: Keyboard
 
   constructor(page: Page) {
     super()
     this.#page = page
     this.sidebar = new Sidebar(page)
+    this.keyboard = new Keyboard(page)
   }
 
   #row(title: string): Locator {

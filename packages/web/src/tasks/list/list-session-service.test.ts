@@ -1,9 +1,8 @@
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { makeTask } from "@taxa/shared/test-support/make-task"
-import type { Ms } from "@taxa/shared/units"
 import { describe, expect, it } from "vite-plus/test"
 import { isCelebrated, isShownDone, ListSessionService, UNDO_OFFERED_MS } from "./list-session-service.ts"
-import type { Scheduler } from "../../services/scheduler.ts"
+import { FakeScheduler } from "../../test-support/fake-scheduler.ts"
 import { TaskChangeType, type TaskChange, type TaskChangesActions } from "../changes/task-changes-service.ts"
 
 /** Task changes the test answers itself, one at a time, as the server would. */
@@ -23,31 +22,6 @@ class FakeTaskChanges implements TaskChangesActions {
     asked.answer(made ? { ...asked.task, status, version: asked.task.version + 1 } : undefined)
     await Promise.resolve()
     await Promise.resolve()
-  }
-}
-
-/** Time that passes only when the test says. */
-class FakeScheduler implements Scheduler {
-  #now: Ms = 0
-  #waiting: { at: Ms; run: () => void }[] = []
-
-  readonly after = (wait: Ms, run: () => void): (() => void) => {
-    const entry = { at: this.#now + wait, run }
-    this.#waiting.push(entry)
-    return () => {
-      this.#waiting = this.#waiting.filter((waiting) => waiting !== entry)
-    }
-  }
-
-  get waiting(): number {
-    return this.#waiting.length
-  }
-
-  advance(time: Ms): void {
-    this.#now += time
-    const due = this.#waiting.filter(({ at }) => at <= this.#now)
-    this.#waiting = this.#waiting.filter(({ at }) => at > this.#now)
-    for (const { run } of due) run()
   }
 }
 

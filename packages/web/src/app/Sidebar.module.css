@@ -88,3 +88,31 @@
     border-bottom: 1px solid var(--border);
   }
 }
+
+.shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.shortcuts:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.shortcutsKey {
+  margin-left: auto;
+  padding: 0 0.3rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.75rem;
+}
