@@ -4,7 +4,7 @@
   "workspaces": {
     ".": {},
     "packages/web": {
-      "entry": ["scripts/*.ts", "browser/**/*.{iwft,e2e}.ts"],
+      "entry": ["scripts/*.ts", "browser/**/*.{iwft,e2e}.ts", "src/**/*.iwbt.ts"],
       "playwright": {
         "config": ["browser/playwright.iwft.config.ts"]
       }

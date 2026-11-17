@@ -42,6 +42,14 @@ Taxa is a task manager for people and their agents. What it does and why is in `
 - A `.tsx` file exports one component, with its own CSS module and `*TestIds.ts`. A helper component may stay in the file if it is unexported, used only there, and short (about 30 lines).
 - CSS modules are typed: `scripts/css-module-types.ts` writes a declaration beside each one, so a class missing from its CSS fails the typecheck.
 
+## Services
+
+- Web state with side effects lives in a service (`web/src/services/`), not in components or hooks. A service extends `AbstractService<XState>` and `implements XActions`; actions are arrow-function fields, so they survive being destructured.
+- Its outside world comes in through the constructor as interfaces (`TaskChangesApi`, `TaskCache`, a `Clock`), so tests can give it the real in-process server or a fake.
+- Each module exports its state and actions interfaces, the class, a context, and hooks: `useXActions()` / `useX()` for actions, and selector hooks that pick one value from the state (`useServiceState` throws if a selector builds a new value).
+- Build a service once (`useState(() => new XService(…))` or a module constant), never inline in JSX.
+- Test a service by calling its actions and asserting on `service.state`; with the in-process server that's a `*.iwbt.ts` beside it.
+
 ## Tests
 
 - Two levels: unit tests of services and pure functions (quick, run often), and IWFTs of the whole web app in a browser (slower, run less). Nothing renders a component on its own: move its logic into a service or pure function and unit-test that. A behaviour may be tested at both levels.

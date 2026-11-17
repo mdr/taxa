@@ -11,12 +11,13 @@ import { problemMessage } from "../../api/problem-message.ts"
 import { DomainBadge } from "../../domains/DomainBadge.tsx"
 import { useDomains } from "../../domains/domain-queries.ts"
 import { useTask } from "../task-queries.ts"
-import { TaskChangeType, useTaskChanges } from "../use-task-changes.ts"
+import { TaskChangeType, useTaskChanges, useTaskProblem, type TaskChange } from "../changes/task-changes-service.ts"
 
 export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
   const query = useTask(taskRef)
   const domains = useDomains()
-  const { change, problem } = useTaskChanges(query.data, taskRef)
+  const { change: changeTask } = useTaskChanges()
+  const problem = useTaskProblem(query.data?.id)
   if (query.isPending) return undefined
   if (query.isError) {
     return (
@@ -26,6 +27,7 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
     )
   }
   const task = query.data
+  const change = (taskChange: TaskChange): void => void changeTask(task, taskChange)
   const domain = domains.data?.find(({ id }) => id === task.domainId)
   return (
     <article className={styles.page} aria-labelledby="task-heading">

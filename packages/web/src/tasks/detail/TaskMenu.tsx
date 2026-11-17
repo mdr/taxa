@@ -3,7 +3,7 @@ import { Copy, Ellipsis, RotateCcw, Trash2 } from "lucide-react"
 import { taskMenuTestIds } from "./TaskMenuTestIds.ts"
 import { OptionList } from "../../ui/OptionList.tsx"
 import { Popover, PopoverLook } from "../../ui/Popover.tsx"
-import { TaskChangeType, type TaskChange } from "../use-task-changes.ts"
+import { TaskChangeType, type TaskChange } from "../changes/task-changes-service.ts"
 
 enum MenuAction {
   COPY_REF = "COPY_REF",

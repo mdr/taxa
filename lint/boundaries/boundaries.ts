@@ -22,7 +22,7 @@ const packageOf = (path: string): string | undefined => /^packages\/([^/]+)\//.e
 const SERVER_TEST_SUPPORT = "packages/server/src/test-support/"
 
 /** Test code in the web and CLI packages that may start the in-process server. */
-const IN_PROCESS_TESTS = /^packages\/web\/browser\/|^packages\/cli\/src\/.*\.iwbt\.ts$/
+const IN_PROCESS_TESTS = /^packages\/web\/browser\/|^packages\/(cli|web)\/src\/.*\.iwbt\.ts$/
 
 /** Why an import crosses between the packages where it must not, if it does. */
 export const packageProblem = ({ from, to }: Import): string | undefined => {

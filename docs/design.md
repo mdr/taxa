@@ -237,7 +237,15 @@ offline editing from the start, even though it ships in stages.
 - TypeScript throughout, in a pnpm monorepo: `shared`, `server`, `web`, `cli`.
 - Server: Hono on Node, Postgres with Drizzle. Postgres 17, the same major
   version as PGlite.
-- Web: React with Vite, TanStack Query, and a PWA later.
+- Web: React with Vite, and a PWA later. State and side effects live in
+  services, after the Providerish pattern from earlier projects: a plain
+  class owns a piece of state and every action that changes it, takes its
+  outside world (API, cache, clock) through its constructor, and is read
+  from components through selectors. Services are tested without rendering.
+  TanStack Query caches server data for now. With live updates (Stage 3)
+  and the offline copy (Stage 5), an app-wide store service will own the
+  local copy of the person's data, the queue of operations waiting to send
+  and the change feed, and TanStack Query goes.
 - Tooling and conventions follow mdr/whereabouts: Vite+ (Oxfmt and
   type-aware Oxlint), Knip, Stryker, Taskfile, lint for folder size and
   package boundaries, and a Nix flake for the development shell.

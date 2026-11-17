@@ -11,7 +11,7 @@ import { TickBox } from "./TickBox.tsx"
 import { PriorityIcon } from "../PriorityIcon.tsx"
 import { StatusIcon } from "../StatusIcon.tsx"
 import { capitalised } from "../../ui/capitalised.ts"
-import { TaskChangeType, useTaskChanges } from "../use-task-changes.ts"
+import { TaskChangeType, useTaskChanges, useTaskProblem } from "../changes/task-changes-service.ts"
 
 const dueClass = (due: IsoDate, today: IsoDate): string | undefined =>
   due < today ? styles.overdue : due === today ? styles.dueToday : styles.meta
@@ -24,7 +24,8 @@ interface TaskRowProps {
 }
 
 export const TaskRow = ({ task, today, onStatusChanged }: TaskRowProps) => {
-  const { change, problem } = useTaskChanges(task, task.ref, onStatusChanged)
+  const { change } = useTaskChanges()
+  const problem = useTaskProblem(task.id)
   // The box shows the tick at once, before the server answers, and goes back if it refuses.
   const [ticked, setTicked] = useState<boolean>()
   const shownTick = problem === undefined ? ticked : undefined
@@ -43,7 +44,10 @@ export const TaskRow = ({ task, today, onStatusChanged }: TaskRowProps) => {
         label={`Done: ${task.title}`}
         onChange={() => {
           setTicked(!done)
-          change({ type: TaskChangeType.STATUS, request: { status: done ? TaskStatus.OPEN : TaskStatus.DONE } })
+          void change(task, {
+            type: TaskChangeType.STATUS,
+            request: { status: done ? TaskStatus.OPEN : TaskStatus.DONE }
+          }).then((changed) => changed && onStatusChanged?.(changed))
         }}
         testId={taskRowTestIds.done}
       />

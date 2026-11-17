@@ -25,7 +25,7 @@ import { DomainBadge } from "../../domains/DomainBadge.tsx"
 import { PriorityIcon } from "../PriorityIcon.tsx"
 import { StatusIcon } from "../StatusIcon.tsx"
 import { capitalised } from "../../ui/capitalised.ts"
-import { TaskChangeType, type TaskChange } from "../use-task-changes.ts"
+import { TaskChangeType, type TaskChange } from "../changes/task-changes-service.ts"
 
 const ENERGY_ICONS: Record<Energy, LucideIcon> = {
   [Energy.LOW]: BatteryLow,

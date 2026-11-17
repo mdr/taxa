@@ -33,7 +33,11 @@ describe("packageProblem", () => {
     ["packages/web/src/main.tsx", "@taxa/shared/clock"],
     ["packages/server/src/app.ts", "./database/database"],
     ["packages/web/browser/fixtures/taxa-fixture.ts", "../../../server/src/test-support/in-process-server.ts"],
-    ["packages/cli/src/iwbt/health.iwbt.ts", "@taxa/server/src/test-support/use-in-process-server"]
+    ["packages/cli/src/iwbt/health.iwbt.ts", "@taxa/server/src/test-support/use-in-process-server"],
+    [
+      "packages/web/src/tasks/changes/task-changes-service.iwbt.ts",
+      "../../../../server/src/test-support/in-process-server.ts"
+    ]
   ])("allows %s importing %s", (from, specifier) => {
     expect(packageProblem(makeImport(from, specifier))).toBeUndefined()
   })

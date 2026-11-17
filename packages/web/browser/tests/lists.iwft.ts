@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 import { Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
-import { CONFLICT_NOTICE } from "../../src/tasks/use-task-changes.ts"
+import { CONFLICT_NOTICE } from "../../src/tasks/changes/task-changes-service.ts"
 
 const DAY = 24 * 60 * 60 * 1000
 

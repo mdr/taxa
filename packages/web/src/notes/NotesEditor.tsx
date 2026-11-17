@@ -6,7 +6,7 @@ import { notesEditorTestIds } from "./NotesEditorTestIds.ts"
 import { NotesToolbar } from "./NotesToolbar.tsx"
 import { documentToNotes, normaliseNotes, notesToDocument, NOTES_EXTENSIONS } from "./notes-markdown.ts"
 import { loadNotesMode, NotesMode, saveNotesMode } from "./notes-mode.ts"
-import { TaskChangeType, type TaskChange } from "../tasks/use-task-changes.ts"
+import { TaskChangeType, type TaskChange } from "../tasks/changes/task-changes-service.ts"
 
 const PLACEHOLDER = "Add notes…"
 

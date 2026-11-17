@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react"
 import styles from "./TitleField.module.css"
 import { titleFieldTestIds } from "./TitleFieldTestIds.ts"
-import { TaskChangeType, type TaskChange } from "../use-task-changes.ts"
+import { TaskChangeType, type TaskChange } from "../changes/task-changes-service.ts"
 
 /** The title as the page's heading, edited in place: saved on Enter or leaving it, Escape undoes. */
 export const TitleField = ({ title, change }: { title: string; change: (change: TaskChange) => void }) => {

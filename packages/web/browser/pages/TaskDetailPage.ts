@@ -14,7 +14,7 @@ import { taskDetailPageTestIds } from "../../src/tasks/detail/TaskDetailPageTest
 import { taskMenuTestIds } from "../../src/tasks/detail/TaskMenuTestIds.ts"
 import { taskPropertiesTestIds } from "../../src/tasks/detail/TaskPropertiesTestIds.ts"
 import { titleFieldTestIds } from "../../src/tasks/detail/TitleFieldTestIds.ts"
-import { CONFLICT_NOTICE } from "../../src/tasks/use-task-changes.ts"
+import { CONFLICT_NOTICE } from "../../src/tasks/changes/task-changes-service.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
 
 /** Everything about one task, editable. */

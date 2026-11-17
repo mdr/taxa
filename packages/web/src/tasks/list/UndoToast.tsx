@@ -3,7 +3,7 @@ import { CircleCheck } from "lucide-react"
 import { useEffect } from "react"
 import styles from "./UndoToast.module.css"
 import { undoToastTestIds } from "./UndoToastTestIds.ts"
-import { TaskChangeType, useTaskChanges } from "../use-task-changes.ts"
+import { TaskChangeType, useTaskChanges } from "../changes/task-changes-service.ts"
 
 const SHOWN_MS = 6000
 
@@ -15,7 +15,7 @@ interface UndoToastProps {
 
 /** "Done: …, Undo", for a few seconds after ticking a task off. */
 export const UndoToast = ({ task, onReopened, onDismiss }: UndoToastProps) => {
-  const { change } = useTaskChanges(task, task.ref, onReopened)
+  const { change } = useTaskChanges()
   useEffect(() => {
     const timer = setTimeout(onDismiss, SHOWN_MS)
     return () => clearTimeout(timer)
@@ -30,7 +30,9 @@ export const UndoToast = ({ task, onReopened, onDismiss }: UndoToastProps) => {
         type="button"
         className={styles.undo}
         onClick={() => {
-          change({ type: TaskChangeType.STATUS, request: { status: TaskStatus.OPEN } })
+          void change(task, { type: TaskChangeType.STATUS, request: { status: TaskStatus.OPEN } }).then(
+            (reopened) => reopened && onReopened(reopened)
+          )
           onDismiss()
         }}
         data-testid={undoToastTestIds.undo}
