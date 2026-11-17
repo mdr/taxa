@@ -27,6 +27,10 @@ Also in the CLI: `log` (the activity log), `start`, `wait`, `cancel`,
 `reopen`, `delete`, `restore`, domains, agents and keys. Not yet: key
 scopes (Stage 3), and `taxa` outside this repository's dev shell.
 
+Brought forward from Stage 2 after first use: the notes editor (Tiptap)
+with its Markdown toggle. The web app saves notes in the canonical style;
+normalising what the API receives from others is still to come.
+
 **Feedback checkpoint:** daily use, the CLI, and how agents get on with it.
 
 ## Stage 2: Organising and deciding
@@ -36,7 +40,7 @@ scopes (Stage 3), and `taxa` outside this repository's dev shell.
 - Today (Planned, Needs attention, carried over), Upcoming, Someday, per-project views
 - Focus
 - Time zones, and times pinned to a zone
-- The rich-text editor with a raw toggle, Markdown normalisation, links for task references
+- Markdown normalisation in the API, whoever writes, and links for task references
 
 ## Stage 3: Agents as collaborators
 

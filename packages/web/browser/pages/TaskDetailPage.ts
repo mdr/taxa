@@ -6,7 +6,9 @@ import { expectAccessible } from "./accessibility.ts"
 import { Sidebar } from "./Sidebar.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
 import { activityListTestIds } from "../../src/tasks/detail/ActivityListTestIds.ts"
-import { notesEditorTestIds } from "../../src/tasks/detail/NotesEditorTestIds.ts"
+import { notesEditorTestIds } from "../../src/notes/NotesEditorTestIds.ts"
+import type { NotesFormat } from "../../src/notes/notes-format.ts"
+import { notesToolbarTestIds } from "../../src/notes/NotesToolbarTestIds.ts"
 import { estimatePropertyTestIds } from "../../src/tasks/detail/properties/EstimatePropertyTestIds.ts"
 import { taskDetailPageTestIds } from "../../src/tasks/detail/TaskDetailPageTestIds.ts"
 import { taskMenuTestIds } from "../../src/tasks/detail/TaskMenuTestIds.ts"
@@ -103,15 +105,59 @@ export class TaskDetailPage extends PageObject {
     await expect(this.#page.getByTestId(taskPropertiesTestIds.inProgressBy)).toHaveText(text)
   }
 
-  async writeNotes(markdown: string): Promise<void> {
-    await this.#page.getByTestId(notesEditorTestIds.edit).click()
-    await this.#page.getByTestId(notesEditorTestIds.text).fill(markdown)
-    await this.#page.getByTestId(notesEditorTestIds.save).click()
+  /** Types into the formatted notes, as someone would, Markdown shortcuts and all, then leaves them. */
+  async typeNotes(text: string): Promise<void> {
+    await this.#page.getByTestId(notesEditorTestIds.editor).click()
+    await this.#page.keyboard.type(text)
+    await this.#page.keyboard.press("Escape")
   }
 
-  /** The notes' rendered Markdown has a heading with this text. */
+  /** Types into the formatted notes, switching a format on first, then leaves them. */
+  async typeNotesFormatted(format: NotesFormat, text: string): Promise<void> {
+    await this.#page.getByTestId(notesEditorTestIds.editor).click()
+    await this.#page.keyboard.press("End")
+    await this.#page.locator(`[data-testid="${notesToolbarTestIds.button}"][data-value="${format}"]`).click()
+    await this.#page.keyboard.type(text)
+    await this.#page.keyboard.press("Escape")
+  }
+
+  async #setMarkdownMode(on: boolean): Promise<void> {
+    const toggle = this.#page.getByTestId(notesEditorTestIds.markdownMode)
+    if ((await toggle.getAttribute("aria-pressed")) !== String(on)) await toggle.click()
+    await expect(toggle).toHaveAttribute("aria-pressed", String(on))
+  }
+
+  async writeNotesAsMarkdown(markdown: string): Promise<void> {
+    await this.#setMarkdownMode(true)
+    const source = this.#page.getByTestId(notesEditorTestIds.markdown)
+    await source.fill(markdown)
+    await source.press("Escape")
+  }
+
+  async expectNotesMarkdown(markdown: string): Promise<void> {
+    await this.#setMarkdownMode(true)
+    await expect(this.#page.getByTestId(notesEditorTestIds.markdown)).toHaveValue(markdown)
+  }
+
+  async showNotesFormatted(): Promise<void> {
+    await this.#setMarkdownMode(false)
+  }
+
+  /** The formatted notes have a heading with this text. */
   async expectNotesHeading(text: string): Promise<void> {
-    await expect(this.#page.getByTestId(notesEditorTestIds.rendered).getByRole("heading", { name: text })).toBeVisible()
+    await expect(this.#page.getByTestId(notesEditorTestIds.editor).getByRole("heading", { name: text })).toBeVisible()
+  }
+
+  /** Leaves the tab and comes back, which is when the app looks for changes made elsewhere. */
+  async returnToTab(): Promise<void> {
+    await this.#page.evaluate(() => window.dispatchEvent(new Event("visibilitychange")))
+  }
+
+  async tickNotesItem(text: string): Promise<void> {
+    await this.#page
+      .getByTestId(notesEditorTestIds.editor)
+      .getByRole("checkbox", { name: `Done: ${text}` })
+      .click()
   }
 
   /** The activity log, oldest first, without times. */

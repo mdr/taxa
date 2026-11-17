@@ -2,11 +2,12 @@ import { formatDay } from "@taxa/shared/dates/date-format"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
-import { CalendarClock, CalendarDays, Check } from "lucide-react"
+import { CalendarClock, CalendarDays } from "lucide-react"
 import { useState } from "react"
 import { Link } from "wouter"
 import styles from "./TaskRow.module.css"
 import { taskRowTestIds } from "./TaskRowTestIds.ts"
+import { TickBox } from "./TickBox.tsx"
 import { PriorityIcon } from "../PriorityIcon.tsx"
 import { StatusIcon } from "../StatusIcon.tsx"
 import { TaskChangeType, useTaskChanges } from "../use-task-changes.ts"
@@ -23,25 +24,28 @@ interface TaskRowProps {
 
 export const TaskRow = ({ task, today, onStatusChanged }: TaskRowProps) => {
   const { change, problem } = useTaskChanges(task, task.ref, onStatusChanged)
-  // The box shows the tick at once, before the server answers.
+  // The box shows the tick at once, before the server answers, and goes back if it refuses.
   const [ticked, setTicked] = useState<boolean>()
-  const done = ticked ?? task.status === TaskStatus.DONE
+  const shownTick = problem === undefined ? ticked : undefined
+  const done = shownTick ?? task.status === TaskStatus.DONE
   return (
-    <li className={styles.row} data-done={done} data-testid={taskRowTestIds.row}>
-      <label className={styles.tick}>
-        <input
-          type="checkbox"
-          className={styles.box}
-          checked={done}
-          onChange={() => {
-            setTicked(!done)
-            change({ type: TaskChangeType.STATUS, request: { status: done ? TaskStatus.OPEN : TaskStatus.DONE } })
-          }}
-          aria-label={`Done: ${task.title}`}
-          data-testid={taskRowTestIds.done}
-        />
-        <Check size={12} strokeWidth={3} className={styles.mark} aria-hidden />
-      </label>
+    <li
+      className={styles.row}
+      data-done={done}
+      data-celebrate={done && shownTick === true}
+      data-testid={taskRowTestIds.row}
+    >
+      <TickBox
+        checked={done}
+        celebrate={shownTick === true}
+        priority={task.priority}
+        label={`Done: ${task.title}`}
+        onChange={() => {
+          setTicked(!done)
+          change({ type: TaskChangeType.STATUS, request: { status: done ? TaskStatus.OPEN : TaskStatus.DONE } })
+        }}
+        testId={taskRowTestIds.done}
+      />
       <Link href={`/tasks/${task.ref}`} className={styles.title} data-testid={taskRowTestIds.title}>
         {task.title}
       </Link>

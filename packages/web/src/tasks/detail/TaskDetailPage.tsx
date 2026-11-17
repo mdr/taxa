@@ -3,7 +3,7 @@ import { Link } from "wouter"
 import styles from "./TaskDetailPage.module.css"
 import { taskDetailPageTestIds } from "./TaskDetailPageTestIds.ts"
 import { ActivityList } from "./ActivityList.tsx"
-import { NotesEditor } from "./NotesEditor.tsx"
+import { NotesEditor } from "../../notes/NotesEditor.tsx"
 import { TaskMenu } from "./TaskMenu.tsx"
 import { TaskProperties } from "./TaskProperties.tsx"
 import { TitleField } from "./TitleField.tsx"
@@ -71,7 +71,7 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
           {problem}
         </p>
       )}
-      <NotesEditor notes={task.notes} change={change} />
+      <NotesEditor key={task.id} notes={task.notes} change={change} />
       <ActivityList taskId={task.id} domains={domains.data ?? []} />
     </article>
   )

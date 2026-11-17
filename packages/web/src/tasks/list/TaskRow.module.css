@@ -13,54 +13,6 @@
   background: var(--hover);
 }
 
-.tick {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  width: 1.15rem;
-  height: 1.15rem;
-  cursor: pointer;
-}
-
-.box {
-  appearance: none;
-  width: 1.15rem;
-  height: 1.15rem;
-  margin: 0;
-  border: 1.5px solid var(--border-strong);
-  border-radius: 50%;
-  background: var(--surface);
-  cursor: pointer;
-  transition:
-    background 120ms,
-    border-color 120ms;
-}
-
-.box:hover {
-  border-color: var(--accent);
-}
-
-.box:checked {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.mark {
-  position: absolute;
-  color: var(--accent-text);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.box:checked + .mark {
-  opacity: 1;
-}
-
-.box:hover:not(:checked) + .mark {
-  opacity: 0.6;
-  color: var(--accent);
-}
-
 .title {
   flex: 1;
   min-width: 10rem;
@@ -107,8 +59,36 @@
   font-size: 0.85rem;
 }
 
+.title {
+  text-decoration-line: line-through;
+  text-decoration-color: transparent;
+  transition:
+    color 300ms 150ms,
+    text-decoration-color 300ms 150ms;
+}
+
 .row[data-done="true"] .title {
   color: var(--muted);
-  text-decoration: line-through;
   text-decoration-color: var(--faint);
+}
+
+/* A glow across the row as it's ticked off. */
+.row[data-celebrate="true"] {
+  animation: glow 900ms ease-out;
+}
+
+@keyframes glow {
+  from {
+    background: var(--accent-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row[data-celebrate="true"] {
+    animation: none;
+  }
+
+  .title {
+    transition: none;
+  }
 }

@@ -14,7 +14,7 @@ test("editing a task's properties and notes, each change in its activity log", a
   await detail.setDue("fri")
   await detail.expectDue("2026-01-09")
   await detail.setEstimate("1h30m")
-  await detail.writeNotes("## Plan\n\n- Turn off the water\n- Replace the washer")
+  await detail.typeNotes("## Plan\n- Turn off the water\nReplace the washer")
   await detail.expectNotesHeading("Plan")
   await detail.expectActivity([
     "Matt created this",
@@ -29,7 +29,13 @@ test("editing a task's properties and notes, each change in its activity log", a
 
   await expect
     .poll(async () => taxa.matt.client.task("H-1"))
-    .toMatchObject({ title: "Fix the kitchen tap", priority: Priority.HIGH, due: "2026-01-09", estimateMinutes: 90 })
+    .toMatchObject({
+      title: "Fix the kitchen tap",
+      priority: Priority.HIGH,
+      due: "2026-01-09",
+      estimateMinutes: 90,
+      notes: "## Plan\n\n- Turn off the water\n- Replace the washer"
+    })
 
   await detail.pickDue("2026-01-14")
   await detail.expectDue("2026-01-14")

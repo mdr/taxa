@@ -1,0 +1,150 @@
+.tick {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+/* The real checkbox, invisible, over the drawing: it takes the clicks, the focus and the keyboard. */
+.input {
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.icon {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ring {
+  fill: none;
+  stroke: var(--ring);
+  stroke-width: 1.75;
+  transition: stroke 150ms;
+}
+
+.fill {
+  fill: var(--accent);
+  transform: scale(0);
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.check {
+  fill: none;
+  stroke: var(--ring);
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+}
+
+/* Hovering previews the tick. */
+.input:hover:not(:checked) ~ .icon .check {
+  stroke-dashoffset: 0;
+  opacity: 0.55;
+}
+
+.input:hover:not(:checked) ~ .icon .ring {
+  stroke: var(--accent);
+}
+
+.input:focus-visible ~ .icon {
+  border-radius: 50%;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.input:checked ~ .icon .fill {
+  transform: scale(1);
+}
+
+.input:checked ~ .icon .check {
+  stroke: var(--accent-text);
+  stroke-dashoffset: 0;
+  opacity: 1;
+}
+
+/* Ticked just now: the fill springs out, the tick draws itself, sparks fly. */
+.tick[data-celebrate="true"] .fill {
+  animation: pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tick[data-celebrate="true"] .check {
+  animation: draw 260ms 140ms ease-out backwards;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0);
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+.sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sparks i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  animation: spark 520ms 80ms ease-out;
+}
+
+.sparks i:nth-child(even) {
+  background: var(--priority-high);
+  width: 3px;
+  height: 3px;
+  margin: -1.5px;
+}
+
+@keyframes spark {
+  from {
+    opacity: 1;
+    transform: rotate(var(--angle)) translateY(-8px) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateY(-19px) scale(0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tick[data-celebrate="true"] .fill,
+  .tick[data-celebrate="true"] .check {
+    animation: none;
+  }
+
+  .sparks {
+    display: none;
+  }
+}
