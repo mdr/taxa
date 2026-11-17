@@ -1,9 +1,12 @@
-import { EditorContent, useEditor } from "@tiptap/react"
+import { EditorContent, useEditor, useEditorState } from "@tiptap/react"
 import { Placeholder } from "@tiptap/extensions"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import styles from "./NotesEditor.module.css"
 import { notesEditorTestIds } from "./NotesEditorTestIds.ts"
 import { NotesToolbar } from "./NotesToolbar.tsx"
+import { LinkBar } from "./LinkBar.tsx"
+import { LinkForm } from "./LinkForm.tsx"
+import { applyLink, linkDraftAt, removeLink, type LinkDraft } from "./notes-links.ts"
 import { NotesDraftService } from "./notes-draft-service.ts"
 import { documentToNotes, notesToDocument, NOTES_EXTENSIONS } from "./notes-markdown.ts"
 import { localNotesModeStore, NotesMode } from "./notes-mode.ts"
@@ -44,6 +47,9 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
   const source = useServiceState(draft, (state) => state.source)
   const shown = useServiceState(draft, (state) => state.shown)
   const sourceField = useAutoHeight(source)
+  const [linking, setLinking] = useState<LinkDraft | undefined>()
+  // The editor's key handler is set once, so it reaches the editor through this.
+  const openLinkForm = useRef<() => void>(() => undefined)
   const editor = useEditor({
     extensions: [...NOTES_EXTENSIONS, Placeholder.configure({ placeholder: PLACEHOLDER })],
     content: notesToDocument(shown.notes),
@@ -57,8 +63,24 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
         "data-testid": notesEditorTestIds.editor
       },
       handleKeyDown: (view, event) => {
+        if (event.key === "k" && (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey) {
+          event.preventDefault()
+          openLinkForm.current()
+          return true
+        }
         if (event.key !== "Escape" && !(event.key === "Enter" && (event.metaKey || event.ctrlKey))) return false
         view.dom.blur()
+        return true
+      },
+      // A link isn't followed by a click, which places the cursor to edit it, but by ⌘-click.
+      handleClick: (view, position, event) => {
+        if (!(event.metaKey || event.ctrlKey)) return false
+        const link = view.state.doc
+          .resolve(position)
+          .marks()
+          .find((mark) => mark.type.name === "link")
+        if (!link) return false
+        window.open(String(link.attrs["href"]), "_blank", "noopener,noreferrer")
         return true
       }
     },
@@ -66,6 +88,17 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
     onFocus: draft.startWriting,
     onBlur: draft.finishWriting
   })
+
+  openLinkForm.current = () => setLinking(linkDraftAt(editor))
+  const linkHere = useEditorState({
+    editor,
+    selector: ({ editor: current }) =>
+      current.isFocused && current.isActive("link") ? String(current.getAttributes("link")["href"] ?? "") : undefined
+  })
+  const closeLinkForm = (): void => {
+    setLinking(undefined)
+    editor.commands.focus()
+  }
 
   const { focusTaken } = useShortcutActions()
   const focusWanted = useFocusRequested(FocusTarget.NOTES)
@@ -85,7 +118,7 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
   return (
     <section className={styles.notes} aria-label="Notes">
       <div className={styles.header}>
-        {mode === NotesMode.RICH && <NotesToolbar editor={editor} />}
+        {mode === NotesMode.RICH && <NotesToolbar editor={editor} onLink={() => openLinkForm.current()} />}
         <button
           type="button"
           className={styles.mode}
@@ -97,7 +130,24 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
           Markdown
         </button>
       </div>
+      {mode === NotesMode.RICH && linking && (
+        <LinkForm
+          draft={linking}
+          onSave={(text, address) => {
+            setLinking(undefined)
+            applyLink(editor, text, address)
+          }}
+          onRemove={() => {
+            setLinking(undefined)
+            removeLink(editor)
+          }}
+          onCancel={closeLinkForm}
+        />
+      )}
       <EditorContent editor={editor} hidden={mode !== NotesMode.RICH} />
+      {mode === NotesMode.RICH && !linking && linkHere !== undefined && (
+        <LinkBar href={linkHere} onEdit={() => openLinkForm.current()} onRemove={() => removeLink(editor)} />
+      )}
       {mode === NotesMode.MARKDOWN && (
         <textarea
           ref={sourceField}

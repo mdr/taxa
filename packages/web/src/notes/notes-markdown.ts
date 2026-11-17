@@ -19,7 +19,7 @@ const NotesLink = Link.extend({
     const children = helpers.renderChildren(node)
     return isBareLink(href, context.meta?.["markText"]) ? children : `[${children}](${href})`
   }
-}).configure({ openOnClick: false, autolink: true, defaultProtocol: "https" })
+}).configure({ openOnClick: false, autolink: true, markdownLinks: true, defaultProtocol: "https" })
 
 /** What notes can hold: GitHub-flavoured Markdown, less raw HTML. Underline has no Markdown. */
 export const NOTES_EXTENSIONS: AnyExtension[] = [

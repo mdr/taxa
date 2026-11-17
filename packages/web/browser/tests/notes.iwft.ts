@@ -67,3 +67,50 @@ test("an agent's change to notes you only clicked into is shown, not overwritten
   await detail.expectActivity(["Matt created this", "Claude Code for Matt edited the notes"])
   expect((await taxa.matt.client.task("H-1")).notes).toBe("Shortlist: Worcester Bosch")
 })
+
+test("links in notes, with their own text, added, followed, changed and removed", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  const detail = await (await taxa.openTab("Matt")).openTask("H-1")
+  const notes = async (): Promise<string> => (await taxa.matt.client.task("H-1")).notes
+
+  await detail.startTypingNotes("Read the ")
+  await detail.openLinkForm("keyboard")
+  await detail.expectLinkForm("", "")
+  await detail.fillLinkForm("manual", "example.com/manual")
+  await detail.typeInNotes(" first, then ask on ")
+  await detail.openLinkForm("toolbar")
+  await detail.fillLinkForm(undefined, "forum.example.com")
+  await detail.typeInNotes(" or [the shop](https://shop.example.com) ")
+  await detail.leaveNotes()
+  await expect
+    .poll(notes)
+    .toBe(
+      "Read the [manual](https://example.com/manual) first, then ask on https://forum.example.com or [the shop](https://shop.example.com)"
+    )
+
+  await detail.clickNotesLink("manual")
+  await detail.expectLinkBar("https://example.com/manual")
+  await detail.expectAccessible()
+  await detail.editLinkFromBar()
+  await detail.expectLinkForm("manual", "https://example.com/manual")
+  await detail.expectAccessible()
+  await detail.fillLinkFormWrongly("javascript:alert(1)")
+  await detail.fillLinkForm("fitting guide", "https://example.com/guide")
+  await detail.leaveNotes()
+  await expect.poll(notes).toContain("Read the [fitting guide](https://example.com/guide) first")
+
+  await detail.clickNotesLink("the shop")
+  await detail.expectLinkBar("https://shop.example.com")
+  await detail.removeLinkFromBar()
+  await detail.leaveNotes()
+  await expect.poll(notes).toContain("or the shop")
+
+  await detail.clickNotesLink("fitting guide")
+  await detail.openLinkForm("keyboard")
+  await detail.cancelLinkFormWithEscape()
+  await detail.leaveNotes()
+  await detail.expectNotesMarkdown(
+    "Read the [fitting guide](https://example.com/guide) first, then ask on https://forum.example.com or the shop"
+  )
+})

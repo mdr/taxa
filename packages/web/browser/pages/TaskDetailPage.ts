@@ -10,6 +10,8 @@ import { activityListTestIds } from "../../src/tasks/detail/ActivityListTestIds.
 import { notesEditorTestIds } from "../../src/notes/NotesEditorTestIds.ts"
 import type { NotesFormat } from "../../src/notes/notes-format.ts"
 import { notesToolbarTestIds } from "../../src/notes/NotesToolbarTestIds.ts"
+import { linkFormTestIds } from "../../src/notes/LinkFormTestIds.ts"
+import { linkBarTestIds } from "../../src/notes/LinkBarTestIds.ts"
 import { estimatePropertyTestIds } from "../../src/tasks/detail/properties/EstimatePropertyTestIds.ts"
 import { taskDetailPageTestIds } from "../../src/tasks/detail/TaskDetailPageTestIds.ts"
 import { taskMenuTestIds } from "../../src/tasks/detail/TaskMenuTestIds.ts"
@@ -265,6 +267,66 @@ export class TaskDetailPage extends PageObject {
   /** The formatted notes have a heading with this text. */
   async expectNotesHeading(text: string): Promise<void> {
     await expect(this.#page.getByTestId(notesEditorTestIds.editor).getByRole("heading", { name: text })).toBeVisible()
+  }
+
+  /** Opens the link box where the cursor is in the notes, by ⌘K or the toolbar's button. */
+  async openLinkForm(by: "keyboard" | "toolbar"): Promise<void> {
+    if (by === "keyboard") await this.#page.keyboard.press("ControlOrMeta+k")
+    else await this.#page.getByTestId(notesToolbarTestIds.link).click()
+    await expect(this.#page.getByTestId(linkFormTestIds.form)).toBeVisible()
+  }
+
+  async expectLinkForm(text: string, address: string): Promise<void> {
+    await expect(this.#page.getByTestId(linkFormTestIds.text)).toHaveValue(text)
+    await expect(this.#page.getByTestId(linkFormTestIds.address)).toHaveValue(address)
+  }
+
+  /** Fills in the open link box and saves it, leaving the cursor in the notes after the link. */
+  async fillLinkForm(text: string | undefined, address: string): Promise<void> {
+    if (text !== undefined) await this.#page.getByTestId(linkFormTestIds.text).fill(text)
+    await this.#page.getByTestId(linkFormTestIds.address).fill(address)
+    await this.#page.getByTestId(linkFormTestIds.save).click()
+    await expect(this.#page.getByTestId(linkFormTestIds.form)).toHaveCount(0)
+    await expect(this.#page.getByTestId(notesEditorTestIds.editor)).toBeFocused()
+  }
+
+  /** Saves an address that can't be linked to, which keeps the box open and says why. */
+  async fillLinkFormWrongly(address: string): Promise<void> {
+    await this.#page.getByTestId(linkFormTestIds.address).fill(address)
+    await this.#page.getByTestId(linkFormTestIds.save).click()
+    await expect(this.#page.getByTestId(linkFormTestIds.problem)).toBeVisible()
+  }
+
+  async cancelLinkFormWithEscape(): Promise<void> {
+    await this.#page.keyboard.press("Escape")
+    await expect(this.#page.getByTestId(linkFormTestIds.form)).toHaveCount(0)
+    await expect(this.#page.getByTestId(notesEditorTestIds.editor)).toBeFocused()
+  }
+
+  /** Clicks a link in the formatted notes, which puts the cursor in it rather than following it. */
+  async clickNotesLink(text: string): Promise<void> {
+    await this.#page.getByTestId(notesEditorTestIds.editor).getByRole("link", { name: text }).click()
+  }
+
+  async expectLinkBar(href: string): Promise<void> {
+    const open = this.#page.getByTestId(linkBarTestIds.open)
+    await expect(open).toHaveText(href)
+    await expect(open).toHaveAttribute("href", href)
+    await expect(open).toHaveAttribute("target", "_blank")
+  }
+
+  async editLinkFromBar(): Promise<void> {
+    await this.#page.getByTestId(linkBarTestIds.edit).click()
+    await expect(this.#page.getByTestId(linkFormTestIds.form)).toBeVisible()
+  }
+
+  async removeLinkFromBar(): Promise<void> {
+    await this.#page.getByTestId(linkBarTestIds.remove).click()
+    await expect(this.#page.getByTestId(linkBarTestIds.bar)).toHaveCount(0)
+  }
+
+  async typeInNotes(text: string): Promise<void> {
+    await this.#page.keyboard.type(text)
   }
 
   /** Leaves the tab and comes back, which is when the app looks for changes made elsewhere. */

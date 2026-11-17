@@ -1,3 +1,4 @@
 export const notesToolbarTestIds = {
-  button: "NotesToolbar.button"
+  button: "NotesToolbar.button",
+  link: "NotesToolbar.link"
 }

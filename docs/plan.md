@@ -43,6 +43,9 @@ Also added: `I` starts or stops working on a task, in a list or on its page.
 Tasks in progress sort first in every list, and an In progress list in the
 sidebar gathers them from the Inbox and every domain.
 
+Also added: links with their own text in notes, by `⌘K` while writing, the
+toolbar, or typing `[text](address)`, with a bar to open, edit or remove one.
+
 **Feedback checkpoint:** daily use, the CLI, and how agents get on with it.
 
 ## Stage 2: Organising and deciding

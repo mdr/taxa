@@ -4,6 +4,7 @@ import {
   Code,
   Heading2,
   Italic,
+  Link2,
   List,
   ListChecks,
   ListOrdered,
@@ -92,12 +93,13 @@ const FORMATS: Format[] = [
 ]
 
 /** Formatting for the selection; everything here also has a Markdown shortcut as you type. */
-export const NotesToolbar = ({ editor }: { editor: Editor }) => {
+export const NotesToolbar = ({ editor, onLink }: { editor: Editor; onLink: () => void }) => {
   const active = useEditorState({
     editor,
     selector: ({ editor: current }) =>
       FORMATS.map(({ active: [name, attributes] }) => current.isActive(name, attributes))
   })
+  const onLinkNow = useEditorState({ editor, selector: ({ editor: current }) => current.isActive("link") })
   return (
     <div className={styles.toolbar} role="toolbar" aria-label="Formatting">
       {FORMATS.map(({ format, label, icon: Icon, apply }, index) => (
@@ -117,6 +119,18 @@ export const NotesToolbar = ({ editor }: { editor: Editor }) => {
           <Icon size={15} aria-hidden />
         </button>
       ))}
+      <button
+        type="button"
+        className={styles.button}
+        aria-label="Link (⌘K)"
+        title="Link (⌘K)"
+        aria-pressed={onLinkNow}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={onLink}
+        data-testid={notesToolbarTestIds.link}
+      >
+        <Link2 size={15} aria-hidden />
+      </button>
     </div>
   )
 }
