@@ -3,5 +3,6 @@ export const taskRowTestIds = {
   done: "TaskRow.done",
   ref: "TaskRow.ref",
   title: "TaskRow.title",
-  highlights: "TaskRow.highlights"
+  highlights: "TaskRow.highlights",
+  problem: "TaskRow.problem"
 }

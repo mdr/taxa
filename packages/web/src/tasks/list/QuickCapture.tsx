@@ -30,7 +30,7 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
         Add
       </button>
       {create.isError && (
-        <p className={styles.error} role="alert">
+        <p className={styles.error} role="alert" data-testid={quickCaptureTestIds.error}>
           {problemMessage(create.error)}
         </p>
       )}

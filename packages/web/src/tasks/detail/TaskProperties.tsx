@@ -24,6 +24,7 @@ import { useToday } from "../../dates/use-today.ts"
 import { DomainBadge } from "../../domains/DomainBadge.tsx"
 import { PriorityIcon } from "../PriorityIcon.tsx"
 import { StatusIcon } from "../StatusIcon.tsx"
+import { capitalised } from "../../ui/capitalised.ts"
 import { TaskChangeType, type TaskChange } from "../use-task-changes.ts"
 
 const ENERGY_ICONS: Record<Energy, LucideIcon> = {
@@ -31,9 +32,6 @@ const ENERGY_ICONS: Record<Energy, LucideIcon> = {
   [Energy.MEDIUM]: BatteryMedium,
   [Energy.HIGH]: BatteryFull
 }
-
-/** Sentence case for a chip, from the lower-case text the CLI shares. */
-const capitalised = (text: string): string => `${text.charAt(0).toUpperCase()}${text.slice(1)}`
 
 interface TaskPropertiesProps {
   task: Task
@@ -94,7 +92,8 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
       <ChoiceProperty
         label="Domain"
         testId={taskPropertiesTestIds.domain}
-        value={domain?.prefix ?? ""}
+        // In the Inbox, no domain is chosen yet, so choosing any one files it.
+        value={task.inbox ? "" : (domain?.prefix ?? "")}
         trigger={
           <>
             {domain && <DomainBadge prefix={domain.prefix} />}
@@ -111,7 +110,6 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
           label: name,
           icon: <DomainBadge prefix={prefix} />
         }))}
-        // Choosing a domain files the task, even when it's the one it's in.
         onChoose={(prefix) =>
           change({ type: TaskChangeType.UPDATE, request: { set: { domain: prefix, inbox: false } } })
         }

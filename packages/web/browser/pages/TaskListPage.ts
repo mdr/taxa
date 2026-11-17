@@ -69,6 +69,31 @@ export class TaskListPage extends PageObject {
     await expect(this.#row(title).getByTestId(taskRowTestIds.highlights)).toHaveText(highlights)
   }
 
+  /** Tries to capture, and is told why not; what was typed stays to fix. */
+  async captureExpectingProblem(title: string, problem: string): Promise<void> {
+    const input = this.#page.getByTestId(quickCaptureTestIds.title)
+    await input.fill(title)
+    await input.press("Enter")
+    await expect(this.#page.getByTestId(quickCaptureTestIds.error)).toContainText(problem)
+    await expect(input).toHaveValue(title)
+  }
+
+  /** Tabs from the capture box to the task's tick box, and ticks it with Space. */
+  async completeWithKeyboard(title: string): Promise<void> {
+    const box = this.#row(title).getByTestId(taskRowTestIds.done)
+    await this.#page.getByTestId(quickCaptureTestIds.title).focus()
+    for (let step = 0; step < 20 && !(await box.evaluate((element) => element === document.activeElement)); step++) {
+      await this.#page.keyboard.press("Tab")
+    }
+    await expect(box).toBeFocused()
+    await this.#page.keyboard.press("Space")
+  }
+
+  /** The task shows its problem, from the server refusing a change. */
+  async expectRowProblem(title: string, problem: string): Promise<void> {
+    await expect(this.#row(title).getByTestId(taskRowTestIds.problem)).toContainText(problem)
+  }
+
   /** Ticks it off. */
   async complete(title: string): Promise<void> {
     await this.#row(title).first().getByTestId(taskRowTestIds.done).check()
@@ -81,6 +106,11 @@ export class TaskListPage extends PageObject {
 
   async expectUndoOffered(title: string): Promise<void> {
     await expect(this.#page.getByTestId(undoToastTestIds.toast)).toContainText(title)
+  }
+
+  /** The Undo offer goes by itself after a few seconds. */
+  async expectUndoGoesAway(): Promise<void> {
+    await expect(this.#page.getByTestId(undoToastTestIds.toast)).toHaveCount(0, { timeout: 10_000 })
   }
 
   async undo(): Promise<void> {

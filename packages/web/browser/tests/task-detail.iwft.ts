@@ -7,7 +7,7 @@ test("editing a task's properties and notes, each change in its activity log", a
   await taxa.matt.addTask("Fix the tap", { domain: "H" })
   const detail = await (await taxa.openTab("Matt")).openTask("H-1")
   await detail.expectAccessible()
-  await detail.expectAccessibleWithDatePicker()
+  await detail.expectAccessibleWithPopovers()
 
   await detail.rename("Fix the kitchen tap")
   await detail.setPriority(Priority.HIGH)

@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
-import type { Priority, TaskStatus } from "@taxa/shared/tasks/task"
+import type { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { PageObject } from "./steps.ts"
 import { expectAccessible } from "./accessibility.ts"
 import { Sidebar } from "./Sidebar.ts"
@@ -38,8 +38,28 @@ export class TaskDetailPage extends PageObject {
     await this.#option(value).click()
   }
 
+  /** Opens a date property's picker. */
+  async #openDate(property: string): Promise<void> {
+    await this.#page.getByTestId(property).click()
+  }
+
+  async #typeDate(property: string, date: IsoDate | string): Promise<void> {
+    await this.#openDate(property)
+    const typed = this.#page.getByTestId(datePickerTestIds.typed)
+    await typed.fill(date)
+    await typed.press("Enter")
+  }
+
   async expectRef(ref: string): Promise<void> {
     await expect(this.#page.getByTestId(taskDetailPageTestIds.ref)).toHaveText(ref)
+  }
+
+  /** Starts renaming, then thinks better of it with Escape, and leaves the title. */
+  async abandonRename(title: string): Promise<void> {
+    const input = this.#page.getByTestId(titleFieldTestIds.title)
+    await input.fill(title)
+    await input.press("Escape")
+    await input.blur()
   }
 
   async rename(title: string): Promise<void> {
@@ -58,6 +78,41 @@ export class TaskDetailPage extends PageObject {
 
   async setStatus(status: TaskStatus): Promise<void> {
     await this.#choose(taskPropertiesTestIds.status, status)
+  }
+
+  async expectStatus(status: TaskStatus): Promise<void> {
+    await expect(this.#page.getByTestId(taskPropertiesTestIds.status)).toHaveAttribute("data-value", status)
+  }
+
+  async expectWaiting(text: string): Promise<void> {
+    await expect(this.#page.getByTestId(taskPropertiesTestIds.waiting)).toHaveText(text)
+  }
+
+  /** Opens the priority with the keyboard, moves to it with the arrow keys, and picks it with Enter. */
+  async setPriorityWithKeys(priority: Priority): Promise<void> {
+    const chip = this.#page.getByTestId(taskPropertiesTestIds.priority)
+    await chip.focus()
+    await this.#page.keyboard.press("Enter")
+    const focused = this.#page.locator(`[data-testid="${optionListTestIds.option}"]:focus`)
+    await expect(focused).toHaveCount(1)
+    for (let step = 0; step < 6 && (await focused.getAttribute("data-value")) !== priority; step++) {
+      await this.#page.keyboard.press("ArrowDown")
+    }
+    await expect(focused).toHaveAttribute("data-value", priority)
+    await this.#page.keyboard.press("Enter")
+  }
+
+  /** Opens the priority, then closes it with Escape. */
+  async openAndEscapePriority(): Promise<void> {
+    await this.#page.getByTestId(taskPropertiesTestIds.priority).click()
+    await expect(this.#option("HIGH")).toBeVisible()
+    await this.#page.keyboard.press("Escape")
+  }
+
+  /** The priority's options are closed, and the keyboard is back on its chip. */
+  async expectPriorityClosedAndFocused(): Promise<void> {
+    await expect(this.#page.getByTestId(optionListTestIds.option)).toHaveCount(0)
+    await expect(this.#page.getByTestId(taskPropertiesTestIds.priority)).toBeFocused()
   }
 
   async setPriority(priority: Priority): Promise<void> {
@@ -80,10 +135,38 @@ export class TaskDetailPage extends PageObject {
     await typed.press("Enter")
   }
 
-  /** Picks the due date from the picker's calendar. */
+  /** Picks the due date from the picker's calendar, moving on through the months to it. */
   async pickDue(date: IsoDate): Promise<void> {
-    await this.#page.getByTestId(taskPropertiesTestIds.due).click()
-    await this.#page.locator(`[data-testid="${datePickerTestIds.day}"][data-date="${date}"]`).click()
+    await this.#openDate(taskPropertiesTestIds.due)
+    const day = this.#page.locator(`[data-testid="${datePickerTestIds.day}"][data-date="${date}"]`)
+    for (let month = 0; month < 12 && (await day.count()) === 0; month++) {
+      await this.#page.getByTestId(datePickerTestIds.nextMonth).click()
+    }
+    await day.click()
+  }
+
+  /** Schedules it by one of the picker's shortcuts, by its label ("Tomorrow"). */
+  async scheduleFor(shortcut: string): Promise<void> {
+    await this.#openDate(taskPropertiesTestIds.scheduled)
+    await this.#page.getByTestId(datePickerTestIds.shortcut).filter({ hasText: shortcut }).click()
+  }
+
+  async setScheduledTime(time: string): Promise<void> {
+    await this.#openDate(taskPropertiesTestIds.scheduled)
+    const field = this.#page.getByTestId(datePickerTestIds.time)
+    await field.fill(time)
+    await field.press("Enter")
+  }
+
+  /** The scheduled date, and the time if there is one, as the chip shows it ("Tue 6 Jan · 18:30"). */
+  async expectScheduled(date: IsoDate | "", shown: string): Promise<void> {
+    const chip = this.#page.getByTestId(taskPropertiesTestIds.scheduled)
+    await expect(chip).toHaveAttribute("data-value", date)
+    await expect(chip).toContainText(shown)
+  }
+
+  async hideUntil(date: IsoDate | string): Promise<void> {
+    await this.#typeDate(taskPropertiesTestIds.start, date)
   }
 
   async expectDue(date: IsoDate | ""): Promise<void> {
@@ -95,6 +178,20 @@ export class TaskDetailPage extends PageObject {
     const typed = this.#page.getByTestId(estimatePropertyTestIds.typed)
     await typed.fill(estimate)
     await typed.press("Enter")
+  }
+
+  async clearEstimate(): Promise<void> {
+    await this.#page.getByTestId(taskPropertiesTestIds.estimate).click()
+    await this.#page.getByTestId(estimatePropertyTestIds.clear).click()
+  }
+
+  /** Chooses the energy it needs, or with none, clears it. */
+  async setEnergy(energy?: Energy): Promise<void> {
+    await this.#choose(taskPropertiesTestIds.energy, energy ?? "")
+  }
+
+  async expectEnergy(energy?: Energy): Promise<void> {
+    await expect(this.#page.getByTestId(taskPropertiesTestIds.energy)).toHaveAttribute("data-value", energy ?? "")
   }
 
   async expectEstimate(estimate: string): Promise<void> {
@@ -110,6 +207,16 @@ export class TaskDetailPage extends PageObject {
     await this.#page.getByTestId(notesEditorTestIds.editor).click()
     await this.#page.keyboard.type(text)
     await this.#page.keyboard.press("Escape")
+  }
+
+  /** Types into the formatted notes and stays there. */
+  async startTypingNotes(text: string): Promise<void> {
+    await this.#page.getByTestId(notesEditorTestIds.editor).click()
+    await this.#page.keyboard.type(text)
+  }
+
+  async expectNotesText(text: string): Promise<void> {
+    await expect(this.#page.getByTestId(notesEditorTestIds.editor)).toHaveText(text)
   }
 
   /** Types into the formatted notes, switching a format on first, then leaves them. */
@@ -169,6 +276,15 @@ export class TaskDetailPage extends PageObject {
     await expect(this.#page.getByTestId(taskDetailPageTestIds.problem)).toHaveText(CONFLICT_NOTICE)
   }
 
+  async copyRef(): Promise<void> {
+    await this.#page.getByTestId(taskMenuTestIds.open).click()
+    await this.#option("COPY_REF").click()
+  }
+
+  async expectClipboard(text: string): Promise<void> {
+    await expect.poll(() => this.#page.evaluate(() => navigator.clipboard.readText())).toBe(text)
+  }
+
   async delete(): Promise<void> {
     await this.#page.getByTestId(taskMenuTestIds.open).click()
     await this.#option("DELETE").click()
@@ -185,9 +301,20 @@ export class TaskDetailPage extends PageObject {
     await expectAccessible(this.#page, "task detail")
   }
 
-  async expectAccessibleWithDatePicker(): Promise<void> {
-    await this.#page.getByTestId(taskPropertiesTestIds.due).click()
-    await expectAccessible(this.#page, "task detail with the date picker")
-    await this.#page.keyboard.press("Escape")
+  /** Checks the page with each kind of popover open: options, a date picker, an estimate, the menu. */
+  async expectAccessibleWithPopovers(): Promise<void> {
+    const popovers = [
+      [taskPropertiesTestIds.priority, "the priority's options"],
+      [taskPropertiesTestIds.due, "the date picker"],
+      [taskPropertiesTestIds.estimate, "the estimate"],
+      [taskMenuTestIds.open, "the menu"]
+    ]
+    for (const [testId, name] of popovers) {
+      await this.#page.getByTestId(testId!).click()
+      await expect(this.#page.getByRole("dialog")).toBeVisible()
+      await expectAccessible(this.#page, `task detail with ${name} open`)
+      await this.#page.keyboard.press("Escape")
+      await expect(this.#page.getByRole("dialog")).toHaveCount(0)
+    }
   }
 }

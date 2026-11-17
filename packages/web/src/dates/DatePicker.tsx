@@ -76,6 +76,7 @@ export const DatePicker = ({ value, today, onChoose, time }: DatePickerProps) =>
             className={styles.nav}
             onClick={() => setMonth(firstOfMonth(month, -1))}
             aria-label="Previous month"
+            data-testid={datePickerTestIds.previousMonth}
           >
             <ChevronLeft size={16} aria-hidden />
           </button>
@@ -84,6 +85,7 @@ export const DatePicker = ({ value, today, onChoose, time }: DatePickerProps) =>
             className={styles.nav}
             onClick={() => setMonth(firstOfMonth(month, 1))}
             aria-label="Next month"
+            data-testid={datePickerTestIds.nextMonth}
           >
             <ChevronRight size={16} aria-hidden />
           </button>

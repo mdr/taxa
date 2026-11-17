@@ -10,6 +10,7 @@ import { taskRowTestIds } from "./TaskRowTestIds.ts"
 import { TickBox } from "./TickBox.tsx"
 import { PriorityIcon } from "../PriorityIcon.tsx"
 import { StatusIcon } from "../StatusIcon.tsx"
+import { capitalised } from "../../ui/capitalised.ts"
 import { TaskChangeType, useTaskChanges } from "../use-task-changes.ts"
 
 const dueClass = (due: IsoDate, today: IsoDate): string | undefined =>
@@ -53,13 +54,13 @@ export const TaskRow = ({ task, today, onStatusChanged }: TaskRowProps) => {
         {(task.status === TaskStatus.IN_PROGRESS || task.status === TaskStatus.WAITING) && (
           <span className={styles.meta}>
             <StatusIcon status={task.status} size={14} />
-            {task.waitingOn ? `Waiting on ${task.waitingOn}` : STATUS_TEXT[task.status]}
+            {task.waitingOn ? `Waiting on ${task.waitingOn}` : capitalised(STATUS_TEXT[task.status])}
           </span>
         )}
         {task.priority !== Priority.NORMAL && (
           <span className={styles.meta}>
             <PriorityIcon priority={task.priority} size={14} />
-            {PRIORITY_TEXT[task.priority]}
+            {capitalised(PRIORITY_TEXT[task.priority])}
           </span>
         )}
         {task.scheduled && (
@@ -80,7 +81,7 @@ export const TaskRow = ({ task, today, onStatusChanged }: TaskRowProps) => {
         {task.ref}
       </span>
       {problem && (
-        <span className={styles.problem} role="alert">
+        <span className={styles.problem} role="alert" data-testid={taskRowTestIds.problem}>
           {problem}
         </span>
       )}

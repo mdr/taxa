@@ -22,7 +22,11 @@ export const Sidebar = () => {
       <Link href="/" className={styles.link} aria-current={current("/")} data-testid={sidebarTestIds.inbox}>
         <Inbox size={16} className={styles.linkIcon} aria-hidden />
         <span className={styles.name}>Inbox</span>
-        {inboxCount > 0 && <span className={styles.count}>{inboxCount}</span>}
+        {inboxCount > 0 && (
+          <span className={styles.count} data-testid={sidebarTestIds.inboxCount}>
+            {inboxCount}
+          </span>
+        )}
       </Link>
       <p className={styles.section}>Domains</p>
       <ul className={styles.links}>
