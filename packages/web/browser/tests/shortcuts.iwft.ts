@@ -49,6 +49,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
   await help.expectShortcuts([
     "Add a task C",
     "Show keyboard shortcuts ?",
+    "Search commands ⌘K",
     "Inbox G then I",
     "Home G then H",
     "Next task J or ↓",
@@ -61,6 +62,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
   await help.expectAccessible()
   await help.setSingleKeys(false)
   await help.expectShortcuts([
+    "Search commands ⌘K",
     "Next task ↓",
     "Previous task ↑",
     "Open the task Enter",
@@ -140,4 +142,30 @@ test("changing a task from the keyboard on its page", async ({ taxa }) => {
   const work = await detail.keyboard.backToList()
   await work.expectHeading("Work")
   await work.expectTasks(["W-1 Fix the kitchen tap"])
+})
+
+test("finding and running commands from the command menu", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  const inbox = await (await taxa.openTab("Matt")).openInbox()
+
+  const menu = await inbox.keyboard.openCommandMenu()
+  await menu.expectAccessible()
+  await menu.search("go")
+  await menu.expectCommands(["Inbox", "Home"])
+  await menu.pickNext()
+  await menu.expectPicked("Home")
+  await menu.run()
+  await inbox.expectHeading("Home")
+
+  const detail = await (await inbox.keyboard.openCommandMenu()).openTask("H-1")
+  await detail.expectRef("H-1")
+
+  const changing = await detail.keyboard.openCommandMenu()
+  await changing.search("prio")
+  await changing.expectCommands(["Set priority"])
+  await changing.run()
+  await detail.keyboard.chooseInOpenPicker(Priority.URGENT)
+  await detail.expectPriority(Priority.URGENT)
+  await expect.poll(async () => (await taxa.matt.client.task("H-1")).priority).toBe(Priority.URGENT)
 })

@@ -3,14 +3,8 @@ import { Fragment, useEffect, useRef } from "react"
 import styles from "./ShortcutsHelp.module.css"
 import { shortcutsHelpTestIds } from "./ShortcutsHelpTestIds.ts"
 import { keyLabel } from "./key-press.ts"
-import { shortcutEntries } from "./shortcut-list.ts"
+import { GROUP_TEXT, shortcutEntries } from "./shortcut-list.ts"
 import { ShortcutGroup, useShortcutActions, useSingleKeys } from "./shortcut-service.ts"
-
-const GROUP_TEXT: Record<ShortcutGroup, string> = {
-  [ShortcutGroup.GENERAL]: "General",
-  [ShortcutGroup.GO]: "Go to",
-  [ShortcutGroup.TASKS]: "Tasks"
-}
 
 const MAC = navigator.userAgent.includes("Mac")
 

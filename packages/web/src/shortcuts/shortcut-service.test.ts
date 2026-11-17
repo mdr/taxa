@@ -174,6 +174,16 @@ describe("ShortcutService", () => {
     expect(shortcuts.state.singleKeys).toBe(false)
   })
 
+  it("ignores keys while the command menu is open", () => {
+    const { shortcuts, shortcut, ran } = makeShortcutService()
+    shortcuts.register(ShortcutScope.APP, () => [shortcut("c", "capture")])
+    shortcuts.openMenu()
+    expect(shortcuts.press("c")).toBe(false)
+    shortcuts.closeMenu()
+    shortcuts.press("c")
+    expect(ran).toEqual(["capture"])
+  })
+
   it("ignores keys while the list of shortcuts is open", () => {
     const { shortcuts, shortcut, ran } = makeShortcutService()
     shortcuts.register(ShortcutScope.APP, () => [shortcut("c", "capture")])

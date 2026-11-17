@@ -15,12 +15,14 @@ import { TaskChangesContext, TaskChangesService, useTaskChanges } from "../tasks
 import { realScheduler } from "../services/scheduler.ts"
 import { appShortcuts } from "../shortcuts/app-shortcuts.ts"
 import { ShortcutsHelp } from "../shortcuts/ShortcutsHelp.tsx"
+import { CommandMenu } from "../shortcuts/CommandMenu.tsx"
 import { localShortcutSettings } from "../shortcuts/shortcut-settings.ts"
 import {
   ShortcutContext,
   ShortcutScope,
   ShortcutService,
   useHelpOpen,
+  useMenuOpen,
   useKeyboardShortcuts,
   useShortcutActions,
   useShortcuts
@@ -57,6 +59,7 @@ const Layout = () => {
   useEffect(() => clearProblems(), [location, clearProblems])
   const shortcuts = useShortcutActions()
   const helpOpen = useHelpOpen()
+  const menuOpen = useMenuOpen()
   useShortcuts(ShortcutScope.APP, appShortcuts(location, navigate, domains.data ?? [], shortcuts))
   if (domains.data?.length === 0) {
     return (
@@ -73,6 +76,7 @@ const Layout = () => {
         {domains.isError && <p role="alert">{problemMessage(domains.error)}</p>}
       </main>
       {helpOpen && <ShortcutsHelp />}
+      {menuOpen && <CommandMenu />}
     </div>
   )
 }

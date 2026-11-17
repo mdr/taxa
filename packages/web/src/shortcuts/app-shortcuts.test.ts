@@ -16,6 +16,7 @@ const setUp = (
   const helped: number[] = []
   const shortcuts = appShortcuts(location, (to) => went.push(to), domains, {
     openHelp: () => helped.push(1),
+    openMenu: () => helped.push(2),
     requestFocus: (target) => focused.push(target)
   })
   return { went, focused, helped, shortcuts }
@@ -48,9 +49,10 @@ describe("appShortcuts", () => {
     expect(went).toEqual(["/", "/domains/H", "/domains/WK"])
   })
 
-  it("shows the shortcuts", () => {
+  it("shows the shortcuts, and the command menu", () => {
     const { helped, shortcuts } = setUp("/")
     run(shortcuts, "?")
-    expect(helped).toHaveLength(1)
+    run(shortcuts, "mod+k")
+    expect(helped).toEqual([1, 2])
   })
 })

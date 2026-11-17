@@ -36,7 +36,8 @@ a domain's prefix goes to a list, `⌘Z` undoes a tick, and `?` lists them, with
 single-key ones able to be turned off. In a list, `J`/`K` or the arrows move
 through the tasks, `Enter` opens one and `X` ticks it off; on a task's page, a
 key opens each picker (`S`, `P`, `M`, `D`, `T`, `H`, `E`), `R` renames, `N`
-writes notes and `Esc` goes back. Still to come: a `⌘K` command menu.
+writes notes and `Esc` goes back. `⌘K` opens a command menu that finds any of
+these by typing, shows its shortcut, and opens a task from its ref (`H-12`).
 
 **Feedback checkpoint:** daily use, the CLI, and how agents get on with it.
 

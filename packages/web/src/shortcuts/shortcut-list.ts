@@ -1,4 +1,10 @@
-import type { Shortcut, ShortcutGroup } from "./shortcut-service.ts"
+import { ShortcutGroup, type Shortcut } from "./shortcut-service.ts"
+
+export const GROUP_TEXT: Record<ShortcutGroup, string> = {
+  [ShortcutGroup.GENERAL]: "General",
+  [ShortcutGroup.GO]: "Go to",
+  [ShortcutGroup.TASKS]: "Tasks"
+}
 
 /** One thing shortcuts do, with every way of doing it: `J` or `↓`. */
 export interface ShortcutEntry {

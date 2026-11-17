@@ -54,6 +54,7 @@ export interface ShortcutState {
   /** Keys pressed so far of a sequence. */
   pending: readonly string[]
   helpOpen: boolean
+  menuOpen: boolean
   /** Shortcuts without ⌘ or Ctrl, which can clash with a screen reader's keys: each person can turn them off. */
   singleKeys: boolean
   focusRequest: FocusTarget | undefined
@@ -68,6 +69,8 @@ export interface ShortcutActions {
   active: () => readonly Shortcut[]
   openHelp: () => void
   closeHelp: () => void
+  openMenu: () => void
+  closeMenu: () => void
   setSingleKeys: (on: boolean) => void
   requestFocus: (target: FocusTarget) => void
   focusTaken: () => void
@@ -89,7 +92,14 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
   #cancelWait: (() => void) | undefined
 
   constructor(scheduler: Scheduler, settings: ShortcutSettingsStore) {
-    super({ layers: [], pending: [], helpOpen: false, singleKeys: settings.loadSingleKeys(), focusRequest: undefined })
+    super({
+      layers: [],
+      pending: [],
+      helpOpen: false,
+      menuOpen: false,
+      singleKeys: settings.loadSingleKeys(),
+      focusRequest: undefined
+    })
     this.#scheduler = scheduler
     this.#settings = settings
   }
@@ -124,7 +134,7 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
   }
 
   readonly press = (key: string): boolean => {
-    if (this.state.helpOpen) return false
+    if (this.state.helpOpen || this.state.menuOpen) return false
     this.#stopWaiting()
     const pending = this.state.pending
     const sequence = [...pending, key]
@@ -158,6 +168,13 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
 
   readonly closeHelp = (): void => this.setState({ helpOpen: false })
 
+  readonly openMenu = (): void => {
+    this.#stopWaiting()
+    this.setState({ menuOpen: true, pending: [] })
+  }
+
+  readonly closeMenu = (): void => this.setState({ menuOpen: false })
+
   readonly setSingleKeys = (on: boolean): void => {
     this.setState({ singleKeys: on })
     this.#settings.saveSingleKeys(on)
@@ -180,6 +197,8 @@ export const ShortcutContext = createServiceContext<ShortcutService>()
 export const useShortcutActions = (): ShortcutActions => useService(ShortcutContext)
 
 export const useHelpOpen = (): boolean => useServiceState(useService(ShortcutContext), (state) => state.helpOpen)
+
+export const useMenuOpen = (): boolean => useServiceState(useService(ShortcutContext), (state) => state.menuOpen)
 
 export const useSingleKeys = (): boolean => useServiceState(useService(ShortcutContext), (state) => state.singleKeys)
 

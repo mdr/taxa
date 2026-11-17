@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { PageObject } from "./steps.ts"
+import { CommandMenu } from "./CommandMenu.ts"
 import { ShortcutsHelp } from "./ShortcutsHelp.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { TaskListPage } from "./TaskListPage.ts"
@@ -43,6 +44,11 @@ export class Keyboard extends PageObject {
     return new TaskListPage(this.#page)
   }
 
+  async openCommandMenu(): Promise<CommandMenu> {
+    await this.press("mod+k")
+    return new CommandMenu(this.#page)
+  }
+
   async openShortcuts(): Promise<ShortcutsHelp> {
     await this.press("?")
     return new ShortcutsHelp(this.#page)
@@ -68,6 +74,11 @@ export class Keyboard extends PageObject {
   /** A picker's key, then the arrow keys to an option, and Enter. */
   async choose(key: string, value: string): Promise<void> {
     await this.press(key)
+    await this.chooseInOpenPicker(value)
+  }
+
+  /** The arrow keys to an option in the picker that's open, and Enter. */
+  async chooseInOpenPicker(value: string): Promise<void> {
     const focused = this.#page.locator(`[data-testid="${optionListTestIds.option}"]:focus`)
     await expect(focused).toHaveCount(1)
     for (let step = 0; step < 10 && (await focused.getAttribute("data-value")) !== value; step++) {
