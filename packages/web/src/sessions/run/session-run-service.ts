@@ -9,6 +9,10 @@ import { ANALYTICS_CODES, type AnalyticsCode } from "../../telemetry/codes.ts"
 import type { PlanEntry } from "../plan/plan-edits.ts"
 import type { SessionApi } from "../session-api.ts"
 
+/** What's still to do in a session, in order: every task not finished, the one under way among them. */
+export const toDoOf = (session: Session): PlanEntry[] =>
+  session.items.filter(({ outcome }) => !outcome).map(({ task, minutes }) => ({ taskId: task.id, minutes }))
+
 /** The time +15 min adds. */
 export const MORE_MINUTES: Minutes = 15
 
@@ -128,6 +132,20 @@ export class SessionRunService extends AbstractService<SessionRunState> {
       "replanned a session",
       { tasks: plan.length }
     )
+  }
+
+  /**
+   * A new order for what's still to do, finished tasks kept ahead of it. The
+   * top of it is the task under way: put another there, and that's started
+   * now, the other waiting next.
+   */
+  readonly replanToDo = async (session: Session, toDo: readonly PlanEntry[]): Promise<void> => {
+    const finished = session.items
+      .filter(({ outcome }) => outcome)
+      .map(({ task, minutes }) => ({ taskId: task.id, minutes }))
+    const first = toDo[0]?.taskId
+    const current = session.current?.taskId
+    await this.replan(session, [...finished, ...toDo], current !== undefined && first !== current ? first : undefined)
   }
 
   readonly end = async (session: Session): Promise<void> => {

@@ -1,4 +1,3 @@
-import type { TaskId } from "@taxa/shared/ids"
 import { SessionOutcome, type Session } from "@taxa/shared/sessions/session"
 import { sessionTimeline, SlotState, type Slot, type Timeline } from "@taxa/shared/sessions/session-timeline"
 import { TaskStatus } from "@taxa/shared/tasks/task"
@@ -15,7 +14,7 @@ import { planRows, SLOT_STATUS, slotSpan } from "../session-rows.ts"
 import { clockTime, countdown, durationText, minutesText, timeSpan } from "../session-text.ts"
 import { summaryPath } from "../session-paths.ts"
 import { useNow } from "../use-now.ts"
-import { MORE_MINUTES, SessionRunService } from "./session-run-service.ts"
+import { MORE_MINUTES, SessionRunService, toDoOf } from "./session-run-service.ts"
 import { taxaApi } from "../../api/taxa-api.ts"
 import { useServiceState } from "../../services/service-hooks.ts"
 import { ShortcutGroup, ShortcutScope, useShortcuts } from "../../shortcuts/shortcut-service.ts"
@@ -24,10 +23,6 @@ import { StatusIcon } from "../../tasks/StatusIcon.tsx"
 import { useTasks } from "../../tasks/task-queries.ts"
 
 const MINUTE = 60_000
-
-/** Finished: kept in place, ahead of what's still to do, when replanning. */
-const isSettled = (session: Session, taskId: TaskId): boolean =>
-  session.items.some((item) => item.task.id === taskId && item.outcome)
 
 const slotNote = ({ item, state, spent }: Slot): string => {
   switch (state) {
@@ -160,12 +155,19 @@ const SlotList = ({ timeline, endsAt }: { timeline: Timeline; endsAt: Instant })
   <ol className={styles.slots} aria-label="The session's tasks">
     {timeline.slots.map((slot) => (
       <li key={slot.item.task.id} className={slotClass(slot.state)} data-testid={sessionPageTestIds.slot}>
-        <span className={styles.slotTime}>{slotSpan(slot)}</span>
+        <span className={styles.slotTime} data-testid={sessionPageTestIds.slotTime}>
+          {slotSpan(slot)}
+        </span>
         <StatusIcon status={SLOT_STATUS[slot.state]} />
-        <span className={`${styles.slotTitle} ${slot.state === SlotState.DONE ? styles.slotDone : ""}`}>
+        <span
+          className={`${styles.slotTitle} ${slot.state === SlotState.DONE ? styles.slotDone : ""}`}
+          data-testid={sessionPageTestIds.slotTitle}
+        >
           <Link href={`/tasks/${slot.item.task.ref}`}>{slot.item.task.title}</Link>
         </span>
-        <span className={styles.slotNote}>{slotNote(slot)}</span>
+        <span className={styles.slotNote} data-testid={sessionPageTestIds.slotNote}>
+          {slotNote(slot)}
+        </span>
       </li>
     ))}
     {timeline.spare > 0 && (
@@ -251,15 +253,8 @@ export const SessionNow = ({ session }: { session: Session }) => {
     }
   ])
 
-  const plan: PlanEntry[] = session.items.map(({ task, minutes }) => ({ taskId: task.id, minutes }))
-  const settled = plan.filter(({ taskId }) => isSettled(session, taskId))
-  const toDo = plan.filter(({ taskId }) => !isSettled(session, taskId))
-  /** The top of what's still to do is the task under way: put another there, and that's started now, the other waiting next. */
-  const replan = (entries: PlanEntry[]) => {
-    const first = entries[0]?.taskId
-    const switchTo = current && first !== undefined && first !== current.item.task.id ? first : undefined
-    void run.replan(session, [...settled, ...entries], switchTo)
-  }
+  const toDo = toDoOf(session)
+  const replan = (entries: PlanEntry[]) => void run.replanToDo(session, entries)
   const status = statusText(session, timeline)
 
   return (
@@ -309,7 +304,7 @@ export const SessionNow = ({ session }: { session: Session }) => {
           rows={planRows(timeline, true)}
           suggestions={suggestedTasks(
             tasks.data ?? [],
-            plan.map(({ taskId }) => taskId),
+            session.items.map(({ task }) => task.id),
             search
           )}
           search={search}

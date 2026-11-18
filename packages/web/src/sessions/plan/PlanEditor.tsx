@@ -14,7 +14,6 @@ import {
   type CollisionDetection,
   type DragEndEvent,
   type DragMoveEvent,
-  type Over,
   type DraggableSyntheticListeners,
   type UniqueIdentifier
 } from "@dnd-kit/core"
@@ -30,7 +29,7 @@ import type { TaskId } from "@taxa/shared/ids"
 import type { Task, TaskStatus } from "@taxa/shared/tasks/task"
 import type { Minutes } from "@taxa/shared/units"
 import { GripVertical, Plus, X } from "lucide-react"
-import { useState, type KeyboardEventHandler, type ReactNode } from "react"
+import { useCallback, useState, type KeyboardEventHandler, type ReactNode } from "react"
 import styles from "./PlanEditor.module.css"
 import { planEditorTestIds } from "./PlanEditorTestIds.ts"
 import { suggestionReason } from "./suggestions.ts"
@@ -38,6 +37,7 @@ import { minutesText } from "../session-text.ts"
 import { useToday } from "../../dates/use-today.ts"
 import { StatusIcon } from "../../tasks/StatusIcon.tsx"
 import { TaskEstimate } from "./TaskEstimate.tsx"
+import { draggedTask, dropOf, DropType, isSuggestion, PLAN_END, suggestionDragId, SUGGESTIONS } from "./plan-drop.ts"
 import { Link } from "wouter"
 
 export interface PlanRow {
@@ -70,12 +70,6 @@ export interface PlanEditorProps {
   busy?: boolean
 }
 
-/** Drag ids: a suggestion's is marked as one, a planned task's is its id, and the plan column takes drops at its end. */
-const SUGGESTION = "suggestion:"
-const PLAN_END = "plan-end"
-/** A planned task dragged back here comes out of the plan. */
-const SUGGESTIONS = "suggestions"
-
 /**
  * With a mouse or finger, only what's under the pointer: a row before the
  * column it's in, and nothing at all elsewhere, so letting go there puts it
@@ -99,8 +93,6 @@ const inLowerHalf = ({ activatorEvent, delta, over }: DragMoveEvent | DragEndEve
 const makeRoom: SortingStrategy = (args) =>
   // oxlint-disable-next-line eslint-js/no-restricted-syntax -- the library's "no change"
   args.activeIndex < 0 ? null : verticalListSortingStrategy(args)
-
-const suggestionDragId = (taskId: TaskId): string => `${SUGGESTION}${taskId}`
 
 /** Drag by mouse or touch anywhere on a row; the keyboard only from a grip, so keys on the row's own buttons stay theirs. */
 const pointerOnly = (listeners: DraggableSyntheticListeners) => {
@@ -189,7 +181,7 @@ const PlanRowItem = ({ row, busy, dropAfter, onRemove, onEstimated }: PlanRowIte
   const { task, span, status, detail } = row
   const { setNodeRef, setActivatorNodeRef, listeners, attributes, transform, transition, isDragging, isOver, active } =
     useSortable({ id: task.id, disabled: busy })
-  const suggestionOver = isOver && String(active?.id).startsWith(SUGGESTION)
+  const suggestionOver = isOver && isSuggestion(String(active?.id))
   return (
     <li
       ref={setNodeRef}
@@ -225,7 +217,7 @@ const PlanRowItem = ({ row, busy, dropAfter, onRemove, onEstimated }: PlanRowIte
         {detail && <span className={styles.detail}>{detail}</span>}
       </span>
       <>
-        <TaskEstimate task={task} testId={planEditorTestIds.minutes} onEstimated={onEstimated} />
+        <TaskEstimate task={task} testId={planEditorTestIds.plannedEstimate} onEstimated={onEstimated} />
         {/* The task under way can move, but not come out: finish or stop it first. */}
         {row.underWay ? (
           <span className={styles.gripSpace} />
@@ -254,6 +246,7 @@ const PlanColumn = ({ accepting, children }: { accepting: boolean; children: Rea
       ref={setNodeRef}
       className={`${styles.column} ${accepting && isOver ? styles.dropAtEnd : ""}`}
       aria-labelledby="plan-heading"
+      data-testid={planEditorTestIds.planColumn}
     >
       {children}
     </section>
@@ -268,6 +261,7 @@ const SuggestionsColumn = ({ accepting, children }: { accepting: boolean; childr
       ref={setNodeRef}
       className={`${styles.column} ${accepting ? styles.takesBack : ""} ${accepting && isOver ? styles.takingBack : ""}`}
       aria-labelledby="suggestions-heading"
+      data-testid={planEditorTestIds.suggestionsColumn}
     >
       {children}
     </section>
@@ -291,7 +285,11 @@ export const PlanEditor = ({
   /** What the dragged task is over now, if anything: let go over nothing, and it glides back. */
   const [target, setTarget] = useState<UniqueIdentifier | undefined>(undefined)
   const [dropAfter, setDropAfter] = useState(false)
-  const draggingSuggestion = String(dragged).startsWith(SUGGESTION)
+  /** Where what's dragged is announced, for screen readers. */
+  const [announcer, setAnnouncer] = useState<HTMLElement | undefined>(undefined)
+  // oxlint-disable-next-line eslint-js/no-restricted-syntax -- React gives a ref null when the element goes
+  const announceIn = useCallback((node: HTMLElement | null) => setAnnouncer(node ?? undefined), [])
+  const draggingSuggestion = isSuggestion(String(dragged))
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
@@ -299,7 +297,7 @@ export const PlanEditor = ({
   )
   const movable = rows.filter(({ locked }) => !locked).map(({ task }) => task.id)
   const titleOf = (id: UniqueIdentifier | undefined): string => {
-    const taskId = String(id).replace(SUGGESTION, "")
+    const taskId = draggedTask(String(id))
     if (id === PLAN_END) return "the end of the plan"
     if (id === SUGGESTIONS) return "the suggestions, to take it out"
     return (
@@ -319,27 +317,19 @@ export const PlanEditor = ({
   /** The drop target stays as it was until the next drag: the overlay reads it as it lets go, to glide back or not. */
   const finished = () => setDragged(undefined)
 
-  /** A suggestion let go on the plan: on a row, before or after it by which half; elsewhere on the plan, last. */
-  const droppedSuggestion = (event: DragEndEvent, over: Over) => {
-    const task = (event.active.data.current as { task?: Task } | undefined)?.task
-    if (!task) return
-    const place = movable.indexOf(over.id as TaskId)
-    onAdd(task, over.id === PLAN_END || place < 0 ? undefined : place + (inLowerHalf(event) ? 1 : 0))
-  }
-
-  /** A planned task let go: on the suggestions, out of the plan; on another row, into its place. */
-  const droppedPlanned = (taskId: TaskId, over: Over) => {
-    if (over.id === SUGGESTIONS) onRemove(taskId)
-    const place = movable.indexOf(over.id as TaskId)
-    if (over.id !== taskId && place >= 0) onMove(taskId, place)
-  }
-
   const dropped = (event: DragEndEvent) => {
     finished()
-    const { active, over } = event
-    if (!over) return
-    if (String(active.id).startsWith(SUGGESTION)) droppedSuggestion(event, over)
-    else droppedPlanned(active.id as TaskId, over)
+    const drop = dropOf({
+      dragged: String(event.active.id),
+      over: event.over ? String(event.over.id) : undefined,
+      lowerHalf: inLowerHalf(event),
+      movable
+    })
+    if (drop?.type === DropType.ADD) {
+      const task = suggestions.find(({ id }) => id === drop.taskId)
+      if (task) onAdd(task, drop.at)
+    } else if (drop?.type === DropType.MOVE) onMove(drop.taskId, drop.to)
+    else if (drop?.type === DropType.REMOVE) onRemove(drop.taskId)
   }
 
   return (
@@ -347,6 +337,7 @@ export const PlanEditor = ({
       sensors={sensors}
       collisionDetection={underPointer}
       accessibility={{
+        container: announcer,
         announcements,
         screenReaderInstructions: {
           draggable:
@@ -367,7 +358,7 @@ export const PlanEditor = ({
       onDragEnd={dropped}
     >
       <div className={styles.columns}>
-        <SuggestionsColumn accepting={dragged !== undefined && !String(dragged).startsWith(SUGGESTION) && !byKeyboard}>
+        <SuggestionsColumn accepting={dragged !== undefined && !isSuggestion(String(dragged)) && !byKeyboard}>
           <div className={styles.columnHeader}>
             <h2 id="suggestions-heading" className={styles.columnTitle}>
               Suggestions
@@ -427,6 +418,7 @@ export const PlanEditor = ({
           )}
         </PlanColumn>
       </div>
+      <div ref={announceIn} data-testid={planEditorTestIds.announcer} />
       {/* Dropped somewhere, the task is in its new place at once; let go over nothing, and it glides back to where it was. */}
       {/* oxlint-disable-next-line eslint-js/no-restricted-syntax -- the library's "no animation" */}
       <DragOverlay dropAnimation={target === undefined ? undefined : null}>

@@ -4,7 +4,9 @@ import { timeZone } from "@taxa/shared/dates/plain-date"
  * InProcessServer): the `taxa` fixture starts one for each test, opens tabs
  * whose app talks to it, and sets up and checks what the server holds.
  */
-import { test as base, type Browser } from "@playwright/test"
+import { expect, test as base, type Browser } from "@playwright/test"
+import type { SessionId } from "@taxa/shared/ids"
+import type { Task } from "@taxa/shared/tasks/task"
 import { InProcessServer } from "../../../server/src/test-support/in-process-server.ts"
 import type { TestUser } from "../../../server/src/test-support/test-user.ts"
 import type { Ms } from "@taxa/shared/units"
@@ -41,6 +43,23 @@ export class TestTaxa {
   async advance(time: Ms): Promise<void> {
     this.server.advance(time)
     for (const tab of this.#tabs) await tab.setTime(this.server.clock.now())
+  }
+
+  /** The task, as the server has it, comes to have these values: `{ status: TaskStatus.DONE }`. */
+  async expectTask(ref: string, expected: Partial<Task>): Promise<void> {
+    await expect
+      .poll(async () => {
+        const task = await this.matt.client.task(ref)
+        return Object.fromEntries(Object.keys(expected).map((key) => [key, task[key as keyof Task]]))
+      }, `task ${ref} on the server`)
+      .toEqual(expected)
+  }
+
+  /** The session's note, as the server has it. */
+  async expectSessionNote(id: SessionId, note: string): Promise<void> {
+    await expect
+      .poll(async () => (await this.matt.client.session(id)).note, `session ${id}'s note on the server`)
+      .toBe(note)
   }
 
   async stopDatabase(): Promise<void> {

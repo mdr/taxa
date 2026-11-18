@@ -77,14 +77,17 @@ const Summary = ({ session }: { session: Session }) => {
             <tbody>
               {session.items.map((item) => (
                 <tr key={item.task.id} data-testid={sessionPageTestIds.summaryRow}>
-                  <td>
+                  <td data-testid={sessionPageTestIds.summaryTask}>
                     <Link href={`/tasks/${item.task.ref}`}>{item.task.title}</Link>
                   </td>
-                  <td>{minutesText(item.minutes)}</td>
-                  <td className={item.spentMs > item.minutes * 60_000 ? styles.over : undefined}>
+                  <td data-testid={sessionPageTestIds.summaryPlanned}>{minutesText(item.minutes)}</td>
+                  <td
+                    className={item.spentMs > item.minutes * 60_000 ? styles.over : undefined}
+                    data-testid={sessionPageTestIds.summarySpent}
+                  >
                     {item.spentMs > 0 ? durationText(item.spentMs) : "–"}
                   </td>
-                  <td>
+                  <td data-testid={sessionPageTestIds.summaryNow}>
                     <span className={`${styles.tag} ${item.task.status === TaskStatus.DONE ? styles.tagDone : ""}`}>
                       {nowText(item, domains.data ?? [])}
                     </span>

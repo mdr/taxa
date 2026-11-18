@@ -7,9 +7,12 @@ export const planEditorTestIds = {
   row: "PlanEditor.row",
   time: "PlanEditor.time",
   title: "PlanEditor.title",
-  minutes: "PlanEditor.minutes",
+  plannedEstimate: "PlanEditor.plannedEstimate",
   grip: "PlanEditor.grip",
   estimate: "PlanEditor.estimate",
   remove: "PlanEditor.remove",
-  empty: "PlanEditor.empty"
+  empty: "PlanEditor.empty",
+  suggestionsColumn: "PlanEditor.suggestionsColumn",
+  planColumn: "PlanEditor.planColumn",
+  announcer: "PlanEditor.announcer"
 }

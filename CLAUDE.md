@@ -63,7 +63,11 @@ Taxa is a task manager for people and their agents. What it does and why is in `
 
 ## Browser tests
 
-- Page objects offer `expect…` methods; specs never see locators.
+- A spec reads like a manual test script, in the app's own words ("add Fix the tap to the plan", "expect it to be done"): never locators, test IDs or how the app is built.
+- A page object for each screen, and for a part of one that's used on its own (the plan editor, the sidebar). A step that goes to another screen returns that screen's page object.
+- Checks are page object `expect…` methods too, which verify it however it takes; specs never see locators. Data on the server: the `taxa` fixture's `expect…` methods.
+- Positive checks always retry until they pass or time out: web-first assertions, or `expect.poll` around anything that doesn't retry by itself.
+- Each page object method shows in a failing test's log as a step, `Class.method args`: the `PageObject` base class wraps them.
 - Locate by test ID. Where a test ID alone identifies a state, assert on its presence rather than text or attributes.
 - State that ARIA already expresses (`aria-pressed`…): assert the ARIA attribute.
 - Page state: web-first assertions (`toHaveText`, `toBeVisible`…). Other state: `expect.poll`.

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vite-plus/test"
 import { testTelemetry, type TestTelemetry } from "../../test-support/test-telemetry.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { FakeSessionApi } from "../../test-support/fake-session-api.ts"
-import { SessionRunService } from "./session-run-service.ts"
+import { SessionRunService, toDoOf } from "./session-run-service.ts"
 
 const radiators = makeTask({ number: 2, title: "Bleed the radiators" })
 const boilers = makeTask({ number: 3, title: "Research boilers" })
@@ -93,25 +93,38 @@ describe("SessionRunService", () => {
     expect(api.updated).toHaveLength(4)
   })
 
-  it("starts a task put ahead of the one under way, with the new plan", async () => {
+  it("keeps finished tasks ahead of what's still to do, and starts a task put above the one under way", async () => {
     const { api, run } = setUp()
-    await run.replan(
-      session,
-      [
-        { taskId: passport.id, minutes: 20 },
-        { taskId: boilers.id, minutes: 45 }
-      ],
-      passport.id
-    )
-    expect(api.updated.at(-1)?.request).toEqual({
-      set: {
-        items: [
-          { taskId: passport.id, minutes: 20 },
-          { taskId: boilers.id, minutes: 45 }
-        ]
+    expect(toDoOf(session).map(({ taskId }) => taskId)).toEqual([boilers.id, passport.id])
+    await run.replanToDo(session, [
+      { taskId: boilers.id, minutes: 45 },
+      { taskId: passport.id, minutes: 10 }
+    ])
+    await run.replanToDo(session, [
+      { taskId: passport.id, minutes: 20 },
+      { taskId: boilers.id, minutes: 45 }
+    ])
+    expect(api.updated.map(({ request }) => request)).toEqual([
+      {
+        set: {
+          items: [
+            { taskId: radiators.id, minutes: 30 },
+            { taskId: boilers.id, minutes: 45 },
+            { taskId: passport.id, minutes: 10 }
+          ]
+        }
       },
-      start: passport.id
-    })
+      {
+        set: {
+          items: [
+            { taskId: radiators.id, minutes: 30 },
+            { taskId: passport.id, minutes: 20 },
+            { taskId: boilers.id, minutes: 45 }
+          ]
+        },
+        start: passport.id
+      }
+    ])
   })
 
   it("ends the session, and keeps a note only if it's changed", async () => {

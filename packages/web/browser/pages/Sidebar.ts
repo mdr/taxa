@@ -4,7 +4,8 @@ import { sidebarTestIds } from "../../src/app/SidebarTestIds.ts"
 import { newDomainFormTestIds } from "../../src/domains/NewDomainFormTestIds.ts"
 import { ShortcutsHelp } from "./ShortcutsHelp.ts"
 import { TaskListPage } from "./TaskListPage.ts"
-import { SessionPage } from "./SessionPage.ts"
+import { SessionPlannerPage } from "./SessionPlannerPage.ts"
+import { SessionSetupPage } from "./SessionSetupPage.ts"
 
 /** The lists down the side, on every page. */
 export class Sidebar extends PageObject {
@@ -66,15 +67,30 @@ export class Sidebar extends PageObject {
     return new TaskListPage(this.#page)
   }
 
-  async openSession(): Promise<SessionPage> {
+  /** Opens Session, with none planned or under way: it starts with how long it's for. */
+  async openSession(): Promise<SessionSetupPage> {
     await this.#page.getByTestId(sidebarTestIds.session).click()
-    return new SessionPage(this.#page)
+    const setup = new SessionSetupPage(this.#page)
+    await setup.expectShown()
+    return setup
   }
 
-  /** Time left on the session's task, or how far over: `25m`, `+15m`; none, with no task under way. */
-  async expectSessionLeft(text: string | undefined): Promise<void> {
-    const left = this.#page.getByTestId(sidebarTestIds.sessionLeft)
-    await (text === undefined ? expect(left).toHaveCount(0) : expect(left).toHaveText(text))
+  /** Opens Session, to go back to the plan being made. */
+  async openSessionPlan(): Promise<SessionPlannerPage> {
+    await this.#page.getByTestId(sidebarTestIds.session).click()
+    const planner = new SessionPlannerPage(this.#page)
+    await planner.expectShown()
+    return planner
+  }
+
+  /** Time left on the session's task, or how far over: `25m`, `+15m`. */
+  async expectSessionLeft(text: string): Promise<void> {
+    await expect(this.#page.getByTestId(sidebarTestIds.sessionLeft)).toHaveText(text)
+  }
+
+  /** No time left showing, with no session task under way. */
+  async expectNoSessionLeft(): Promise<void> {
+    await expect(this.#page.getByTestId(sidebarTestIds.sessionLeft)).toHaveCount(0)
   }
 
   async openShortcuts(): Promise<ShortcutsHelp> {
