@@ -8,6 +8,8 @@ import { createServiceContext, useService, useServiceState } from "../../service
 import { TaskChangeType, type TaskChangesActions } from "../changes/task-changes-service.ts"
 import { startedOrStopped } from "../in-progress.ts"
 import type { Analytics } from "../../telemetry/analytics.ts"
+import type { ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
+import { restoringStatus } from "./restore-status.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 
 /** How long the offer to undo a tick stays. */
@@ -31,6 +33,8 @@ export interface ListSessionState {
   undoable: Task | undefined
   /** Which of those it was. */
   undoes: Undo
+  /** A task ticked off, as it was before: what undoing the tick puts back. */
+  before: Task | undefined
   /** The task the keyboard is on, if any. */
   highlighted: TaskId | undefined
   /** What's typed to find tasks in the list: only those it finds show. */
@@ -83,7 +87,15 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   #searched = false
 
   constructor(changes: TaskChangesActions, scheduler: Scheduler, analytics: Analytics) {
-    super({ ticked: {}, pending: {}, undoable: undefined, undoes: Undo.TICK, highlighted: undefined, search: "" })
+    super({
+      ticked: {},
+      pending: {},
+      undoable: undefined,
+      undoes: Undo.TICK,
+      before: undefined,
+      highlighted: undefined,
+      search: ""
+    })
     this.#changes = changes
     this.#scheduler = scheduler
     this.#analytics = analytics
@@ -98,12 +110,12 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   }
 
   readonly toggle = async (task: Task): Promise<void> => {
-    await this.#setStatus(task, isShownDone(this.state, task) ? TaskStatus.OPEN : TaskStatus.DONE)
+    await this.#setStatus(task, { status: isShownDone(this.state, task) ? TaskStatus.OPEN : TaskStatus.DONE })
   }
 
   /** Marks it done, with a chance to undo it, as a tick does. */
   readonly complete = async (task: Task): Promise<void> => {
-    await this.#setStatus(task, TaskStatus.DONE)
+    await this.#setStatus(task, { status: TaskStatus.DONE })
   }
 
   readonly startOrStop = async (task: Task): Promise<void> => {
@@ -112,7 +124,7 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   }
 
   readonly undo = async (): Promise<void> => {
-    const { undoable: task, undoes } = this.state
+    const { undoable: task, undoes, before } = this.state
     if (!task) return
     this.dismissUndo()
     if (undoes === Undo.DELETE) {
@@ -121,7 +133,7 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
       return
     }
     this.#analytics.track(ANALYTICS_CODES.task.undone, `undid ticking off ${task.ref}`, { taskId: task.id, undoes })
-    await this.#setStatus(task, TaskStatus.OPEN)
+    await this.#setStatus(task, before ? restoringStatus(before) : { status: TaskStatus.OPEN })
   }
 
   readonly delete = async (task: Task, shown: readonly TaskId[]): Promise<void> => {
@@ -170,15 +182,15 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
     this.#cancelUndoOffer = undefined
   }
 
-  async #setStatus(task: Task, status: TaskStatus.OPEN | TaskStatus.DONE): Promise<void> {
-    const done = status === TaskStatus.DONE
+  async #setStatus(task: Task, request: ChangeStatusRequest): Promise<void> {
+    const done = request.status === TaskStatus.DONE
     // Kept in the list from the tick: the server's answer refreshes the list, without it, before it comes back.
     this.updateState((state) => ({
       ...state,
       pending: { ...state.pending, [task.id]: done },
       ticked: done ? { ...state.ticked, [task.id]: state.ticked[task.id] ?? task } : state.ticked
     }))
-    const changed = await this.#changes.change(task, { type: TaskChangeType.STATUS, request: { status } })
+    const changed = await this.#changes.change(task, { type: TaskChangeType.STATUS, request })
     this.updateState((state) => ({ ...state, pending: { ...state.pending, [task.id]: undefined } }))
     if (!changed) {
       if (done) this.updateState((state) => ({ ...state, ticked: { ...state.ticked, [task.id]: undefined } }))
@@ -188,7 +200,8 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
       ...state,
       ticked: { ...state.ticked, [task.id]: done ? changed : undefined },
       undoable: done ? changed : state.undoable?.id === task.id ? undefined : state.undoable,
-      undoes: done ? Undo.TICK : state.undoes
+      undoes: done ? Undo.TICK : state.undoes,
+      before: done ? task : state.before
     }))
     if (done) this.#offerUndo()
   }

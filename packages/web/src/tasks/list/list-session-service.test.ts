@@ -61,6 +61,21 @@ describe("ListSessionService", () => {
     expect(telemetry.tracked().at(-1)).toEqual([ANALYTICS_CODES.task.undone, { taskId: task.id, undoes: Undo.DELETE }])
   })
 
+  it("undoes ticking off a task by putting back the status it had, with what it was waiting on", async () => {
+    const { changes, session } = makeListSessionService()
+    const task = makeTask({ status: TaskStatus.WAITING, waitingOn: "the plumber", followUp: "2026-01-12" })
+    const ticking = session.toggle(task)
+    await changes.answer()
+    await ticking
+    const undoing = session.undo()
+    await changes.answer()
+    await undoing
+    expect(changes.made.at(-1)?.change).toEqual({
+      type: TaskChangeType.STATUS,
+      request: { status: TaskStatus.WAITING, waitingOn: "the plumber", followUp: "2026-01-12" }
+    })
+  })
+
   it("offers nothing to undo when the server refuses a delete", async () => {
     const { changes, session } = makeListSessionService()
     const task = makeTask()

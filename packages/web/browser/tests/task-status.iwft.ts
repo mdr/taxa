@@ -36,3 +36,15 @@ test("a task waiting on someone says who, on its page and in its list", async ({
   const list = await detail.sidebar.openDomain("Home")
   await list.expectHighlights("Fix the boiler", "Waiting on the engineer")
 })
+
+test("undoing marking a task done puts back what it was waiting on", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  const tap = await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  await taxa.matt.client.changeStatus(tap.ref, { status: TaskStatus.WAITING, waitingOn: "the plumber" })
+  const home = await (await taxa.openTab("Matt")).openInbox().then((inbox) => inbox.sidebar.openDomain("Home"))
+  const detail = await home.openTask("Fix the tap")
+  await detail.setStatus(TaskStatus.DONE)
+  await detail.toast.undo()
+  await detail.expectStatus(TaskStatus.WAITING)
+  await taxa.expectTask("H-1", { status: TaskStatus.WAITING, waitingOn: "the plumber", followUp: "2026-01-12" })
+})
