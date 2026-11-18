@@ -1,3 +1,5 @@
+import { DAY_PLANS_PATH, DayPlanSchema, type DayPlan, type SetDayPlanRequest } from "../days/day-plan.ts"
+import type { IsoDate } from "../dates/plain-date.ts"
 import type { AgentId, ApiKeyId, SessionId } from "../ids.ts"
 import type { Version } from "../units.ts"
 import { z } from "zod"
@@ -149,6 +151,15 @@ export class TaxaClient {
     return this.#request(SessionSchema, sessionPath(id), { method: "PATCH", body: request, ifMatch })
   }
 
+  /** The order you mean to do a day's tasks in. */
+  dayPlan(date: IsoDate): Promise<DayPlan> {
+    return this.#request(DayPlanSchema, dayPlanPath(date))
+  }
+
+  setDayPlan(date: IsoDate, request: SetDayPlanRequest): Promise<DayPlan> {
+    return this.#request(DayPlanSchema, dayPlanPath(date), { method: "PUT", body: request })
+  }
+
   async agents(): Promise<Agent[]> {
     return (await this.#request(ListSchema(AgentSchema), AGENTS_PATH)).items
   }
@@ -200,4 +211,6 @@ export class TaxaClient {
 }
 
 const taskPath = (ref: string): string => `${TASKS_PATH}/${encodeURIComponent(ref)}`
+const dayPlanPath = (date: IsoDate): string => `${DAY_PLANS_PATH}/${date}`
+
 const sessionPath = (id: SessionId): string => `${SESSIONS_PATH}/${encodeURIComponent(id)}`

@@ -6,5 +6,6 @@ export const taskListPageTestIds = {
   showCompleted: "TaskListPage.showCompleted",
   completed: "TaskListPage.completed",
   search: "TaskListPage.search",
-  noMatches: "TaskListPage.noMatches"
+  noMatches: "TaskListPage.noMatches",
+  planToday: "TaskListPage.planToday"
 }

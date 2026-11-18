@@ -4,6 +4,7 @@ export enum Page {
   INBOX = "INBOX",
   IN_PROGRESS = "IN_PROGRESS",
   TODAY = "TODAY",
+  PLAN_TODAY = "PLAN_TODAY",
   SOON = "SOON",
   SOMEDAY = "SOMEDAY",
   SESSION = "SESSION",
@@ -18,6 +19,7 @@ export const pageOpened = (location: string): LogFields => {
   if (location === "/") return { page: Page.INBOX }
   if (location === "/in-progress") return { page: Page.IN_PROGRESS }
   if (location === "/today") return { page: Page.TODAY }
+  if (location === "/today/plan") return { page: Page.PLAN_TODAY }
   if (location === "/soon") return { page: Page.SOON }
   if (location === "/someday") return { page: Page.SOMEDAY }
   if (location === "/session") return { page: Page.SESSION }

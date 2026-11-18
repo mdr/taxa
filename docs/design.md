@@ -142,6 +142,11 @@ which aren't stored as comments.
   default) or someday. A date beats a horizon, and choosing one clears the
   other. Someday tasks stay out of lists and suggestions until you look at
   Someday, though search still finds them.
+- **Plan today** chooses today's tasks from suggestions (due or overdue, in
+  progress, soon, due this week, important) or any task found, and puts them
+  in order. Putting one in schedules it for today; taking one out leaves it
+  for soon. The order is a day plan, kept per person per date; Today lists
+  tasks in that order, those it doesn't place after.
 - Other built-in views: **Inbox** (not yet organised), **Upcoming**,
   **Someday**, and per project.
 - **Saved filters** are named queries in the query language, built by

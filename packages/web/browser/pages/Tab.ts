@@ -42,7 +42,9 @@ export class Tab extends PageObject {
   /** The app's front page: the Inbox. */
   async openInbox(): Promise<TaskListPage> {
     await this.#page.goto(`${this.#baseUrl}/`)
-    return new TaskListPage(this.#page)
+    const inbox = new TaskListPage(this.#page)
+    await inbox.expectLoaded()
+    return inbox
   }
 
   async openTask(ref: string): Promise<TaskDetailPage> {

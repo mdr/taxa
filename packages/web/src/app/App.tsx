@@ -9,7 +9,8 @@ import { TaskDetailPage } from "../tasks/detail/TaskDetailPage.tsx"
 import { TaskListPage } from "../tasks/list/TaskListPage.tsx"
 import { ListType, type TaskList } from "../tasks/list/task-list.ts"
 import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
-import { SOMEDAY_PATH, SOON_PATH, TODAY_PATH } from "../tasks/when/when-paths.ts"
+import { PLAN_TODAY_PATH, SOMEDAY_PATH, SOON_PATH, TODAY_PATH } from "../tasks/when/when-paths.ts"
+import { DayPlanPage } from "../days/DayPlanPage.tsx"
 import { SessionPage } from "../sessions/SessionPage.tsx"
 import { SessionSummary } from "../sessions/run/SessionSummary.tsx"
 import { SESSION_PATH } from "../sessions/session-paths.ts"
@@ -75,6 +76,9 @@ const Pages = () => (
     </Route>
     <Route path={TODAY_PATH}>
       <TaskListPage key="TODAY" list={TODAY_LIST} />
+    </Route>
+    <Route path={PLAN_TODAY_PATH}>
+      <DayPlanPage />
     </Route>
     <Route path={SOON_PATH}>
       <TaskListPage key="SOON" list={SOON_LIST} />

@@ -1,4 +1,5 @@
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
+import type { TaskId } from "@taxa/shared/ids"
 import { ChevronDown, ChevronRight, Search } from "lucide-react"
 import { useEffect, useRef, useState, type Ref } from "react"
 import styles from "./TaskListPage.module.css"
@@ -10,7 +11,8 @@ import { withTicked } from "./with-ticked.ts"
 import { listSearch } from "./list-search.ts"
 import { ListSessionContext, ListSessionService } from "./list-session-service.ts"
 import { listShortcuts } from "./list-shortcuts.ts"
-import { useLocation } from "wouter"
+import { Link, useLocation } from "wouter"
+import { PLAN_TODAY_PATH } from "../when/when-paths.ts"
 import { realScheduler } from "../../services/scheduler.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
@@ -67,6 +69,8 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
   const undoes = useServiceState(session, (state) => state.undoes)
   const search = useServiceState(session, (state) => state.search)
   const searchBox = useRef<HTMLInputElement>(null)
+  /** The order the list was last shown in, to keep ticked tasks in their places. */
+  const lastShown = useRef<readonly TaskId[]>([])
   const domains = useDomains()
   const query = listQuery(list)
   const tasks = useTasks(query)
@@ -75,12 +79,15 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
   const [showCompleted, setShowCompleted] = useState(false)
   const domain = domains.data?.find(({ prefix }) => prefix === domainPrefix?.toUpperCase())
   const found = listSearch(
-    tasks.data ? withTicked(tasks.data, ticked) : undefined,
+    tasks.data ? withTicked(tasks.data, ticked, lastShown.current) : undefined,
     (completed.data ?? []).filter(({ id }) => ticked[id] === undefined),
     search,
     showCompleted
   )
   const { open: shown, completed: earlierFound, completedOpen } = found
+  useEffect(() => {
+    lastShown.current = (shown ?? []).map(({ id }) => id)
+  })
   const [, navigate] = useLocation()
   useShortcuts(
     ShortcutScope.PAGE,
@@ -122,6 +129,11 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
           </h1>
           {openCount > 0 && <span className={styles.count}>{openCount}</span>}
           <ListSearch value={search} onSearch={session.search} input={searchBox} />
+          {list.type === ListType.TODAY && (
+            <Link href={PLAN_TODAY_PATH} className={styles.planToday} data-testid={taskListPageTestIds.planToday}>
+              Plan today
+            </Link>
+          )}
         </header>
         {home && <QuickCapture domainPrefix={domain?.prefix} />}
         {tasks.isError ? (

@@ -60,6 +60,9 @@ export const ANALYTICS_CODES = {
     ended: "session.ended",
     noteSaved: "session.noteSaved",
     finishUndone: "session.finishUndone"
+  },
+  today: {
+    taskPlanned: "today.taskPlanned"
   }
 } as const
 

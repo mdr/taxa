@@ -13,6 +13,7 @@ import { ProblemError } from "./http/problem-error.ts"
 import { taxaHono, type TaxaApp } from "./http/taxa-hono.ts"
 import { taskRoutes } from "./tasks/task-routes.ts"
 import { sessionRoutes } from "./sessions/session-routes.ts"
+import { dayPlanRoutes } from "./days/day-plan-routes.ts"
 import { LOG_CODES, type ServerLogger } from "./telemetry/log.ts"
 import { ensureUserNamed, userById } from "./users/user-store.ts"
 
@@ -69,6 +70,7 @@ export const createApp = async ({
   domainRoutes(app, db, logger, clock)
   taskRoutes(app, db, logger, clock)
   sessionRoutes(app, db, logger, clock)
+  dayPlanRoutes(app, db, clock)
 
   app.notFound((context) =>
     context.json<Problem>(

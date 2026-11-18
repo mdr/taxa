@@ -1,4 +1,4 @@
-import { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
+import { Energy, Horizon, Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { makeTask } from "@taxa/shared/test-support/make-task"
 import { describe, expect, it } from "vite-plus/test"
 import { suggestedTasks, suggestionReason } from "./suggestions.ts"
@@ -15,6 +15,7 @@ describe("suggestionReason", () => {
     expect(reason({ due: "2026-01-09" })).toBe("Due Fri")
     expect(reason({ due: "2026-01-20", priority: Priority.URGENT })).toBe("Urgent")
     expect(reason({ priority: Priority.HIGH })).toBe("High priority")
+    expect(reason({ horizon: Horizon.SOON, energy: Energy.LOW })).toBe("Soon")
     expect(reason({ energy: Energy.LOW })).toBe("Low energy")
     expect(reason({ inbox: true })).toBe("Inbox")
     expect(reason({})).toBeUndefined()

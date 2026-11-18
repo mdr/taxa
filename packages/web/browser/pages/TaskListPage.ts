@@ -5,6 +5,7 @@ import { Keyboard } from "./Keyboard.ts"
 import { Sidebar } from "./Sidebar.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { TaskRowMenu } from "./TaskRowMenu.ts"
+import { DayPlanPage } from "./DayPlanPage.ts"
 import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
 import { taskListPageTestIds } from "../../src/tasks/list/TaskListPageTestIds.ts"
 import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
@@ -57,6 +58,16 @@ export class TaskListPage extends PageObject {
 
   async expectHeading(heading: string): Promise<void> {
     await expect(this.#page.getByTestId(taskListPageTestIds.heading)).toHaveText(heading)
+  }
+
+  /** The list has come: its tasks, or word that there are none, or why not. */
+  async expectLoaded(): Promise<void> {
+    await expect(
+      this.#page
+        .getByTestId(taskListPageTestIds.tasks)
+        .or(this.#page.getByTestId(taskListPageTestIds.empty))
+        .or(this.#page.getByTestId(taskListPageTestIds.error))
+    ).toBeVisible()
   }
 
   async capture(title: string): Promise<void> {
@@ -170,6 +181,14 @@ export class TaskListPage extends PageObject {
   }
 
   /** Opens the ⋯ menu on a task's row. */
+  /** From Today, to choosing today's tasks and their order. */
+  async planToday(): Promise<DayPlanPage> {
+    await this.#page.getByTestId(taskListPageTestIds.planToday).click()
+    const plan = new DayPlanPage(this.#page)
+    await plan.expectShown()
+    return plan
+  }
+
   async openMenu(title: string): Promise<TaskRowMenu> {
     const row = this.#row(title)
     await row.hover()

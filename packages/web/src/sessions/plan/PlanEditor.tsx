@@ -68,6 +68,10 @@ export interface PlanEditorProps {
   onEstimated: (task: Task) => void
   /** While a change is being saved. */
   busy?: boolean
+  /** What the plan's column is called. */
+  planTitle?: string
+  /** Rows show their place in the plan, not a time: a narrow column for it. */
+  numbered?: boolean
 }
 
 /**
@@ -278,7 +282,9 @@ export const PlanEditor = ({
   onRemove,
   onMove,
   onEstimated,
-  busy = false
+  busy = false,
+  planTitle = "Your plan",
+  numbered = false
 }: PlanEditorProps) => {
   const [dragged, setDragged] = useState<UniqueIdentifier | undefined>(undefined)
   const [byKeyboard, setByKeyboard] = useState(false)
@@ -357,7 +363,7 @@ export const PlanEditor = ({
       }}
       onDragEnd={dropped}
     >
-      <div className={styles.columns}>
+      <div className={styles.columns} data-numbered={numbered}>
         <SuggestionsColumn accepting={dragged !== undefined && !isSuggestion(String(dragged)) && !byKeyboard}>
           <div className={styles.columnHeader}>
             <h2 id="suggestions-heading" className={styles.columnTitle}>
@@ -388,7 +394,7 @@ export const PlanEditor = ({
         <PlanColumn accepting={draggingSuggestion}>
           <div className={styles.columnHeader}>
             <h2 id="plan-heading" className={styles.columnTitle}>
-              Your plan
+              {planTitle}
             </h2>
           </div>
           <SortableContext items={movable} strategy={makeRoom}>

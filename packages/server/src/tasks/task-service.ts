@@ -1,3 +1,5 @@
+import { inPlanOrder } from "@taxa/shared/days/day-plan"
+import { getDayPlan } from "../days/day-plan-service.ts"
 import { DEFAULT_WHENS, When, whenOf } from "@taxa/shared/tasks/when"
 import { eq } from "drizzle-orm"
 import type { z } from "zod"
@@ -93,7 +95,12 @@ export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, n
       whens.has(whenOf({ scheduled: row.scheduled ?? undefined, horizon: row.horizon ?? undefined }, today))
   )
   const { search } = query
-  if (search === undefined) return (await tasksOf(db, started)).sort(compareTasks)
+  if (search === undefined) {
+    const listed = (await tasksOf(db, started)).sort(compareTasks)
+    return whens.size === 1 && whens.has(When.TODAY)
+      ? inPlanOrder(listed, (await getDayPlan(db, caller, today)).taskIds)
+      : listed
+  }
   const matching = started.filter(({ row }) => matchesSearch(row, search))
   return searchResults((await tasksOf(db, matching)).sort(compareTasks), search)
 }

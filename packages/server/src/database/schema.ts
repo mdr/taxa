@@ -182,6 +182,20 @@ export interface StoredSessionItem {
 }
 
 /** Blocks of time people plan and work through; each has at most one not yet ended. */
+/** The order each person means to do a day's tasks in. */
+export const dayPlans = pgTable(
+  "day_plans",
+  {
+    userId: userId("user_id")
+      .notNull()
+      .references(() => users.id),
+    date: plainDate("date").notNull(),
+    taskIds: jsonb("task_ids").$type<TaskId[]>().notNull(),
+    updatedAt: instant("updated_at").notNull()
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.date] })]
+)
+
 export const sessions = pgTable(
   "sessions",
   {

@@ -43,6 +43,7 @@ test("undoing ticking a task off from the keyboard", async ({ taxa }) => {
 test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   const inbox = await (await taxa.openTab("Matt")).openInbox()
+  await inbox.sidebar.expectDomains(["H Home"])
 
   const help = await inbox.keyboard.openShortcuts()
   await help.expectShortcuts([
