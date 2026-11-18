@@ -1,7 +1,7 @@
 import { TaxaClient } from "@taxa/shared/api/taxa-client"
 import type { Domain } from "@taxa/shared/domains/domain"
-import type { CreateTaskRequest } from "@taxa/shared/tasks/task-requests"
-import type { Task } from "@taxa/shared/tasks/task"
+import type { CreateTaskRequest, UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
+import type { Task, TaskStatus } from "@taxa/shared/tasks/task"
 
 /** Someone using Taxa through its API: a person, or one of their agents. */
 export class TestCaller {
@@ -19,6 +19,16 @@ export class TestCaller {
 
   addTask(title: string, fields: Omit<CreateTaskRequest, "title"> = {}): Promise<Task> {
     return this.client.createTask({ title, ...fields })
+  }
+
+  /** Change some of a task's fields: `{ priority: Priority.URGENT }`. */
+  changeTask(ref: string, set: UpdateTaskRequest["set"]): Promise<Task> {
+    return this.client.updateTask(ref, { set })
+  }
+
+  /** Move a task to a status, saying who it's waiting on if given. */
+  changeStatus(ref: string, status: TaskStatus, waitingOn?: string): Promise<Task> {
+    return this.client.changeStatus(ref, { status, waitingOn })
   }
 }
 

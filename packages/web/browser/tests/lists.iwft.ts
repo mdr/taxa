@@ -1,4 +1,3 @@
-import { expect } from "@playwright/test"
 import { Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 import { CONFLICT_NOTICE } from "../../src/tasks/changes/task-changes-service.ts"
@@ -73,7 +72,7 @@ test("the offer to undo goes after a few seconds, and the task stays done", asyn
   await list.expectUndoOffered("Fix the tap")
   await list.expectUndoGoesAway()
   await list.expectTasks(["✓ H-1 Fix the tap"])
-  expect((await taxa.matt.client.task("H-1")).status).toBe(TaskStatus.DONE)
+  await taxa.expectTask("H-1", { status: TaskStatus.DONE })
 })
 
 test("a tick the server refuses is taken back, and says why", async ({ taxa }) => {
@@ -84,16 +83,16 @@ test("a tick the server refuses is taken back, and says why", async ({ taxa }) =
   await list.expectTasks(["H-1 Fix the tap"])
 
   const claude = await taxa.matt.agent("Claude Code")
-  await claude.client.updateTask("H-1", { set: { priority: Priority.HIGH } })
+  await claude.changeTask("H-1", { priority: Priority.HIGH })
   await list.complete("Fix the tap")
   await list.expectRowProblem("Fix the tap", CONFLICT_NOTICE)
   await list.expectTasks(["H-1 Fix the tap"])
-  expect((await taxa.matt.client.task("H-1")).status).toBe(TaskStatus.OPEN)
+  await taxa.expectTask("H-1", { status: TaskStatus.OPEN })
 })
 
 test("a capture the server refuses says why, and keeps what was typed", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   const list = await (await taxa.openTab("Matt")).openInbox()
   await list.captureExpectingProblem("x".repeat(501), "500")
-  expect(await taxa.matt.client.tasks()).toEqual([])
+  await taxa.expectTaskCount(0)
 })

@@ -1,4 +1,3 @@
-import { expect } from "@playwright/test"
 import { test } from "../fixtures/taxa-fixture.ts"
 
 test("a first visit offers domains to start with, and starts with the chosen ones", async ({ taxa }) => {
@@ -26,11 +25,11 @@ test("problems with the choices are shown before anything is made", async ({ tax
   await welcome.expectProblem("Personal", "Another domain has P too.")
   await welcome.expectProblem("Work", "Another domain has P too.")
   await welcome.expectAccessible()
-  expect(await taxa.matt.client.domains()).toEqual([])
+  await taxa.expectDomains([])
 })
 
 test("a prefix someone else has is explained, and the domains already made are kept", async ({ taxa }) => {
-  const jo = await taxa.server.user("Jo")
+  const jo = await taxa.addUser("Jo")
   await jo.addDomain("Hobbies", "H")
   const welcome = await (await taxa.openTab("Matt")).openFirstTime()
   await welcome.startExpectingProblems()

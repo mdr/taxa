@@ -55,6 +55,23 @@ export class TestTaxa {
       .toEqual(expected)
   }
 
+  /** The server comes to hold this many of Matt's tasks. */
+  async expectTaskCount(count: number): Promise<void> {
+    await expect.poll(async () => (await this.matt.client.tasks()).length, "tasks on the server").toBe(count)
+  }
+
+  /** Matt's domains, as the server has them, come to be these, by name. */
+  async expectDomains(names: string[]): Promise<void> {
+    await expect
+      .poll(async () => (await this.matt.client.domains()).map((domain) => domain.name), "domains on the server")
+      .toEqual(names)
+  }
+
+  /** Someone else using Taxa, with no domains or tasks yet. */
+  addUser(name: string): Promise<TestUser> {
+    return this.server.user(name)
+  }
+
   /** The session's note, as the server has it. */
   async expectSessionNote(id: SessionId, note: string): Promise<void> {
     await expect

@@ -1,4 +1,3 @@
-import { expect } from "@playwright/test"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
@@ -32,7 +31,7 @@ test("starting tasks from the keyboard puts them first, and in the In progress l
   await detail.keyboard.press("i")
   await detail.expectStatus(TaskStatus.OPEN)
   await detail.sidebar.expectInProgressCount(1)
-  await expect.poll(async () => (await taxa.matt.client.task("2")).status).toBe(TaskStatus.OPEN)
+  await taxa.expectTask("H-2", { status: TaskStatus.OPEN })
 })
 
 test("an empty In progress list says how to start something", async ({ taxa }) => {

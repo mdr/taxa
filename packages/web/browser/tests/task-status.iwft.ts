@@ -1,4 +1,3 @@
-import { expect } from "@playwright/test"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
@@ -25,13 +24,13 @@ test("taking a task through its statuses from its page", async ({ taxa }) => {
     "Matt reopened it",
     "Matt cancelled it"
   ])
-  await expect.poll(async () => (await taxa.matt.client.task("H-1")).status).toBe(TaskStatus.CANCELLED)
+  await taxa.expectTask("H-1", { status: TaskStatus.CANCELLED })
 })
 
 test("a task waiting on someone says who, on its page and in its list", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Fix the boiler", { domain: "H" })
-  await taxa.matt.client.changeStatus("H-1", { status: TaskStatus.WAITING, waitingOn: "the engineer" })
+  await taxa.matt.changeStatus("H-1", TaskStatus.WAITING, "the engineer")
   const detail = await (await taxa.openTab("Matt")).openTask("H-1")
   await detail.expectWaiting("Waiting on the engineer, follow up Mon 12 Jan")
   const list = await detail.sidebar.openDomain("Home")
