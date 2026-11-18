@@ -1,0 +1,141 @@
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.column {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.columnHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.columnTitle {
+  margin: 0 auto 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.search {
+  width: 11rem;
+  font-size: 0.85rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem;
+  min-height: 2.75rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.locked {
+  color: var(--muted);
+}
+
+.title {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.titleText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.ref {
+  flex: none;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.time {
+  flex: none;
+  width: 6.5rem;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.reason {
+  flex: none;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--selected);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.estimate {
+  flex: none;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.iconButton {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: var(--muted);
+}
+
+.iconButton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.add {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.minutes {
+  flex: none;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.empty {
+  margin: 0;
+  padding: 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}

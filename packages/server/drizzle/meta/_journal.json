@@ -15,6 +15,13 @@
       "when": 1794919744284,
       "tag": "0001_inbox_outside_domains",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794995072319,
+      "tag": "0002_sessions",
+      "breakpoints": true
     }
   ]
 }

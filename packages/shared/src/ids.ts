@@ -57,3 +57,7 @@ export const domainId = (text: string): DomainId => DomainIdSchema.parse(text)
 export const TaskIdSchema = z.uuid().brand<"TaskId">()
 export type TaskId = z.infer<typeof TaskIdSchema>
 export const taskId = (text: string): TaskId => TaskIdSchema.parse(text)
+
+export const SessionIdSchema = z.uuid().brand<"SessionId">()
+export type SessionId = z.infer<typeof SessionIdSchema>
+export const sessionId = (text: string): SessionId => SessionIdSchema.parse(text)

@@ -68,3 +68,9 @@ export const findTasks = async (
 
 export const taskIdExists = async (db: Db, id: TaskId): Promise<boolean> =>
   (await db.select({ id: tasks.id }).from(tasks).where(eq(tasks.id, id))).length > 0
+
+/** The live tasks among these that this person can see. */
+export const findTasksWithIds = async (db: Db, userId: UserId, ids: readonly TaskId[]): Promise<FoundTask[]> =>
+  ids.length === 0
+    ? []
+    : (await selectVisible(db, userId, and(isNull(tasks.deletedAt), inArray(tasks.id, [...ids])))).map(foundOf)

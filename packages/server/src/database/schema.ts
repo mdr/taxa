@@ -11,14 +11,16 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid
 } from "drizzle-orm/pg-core"
+import type { SessionOutcome } from "@taxa/shared/sessions/session"
 import type { ActivityType, FieldChange } from "@taxa/shared/activity/activity"
 import type { IsoDate, IsoTime, TimeZone } from "@taxa/shared/dates/plain-date"
 import type { DomainPrefix } from "@taxa/shared/domains/domain"
-import type { AgentId, ApiKeyId, DomainId, TaskId, UserId } from "@taxa/shared/ids"
+import type { AgentId, ApiKeyId, DomainId, SessionId, TaskId, UserId } from "@taxa/shared/ids"
 import type { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
-import type { ActivitySequence, Minutes, TaskNumber, Version } from "@taxa/shared/units"
+import type { ActivitySequence, Minutes, Ms, TaskNumber, Version } from "@taxa/shared/units"
 
 // Drizzle's column builder types are too intricate to write out.
 // oxlint-disable-next-line typescript/explicit-function-return-type
@@ -168,4 +170,41 @@ export const idempotencyKeys = pgTable(
     body: jsonb("body").notNull()
   },
   (table) => [primaryKey({ columns: [table.userId, table.key] })]
+)
+
+/** A task planned in a session, as stored: see `SessionItem`. */
+export interface StoredSessionItem {
+  taskId: TaskId
+  minutes: Minutes
+  spentMs: Ms
+  outcome?: SessionOutcome
+}
+
+/** Blocks of time people plan and work through; each has at most one not yet ended. */
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: uuid("id").$type<SessionId>().primaryKey(),
+    userId: userId("user_id")
+      .notNull()
+      .references(() => users.id),
+    startedAt: instant("started_at").notNull(),
+    endsAt: instant("ends_at").notNull(),
+    items: jsonb("items").$type<StoredSessionItem[]>().notNull(),
+    /** The task under way, and since when: both or neither. */
+    currentTaskId: uuid("current_task_id").$type<TaskId>(),
+    currentSince: instant("current_since"),
+    note: text("note").notNull(),
+    endedAt: instant("ended_at"),
+    createdAt: instant("created_at").notNull(),
+    updatedAt: instant("updated_at").notNull(),
+    version: version()
+  },
+  (table) => [
+    uniqueIndex("sessions_one_open_each")
+      .on(table.userId)
+      .where(sql`${table.endedAt} is null`),
+    index("sessions_user").on(table.userId, table.startedAt),
+    check("sessions_current_whole", sql`(${table.currentTaskId} is null) = (${table.currentSince} is null)`)
+  ]
 )

@@ -9,6 +9,9 @@ import { TaskDetailPage } from "../tasks/detail/TaskDetailPage.tsx"
 import { TaskListPage } from "../tasks/list/TaskListPage.tsx"
 import { ListType, type TaskList } from "../tasks/list/task-list.ts"
 import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
+import { SessionPage } from "../sessions/SessionPage.tsx"
+import { SessionSummary } from "../sessions/run/SessionSummary.tsx"
+import { SESSION_PATH } from "../sessions/session-paths.ts"
 
 const INBOX_LIST: TaskList = { type: ListType.INBOX }
 const IN_PROGRESS_LIST: TaskList = { type: ListType.IN_PROGRESS }
@@ -67,6 +70,10 @@ const Pages = () => (
       {({ prefix }) => <TaskListPage key={prefix} list={{ type: ListType.DOMAIN, prefix }} />}
     </Route>
     <Route path="/tasks/:ref">{({ ref }) => <TaskDetailPage key={ref} taskRef={ref} />}</Route>
+    <Route path={SESSION_PATH}>
+      <SessionPage />
+    </Route>
+    <Route path="/sessions/:id">{({ id }) => <SessionSummary key={id} id={id} />}</Route>
     <Route>
       <NotFound />
     </Route>

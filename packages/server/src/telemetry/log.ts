@@ -24,6 +24,11 @@ export const LOG_CODES = {
   domain: {
     created: "domain.created"
   },
+  session: {
+    created: "session.created",
+    changed: "session.changed",
+    ended: "session.ended"
+  },
   task: {
     created: "task.created",
     updated: "task.updated",

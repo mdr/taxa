@@ -46,6 +46,10 @@ sidebar gathers them from the Inbox and every domain.
 Also added: links with their own text in notes, by `⌘K` while writing, the
 toolbar, or typing `[text](address)`, with a bar to open, edit or remove one.
 
+Also added: sessions, for planning a block of time (see Deciding what to do
+in the design): the API, and in the web app, planning one, working through it
+with `X` and `I`, replanning, and a summary at the end. Not yet in the CLI.
+
 **Feedback checkpoint:** daily use, the CLI, and how agents get on with it.
 
 ## Stage 2: Organising and deciding

@@ -81,6 +81,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+.left {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Darkened towards the text, to read at this size. */
+.over {
+  color: color-mix(in srgb, var(--warning) 65%, var(--text));
+  font-weight: 600;
+}
+
 @media (max-width: 40rem) {
   .sidebar {
     position: static;

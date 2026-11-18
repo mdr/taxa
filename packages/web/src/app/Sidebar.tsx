@@ -1,4 +1,4 @@
-import { Inbox, Keyboard, Sprout } from "lucide-react"
+import { Inbox, Keyboard, Sprout, Timer } from "lucide-react"
 import { Link, useLocation } from "wouter"
 import styles from "./Sidebar.module.css"
 import { sidebarTestIds } from "./SidebarTestIds.ts"
@@ -10,6 +10,28 @@ import { StatusIcon } from "../tasks/StatusIcon.tsx"
 import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { useShortcutActions } from "../shortcuts/shortcut-service.ts"
+import type { Session } from "@taxa/shared/sessions/session"
+import { sessionTimeline } from "@taxa/shared/sessions/session-timeline"
+import { useCurrentSession } from "../sessions/session-queries.ts"
+import { SESSION_PATH } from "../sessions/session-paths.ts"
+import { shortLeft } from "../sessions/session-text.ts"
+import { useNow } from "../sessions/use-now.ts"
+
+/** Time left on the task under way, or how far over it's run. */
+const SessionLeft = ({ session }: { session: Session }) => {
+  const now = useNow()
+  const { current } = sessionTimeline(session, now)
+  if (!current) return undefined
+  return (
+    <span
+      className={`${styles.count} ${current.left < 0 ? styles.over : styles.left}`}
+      aria-label={current.left < 0 ? "over time" : "left on this task"}
+      data-testid={sidebarTestIds.sessionLeft}
+    >
+      {shortLeft(current.left)}
+    </span>
+  )
+}
 
 export const Sidebar = () => {
   const [location] = useLocation()
@@ -20,6 +42,7 @@ export const Sidebar = () => {
   const current = (href: string) => (location === href ? "page" : undefined)
   const inboxCount = inbox.data?.length ?? 0
   const { openHelp } = useShortcutActions()
+  const session = useCurrentSession().data?.session
   return (
     <nav className={styles.sidebar} aria-label="Lists">
       <p className={styles.brand}>
@@ -50,6 +73,16 @@ export const Sidebar = () => {
             {inProgressCount}
           </span>
         )}
+      </Link>
+      <Link
+        href={SESSION_PATH}
+        className={styles.link}
+        aria-current={current(SESSION_PATH)}
+        data-testid={sidebarTestIds.session}
+      >
+        <Timer size={16} className={styles.linkIcon} aria-hidden />
+        <span className={styles.name}>Session</span>
+        {session && <SessionLeft session={session} />}
       </Link>
       <p className={styles.section}>Domains</p>
       <ul className={styles.links}>

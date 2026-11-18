@@ -4,6 +4,7 @@ import { sidebarTestIds } from "../../src/app/SidebarTestIds.ts"
 import { newDomainFormTestIds } from "../../src/domains/NewDomainFormTestIds.ts"
 import { ShortcutsHelp } from "./ShortcutsHelp.ts"
 import { TaskListPage } from "./TaskListPage.ts"
+import { SessionPage } from "./SessionPage.ts"
 
 /** The lists down the side, on every page. */
 export class Sidebar extends PageObject {
@@ -63,6 +64,17 @@ export class Sidebar extends PageObject {
   async openDomain(name: string): Promise<TaskListPage> {
     await this.#page.getByTestId(sidebarTestIds.domain).filter({ hasText: name }).click()
     return new TaskListPage(this.#page)
+  }
+
+  async openSession(): Promise<SessionPage> {
+    await this.#page.getByTestId(sidebarTestIds.session).click()
+    return new SessionPage(this.#page)
+  }
+
+  /** Time left on the session's task, or how far over: `25m`, `+15m`; none, with no task under way. */
+  async expectSessionLeft(text: string | undefined): Promise<void> {
+    const left = this.#page.getByTestId(sidebarTestIds.sessionLeft)
+    await (text === undefined ? expect(left).toHaveCount(0) : expect(left).toHaveText(text))
   }
 
   async openShortcuts(): Promise<ShortcutsHelp> {

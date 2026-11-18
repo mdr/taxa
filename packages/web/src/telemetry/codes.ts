@@ -48,6 +48,15 @@ export const ANALYTICS_CODES = {
   },
   notes: {
     modeSwitched: "notes.modeSwitched"
+  },
+  session: {
+    started: "session.started",
+    taskFinished: "session.taskFinished",
+    taskStarted: "session.taskStarted",
+    timeAdded: "session.timeAdded",
+    replanned: "session.replanned",
+    ended: "session.ended",
+    noteSaved: "session.noteSaved"
   }
 } as const
 

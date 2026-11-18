@@ -3,7 +3,7 @@ import type { z } from "zod"
 import { ActivityType, type Activity, type FieldChange } from "@taxa/shared/activity/activity"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { dateIn } from "@taxa/shared/dates/plain-date"
-import { taskId as newTaskId, uuidv7, type DomainId, type UserId } from "@taxa/shared/ids"
+import { taskId as newTaskId, uuidv7, type DomainId, type TaskId, type UserId } from "@taxa/shared/ids"
 import { compareTasks } from "@taxa/shared/tasks/task-order"
 import { parseTaskLookup, type TaskLookup } from "@taxa/shared/tasks/task-ref"
 import type {
@@ -25,7 +25,7 @@ import { callerFields } from "../telemetry/change-fields.ts"
 import { LOG_CODES, type ServerLogCode, type ServerLogger } from "../telemetry/log.ts"
 import { Deletion, deletedAtFor, inProgressIdsOf, stateOf, taskOf, valuesOf, type TaskRow } from "./task-rows.ts"
 import { changeStatus, changesFromNothing, editTask, type Outcome, type TaskState } from "./task-state.ts"
-import { findTask, findTasks, taskIdExists, type FoundTask } from "./task-store.ts"
+import { findTask, findTasks, findTasksWithIds, taskIdExists, type FoundTask } from "./task-store.ts"
 
 const lookupOf = (text: string): TaskLookup => {
   const ref = parseTaskLookup(text)
@@ -75,6 +75,10 @@ export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, n
     query.includeNotStarted === "true" ? found : found.filter(({ row }) => !row.start || row.start <= today)
   return (await tasksOf(db, started)).sort(compareTasks)
 }
+
+/** The live tasks among these that the caller can see, by id. */
+export const tasksWithIds = async (db: Db, caller: Caller, ids: readonly TaskId[]): Promise<Map<TaskId, Task>> =>
+  new Map((await tasksOf(db, await findTasksWithIds(db, caller.user.id, ids))).map((task) => [task.id, task]))
 
 export const getTask = async (db: Db, caller: Caller, ref: string): Promise<Task> =>
   taskFrom(db, await findTask(db, caller.user.id, lookupOf(ref)))

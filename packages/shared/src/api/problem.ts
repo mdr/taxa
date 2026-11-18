@@ -6,7 +6,8 @@ export enum ProblemType {
   FORBIDDEN = "FORBIDDEN",
   NOT_FOUND = "NOT_FOUND",
   VERSION_CONFLICT = "VERSION_CONFLICT",
-  PREFIX_TAKEN = "PREFIX_TAKEN"
+  PREFIX_TAKEN = "PREFIX_TAKEN",
+  SESSION_OPEN = "SESSION_OPEN"
 }
 
 /** What the API answers when it can't do what was asked. */

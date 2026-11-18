@@ -146,6 +146,19 @@ which aren't stored as comments.
 There is no hidden priority score: the fields stay understandable, and any
 cleverness lives in views and suggestions.
 
+**Sessions** plan a one-off block of time: say how long you have (a length,
+or until a time), then choose tasks from suggestions (in progress, due soon,
+high priority) and give each the time you mean to spend on it. That time is
+yours to read as a target or a timebox; it's separate from the task's
+estimate. While the session runs, the task under way counts down, then
+counts up as "over" with the rest of the plan sliding later; nothing moves on
+by itself. Done ticks the task off, Stop here leaves it open, and either goes
+on to the next; the plan can be changed at any point. Ending shows what got
+done, what was worked on and what wasn't reached, with planned against spent
+time and a note. Sessions are kept on the server, one under way per person,
+so agents can see when you're in one, and the time spent on each task in
+them is there for checking estimates later.
+
 Still open: should unassigned tasks in a shared domain appear in everyone's
 Today, or in a separate "unclaimed" list?
 

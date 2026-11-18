@@ -1,4 +1,4 @@
-import type { AgentId, ApiKeyId } from "../ids.ts"
+import type { AgentId, ApiKeyId, SessionId } from "../ids.ts"
 import type { Version } from "../units.ts"
 import { z } from "zod"
 import { ActivitySchema, type Activity } from "../activity/activity.ts"
@@ -21,6 +21,15 @@ import {
   type UpdateTaskRequest
 } from "../tasks/task-requests.ts"
 import { TASKS_PATH, TaskSchema, type Task } from "../tasks/task.ts"
+import {
+  CURRENT_SESSION_PATH,
+  CurrentSessionSchema,
+  SESSIONS_PATH,
+  SessionSchema,
+  type CreateSessionRequest,
+  type Session,
+  type UpdateSessionRequest
+} from "../sessions/session.ts"
 import { HEALTH_PATH, HealthSchema, type Health } from "./health.ts"
 import { definedFields } from "../objects.ts"
 import { IDEMPOTENCY_KEY_HEADER, ProblemSchema, ProblemType, type Problem } from "./problem.ts"
@@ -123,6 +132,23 @@ export class TaxaClient {
     return (await this.#request(ListSchema(ActivitySchema), `${taskPath(ref)}/activity`)).items
   }
 
+  /** Your session under way, if there is one. */
+  async currentSession(): Promise<Session | undefined> {
+    return (await this.#request(CurrentSessionSchema, CURRENT_SESSION_PATH)).session
+  }
+
+  session(id: SessionId): Promise<Session> {
+    return this.#request(SessionSchema, sessionPath(id))
+  }
+
+  createSession(request: CreateSessionRequest, idempotencyKey?: string): Promise<Session> {
+    return this.#request(SessionSchema, SESSIONS_PATH, { method: "POST", body: request, idempotencyKey })
+  }
+
+  updateSession(id: SessionId, request: UpdateSessionRequest, ifMatch?: Version): Promise<Session> {
+    return this.#request(SessionSchema, sessionPath(id), { method: "PATCH", body: request, ifMatch })
+  }
+
   async agents(): Promise<Agent[]> {
     return (await this.#request(ListSchema(AgentSchema), AGENTS_PATH)).items
   }
@@ -174,3 +200,4 @@ export class TaxaClient {
 }
 
 const taskPath = (ref: string): string => `${TASKS_PATH}/${encodeURIComponent(ref)}`
+const sessionPath = (id: SessionId): string => `${SESSIONS_PATH}/${encodeURIComponent(id)}`
