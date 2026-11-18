@@ -186,6 +186,38 @@ describe("listing tasks", () => {
     expect(out.horizonSetAt).toBeUndefined()
   })
 
+  it("links a task to the one it follows on from, finds what one led to, and refuses loops", async ({ server }) => {
+    const matt = await mattWithDomains(server)
+    const disks = await matt.addTask("Back up the floppy disks", { domain: "H" })
+    await matt.client.changeStatus(disks.ref, { status: TaskStatus.DONE })
+    const dispose = await matt.addTask("Dispose of the disks", { domain: "H", followsOn: disks.ref })
+    expect(dispose.followsOnId).toBe(disks.id)
+    const photos = await matt.addTask("Upload the photos", { domain: "H" })
+    expect((await matt.client.updateTask(photos.ref, { set: { followsOn: disks.id } })).followsOnId).toBe(disks.id)
+    expect((await matt.client.tasks({ followsOn: disks.ref, status: "OPEN,DONE" })).map(({ title }) => title)).toEqual([
+      "Dispose of the disks",
+      "Upload the photos"
+    ])
+
+    await expectProblem(
+      matt.client.updateTask(disks.ref, { set: { followsOn: disks.ref } }),
+      ProblemType.INVALID_REQUEST
+    )
+    await expectProblem(
+      matt.client.updateTask(disks.ref, { set: { followsOn: dispose.ref } }),
+      ProblemType.INVALID_REQUEST
+    )
+    const jo = await server.user("Jo")
+    await jo.addDomain("Jo", "J")
+    await expectProblem(jo.addTask("Mine", { domain: "J", followsOn: disks.id }), ProblemType.NOT_FOUND)
+
+    const unlinked = await matt.client.updateTask(photos.ref, { clear: [ClearableField.FOLLOWS_ON] })
+    expect(unlinked.followsOnId).toBeUndefined()
+    expect((await matt.client.tasks({ followsOn: disks.ref })).map(({ title }) => title)).toEqual([
+      "Dispose of the disks"
+    ])
+  })
+
   it("shows nobody else's tasks, in their domains or their Inbox", async ({ server }) => {
     const matt = await mattWithDomains(server)
     const jo = await server.user("Jo")

@@ -17,6 +17,7 @@ export const TASK_FIELD_OPTIONS = {
   estimate: { type: "string" },
   energy: { type: "string" },
   horizon: { type: "string" },
+  "follows-on": { type: "string" },
   inbox: { type: "boolean" }
 } as const
 
@@ -30,6 +31,7 @@ export const TASK_FIELD_HELP = `  --domain PREFIX       File it in this domain, 
   --estimate TIME       How long it'll take: 30m, 1h, 1h30m
   --energy LEVEL        low, medium or high
   --horizon WHEN        soon or someday, for a task without a date
+  --follows-on TASK     The task it follows on from, by ref or id
   --inbox               Put it back in the Inbox, out of its domain
 DATE is ${DATE_INPUT_HELP}.`
 
@@ -68,6 +70,7 @@ export const fieldsFrom = (values: OptionValues, today: IsoDate): NonNullable<Up
     priority: optional(stringOption(values, "priority"), (text) => choice(Priority, text, "--priority")),
     energy: optional(stringOption(values, "energy"), (text) => choice(Energy, text, "--energy")),
     horizon: optional(stringOption(values, "horizon"), (text) => choice(Horizon, text, "--horizon")),
+    followsOn: stringOption(values, "follows-on"),
     estimateMinutes: optional(stringOption(values, "estimate"), (text) => {
       const minutes = parseEstimate(text)
       if (minutes === undefined)
@@ -82,7 +85,8 @@ export const fieldsFrom = (values: OptionValues, today: IsoDate): NonNullable<Up
 /** --clear takes the options' names as well as the API's. */
 const CLEAR_ALIASES: Record<string, ClearableField> = {
   at: ClearableField.SCHEDULED_TIME,
-  estimate: ClearableField.ESTIMATE_MINUTES
+  estimate: ClearableField.ESTIMATE_MINUTES,
+  "follows-on": ClearableField.FOLLOWS_ON
 }
 
 /** The fields --clear names. */

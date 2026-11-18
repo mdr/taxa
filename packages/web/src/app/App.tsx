@@ -37,6 +37,8 @@ import { appShortcuts } from "../shortcuts/app-shortcuts.ts"
 import { ShortcutsHelp } from "../shortcuts/ShortcutsHelp.tsx"
 import { CommandMenu } from "../shortcuts/CommandMenu.tsx"
 import { localShortcutSettings } from "../shortcuts/shortcut-settings.ts"
+import { FollowOnDialog } from "../tasks/follow-ons/FollowOnDialog.tsx"
+import { FollowOnContext, FollowOnService, useFollowingOn } from "../tasks/follow-ons/follow-on-service.ts"
 import {
   ShortcutContext,
   ShortcutScope,
@@ -114,6 +116,7 @@ const Layout = () => {
   const shortcuts = useShortcutActions()
   const helpOpen = useHelpOpen()
   const menuOpen = useMenuOpen()
+  const followingOn = useFollowingOn()
   useShortcuts(ShortcutScope.APP, appShortcuts(location, navigate, domains.data ?? [], shortcuts))
   if (domains.data?.length === 0) {
     return (
@@ -131,6 +134,7 @@ const Layout = () => {
       </main>
       {helpOpen && <ShortcutsHelp />}
       {menuOpen && <CommandMenu />}
+      {followingOn && <FollowOnDialog key={followingOn.id} from={followingOn} />}
     </div>
   )
 }
@@ -144,6 +148,7 @@ export const App = () => {
   const [sessionPlan] = useState(
     () => new SessionPlanService(taxaApi, realClock, appAnalytics, (session) => sessionChanged(queryClient, session))
   )
+  const [followOn] = useState(() => new FollowOnService())
   useEffect(() => shortcuts.dispose, [shortcuts])
   useKeyboardShortcuts(shortcuts)
   return (
@@ -151,7 +156,9 @@ export const App = () => {
       <TaskChangesContext.Provider value={taskChanges}>
         <SessionPlanContext.Provider value={sessionPlan}>
           <ShortcutContext.Provider value={shortcuts}>
-            <Layout />
+            <FollowOnContext.Provider value={followOn}>
+              <Layout />
+            </FollowOnContext.Provider>
           </ShortcutContext.Provider>
         </SessionPlanContext.Provider>
       </TaskChangesContext.Provider>

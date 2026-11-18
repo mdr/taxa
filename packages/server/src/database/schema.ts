@@ -12,7 +12,8 @@ import {
   text,
   timestamp,
   uniqueIndex,
-  uuid
+  uuid,
+  type AnyPgColumn
 } from "drizzle-orm/pg-core"
 import type { SessionOutcome } from "@taxa/shared/sessions/session"
 import type { ActivityType, FieldChange } from "@taxa/shared/activity/activity"
@@ -120,6 +121,10 @@ export const tasks = pgTable(
     horizon: text("horizon").$type<Horizon>(),
     /** When it was put in its horizon. */
     horizonSetAt: instant("horizon_set_at"),
+    /** The task it follows on from. */
+    followsOnId: uuid("follows_on_id")
+      .$type<TaskId>()
+      .references((): AnyPgColumn => tasks.id),
     inProgressUserId: userId("in_progress_user_id").references(() => users.id),
     inProgressAgentId: agentId("in_progress_agent_id").references(() => agents.id),
     inProgressAgentContext: text("in_progress_agent_context"),
@@ -136,6 +141,7 @@ export const tasks = pgTable(
   (table) => [
     index("tasks_domain").on(table.domainId),
     index("tasks_inbox").on(table.inboxUserId),
+    index("tasks_follows_on").on(table.followsOnId),
     check("tasks_filed_or_in_an_inbox", sql`(${table.domainId} is null) <> (${table.inboxUserId} is null)`)
   ]
 )

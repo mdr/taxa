@@ -106,7 +106,7 @@ const edit: Command = {
   usage: `<ref> [options]   or   taxa edit <ref> - < changes.json
   --title TEXT          A new title
 ${TASK_FIELD_HELP}
-  --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, energy, horizon)
+  --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, energy, horizon, follows-on)
 ${VERSION_HELP}
 With -, stdin holds {"set": {...}, "clear": [...]}, as the API's UpdateTaskRequest.`,
   options: { ...TASK_FIELD_OPTIONS, title: { type: "string" }, clear: { type: "string" }, ...VERSION_OPTION },

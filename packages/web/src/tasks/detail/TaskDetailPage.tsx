@@ -20,6 +20,7 @@ import {
   useShortcuts
 } from "../../shortcuts/shortcut-service.ts"
 import { TaskChangeType, useTaskChanges, useTaskProblem, type TaskChange } from "../changes/task-changes-service.ts"
+import { FollowOnLinks } from "../follow-ons/FollowOnLinks.tsx"
 import { START_OR_STOP, startedOrStopped } from "../in-progress.ts"
 
 export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
@@ -104,6 +105,7 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
       )}
       <TitleField key={task.title} title={task.title} change={change} />
       <TaskProperties task={task} domains={domains.data ?? []} change={change} />
+      <FollowOnLinks task={task} change={change} />
       {problem && (
         <p className={styles.problem} role="alert" data-testid={taskDetailPageTestIds.problem}>
           {problem}

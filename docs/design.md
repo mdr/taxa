@@ -30,6 +30,13 @@ Domain (Personal / Work / Home)   who can see it
   belong to no project and sit directly in a domain.
 - **Subtasks** are tasks with a parent. Projects stay a separate type from
   tasks: they have a different lifecycle and appear in different places.
+- **Follow-ons** link a task to the one it came out of: it _follows on
+  from_ that task, which shows what it _led to_. A task follows on from one
+  task at most and can lead to any number, so the history is a trail, not a
+  web, and never a loop. Ticking a task off offers **+ Follow-on**, which
+  adds one in the same domain. It's the one kind of link between tasks;
+  dependencies stay in the backlog. Once projects exist, a trail could
+  become one.
 - **Tags** are free-form labels (`errand`, `@phone`, `car`). A task can have
   any number. They're how we capture context and type.
 - **Assignees** come from a domain's members. In a shared domain, a task's

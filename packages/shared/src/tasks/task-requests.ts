@@ -21,7 +21,9 @@ const EditableFieldsSchema = z.object({
   energy: z.enum(Energy),
   horizon: z.enum(Horizon),
   /** File it in this domain, by prefix or id. */
-  domain: z.string()
+  domain: z.string(),
+  /** The task it follows on from, by ref or id. */
+  followsOn: z.string()
 })
 
 /** Fields that can be emptied. */
@@ -32,7 +34,8 @@ export enum ClearableField {
   START = "start",
   ESTIMATE_MINUTES = "estimateMinutes",
   ENERGY = "energy",
-  HORIZON = "horizon"
+  HORIZON = "horizon",
+  FOLLOWS_ON = "followsOnId"
 }
 
 /** Without a domain, it goes in your Inbox. */
@@ -75,6 +78,8 @@ export const ListTasksQuerySchema = z.object({
   includeNotStarted: z.enum(["true", "false"]).optional(),
   /** Comma-separated: TODAY, ON_A_DAY, SOON, ANY_TIME, SOMEDAY. All but SOMEDAY by default. */
   when: z.string().optional(),
+  /** Only the tasks that follow on from this one, by ref or id. */
+  followsOn: z.string().optional(),
   /** Words to find in a task's title or notes: each must be in one or the other. Best matches first. */
   search: z.string().max(200).optional()
 })

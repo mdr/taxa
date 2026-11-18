@@ -67,6 +67,8 @@ export const TaskSchema = z.object({
   horizon: z.enum(Horizon).optional(),
   /** When it was put in its horizon. */
   horizonSetAt: z.iso.datetime().optional(),
+  /** The task it follows on from: what it came out of, done or not. */
+  followsOnId: TaskIdSchema.optional(),
   /** While IN_PROGRESS: who is working on it. */
   inProgressBy: ActorSchema.optional(),
   /** While WAITING: what on, and when to follow it up. */

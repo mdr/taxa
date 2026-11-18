@@ -4,6 +4,7 @@ import type { Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import type { When } from "@taxa/shared/tasks/when"
 import { PageObject } from "./steps.ts"
 import { expectAccessible } from "./accessibility.ts"
+import { FollowOnDialog } from "./FollowOnDialog.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
 import { INBOX_CHOICE } from "../../src/tasks/filing/filing.ts"
 import { estimatePropertyTestIds } from "../../src/tasks/detail/properties/EstimatePropertyTestIds.ts"
@@ -107,6 +108,13 @@ export class TaskRowMenu extends PageObject {
     await this.#option(THING_CHOICE[thing]).click()
     await this.#row.getByTestId(taskRowTestIds.menuBack).click()
     await expect(this.#option(THING_CHOICE[thing])).toBeFocused()
+  }
+
+  async addFollowOn(): Promise<FollowOnDialog> {
+    await this.#option("FOLLOW_ON").click()
+    const dialog = new FollowOnDialog(this.#page)
+    await dialog.expectShown()
+    return dialog
   }
 
   async delete(): Promise<void> {

@@ -55,6 +55,8 @@ const PHRASES: Record<string, Phrase> = {
   },
   estimateMinutes: ({ to }) =>
     typeof to === "number" ? `estimated it at ${formatEstimate(to)}` : "cleared the estimate",
+  followsOnId: ({ to }) =>
+    typeof to === "string" ? "linked it as a follow-on" : "unlinked it from the task it followed on from",
   scheduledTime: ({ to }) => (typeof to === "string" ? `set the time to ${to}` : "cleared the time"),
   domainId: ({ from, to }, { domainName }) => {
     if (typeof to !== "string") return "put it back in the Inbox"

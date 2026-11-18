@@ -6,7 +6,17 @@ import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { ClearableField } from "@taxa/shared/tasks/task-requests"
 import { PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 import { When, whenOf, whenRequest } from "@taxa/shared/tasks/when"
-import { CalendarClock, ChevronLeft, Copy, Ellipsis, FolderInput, Inbox, Timer, Trash2 } from "lucide-react"
+import {
+  CalendarClock,
+  ChevronLeft,
+  Copy,
+  CornerDownRight,
+  Ellipsis,
+  FolderInput,
+  Inbox,
+  Timer,
+  Trash2
+} from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import styles from "./TaskRowMenu.module.css"
 import { taskRowTestIds } from "./TaskRowTestIds.ts"
@@ -24,6 +34,7 @@ import { INBOX_CHOICE, filingChoice, filingRequest } from "../../filing/filing.t
 import { PriorityIcon } from "../../PriorityIcon.tsx"
 import { StatusIcon } from "../../StatusIcon.tsx"
 import { WHEN_ICONS, whenLabel, whenOptions } from "../../when/when-choices.tsx"
+import { useFollowOn } from "../../follow-ons/follow-on-service.ts"
 
 /** What the menu shows: its list of things to change, or the choices for one of them. */
 enum Section {
@@ -49,6 +60,7 @@ const SECTION_TEXT: Record<Section, string> = {
 }
 
 enum Action {
+  FOLLOW_ON = "FOLLOW_ON",
   COPY_REF = "COPY_REF",
   DELETE = "DELETE"
 }
@@ -75,6 +87,7 @@ const MainOptions = ({
   open
 }: PanelProps & { open: (section: Section) => void }) => {
   const domain = domains.find(({ id }) => id === task.domainId)
+  const { start } = useFollowOn()
   const WhenIcon = WHEN_ICONS[whenOf(task, today)]
   return (
     <OptionList
@@ -115,12 +128,20 @@ const MainOptions = ({
           icon: <FolderInput size={15} aria-hidden />,
           detail: domain?.name ?? "Inbox"
         },
+        {
+          value: Action.FOLLOW_ON,
+          label: "Add follow-on task",
+          icon: <CornerDownRight size={15} aria-hidden />
+        },
         { value: Action.COPY_REF, label: `Copy ${task.ref}`, icon: <Copy size={15} aria-hidden /> },
         { value: Action.DELETE, label: "Delete task", icon: <Trash2 size={15} aria-hidden />, danger: true }
       ]}
       onChoose={(choice) => {
         const chosen = choice as Action | Section
-        if (chosen === Action.COPY_REF) {
+        if (chosen === Action.FOLLOW_ON) {
+          close()
+          start(task)
+        } else if (chosen === Action.COPY_REF) {
           close()
           void navigator.clipboard.writeText(task.ref)
           appAnalytics.track(ANALYTICS_CODES.task.refCopied, `copied ${task.ref}`, {

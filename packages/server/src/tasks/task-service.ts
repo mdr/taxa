@@ -38,6 +38,7 @@ import {
   type TaskRow
 } from "./task-rows.ts"
 import { changeStatus, changesFromNothing, editTask, type Outcome, type TaskState } from "./task-state.ts"
+import { followsOnIdFor } from "./follow-ons.ts"
 import { findTask, findTasks, findTasksWithIds, taskIdExists, type FoundTask } from "./task-store.ts"
 
 const lookupOf = (text: string): TaskLookup => {
@@ -95,7 +96,14 @@ const parseWhens = (text: string | undefined): ReadonlySet<When> => {
 export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, now: Instant): Promise<Task[]> => {
   const domainId = query.domain === undefined ? undefined : (await findDomain(db, caller.user.id, query.domain)).id
   const inbox = query.inbox === undefined ? undefined : query.inbox === "true"
-  const found = await findTasks(db, caller.user.id, { domainId, statuses: parseStatuses(query.status), inbox })
+  const followsOnId =
+    query.followsOn === undefined ? undefined : (await findTask(db, caller.user.id, lookupOf(query.followsOn))).row.id
+  const found = await findTasks(db, caller.user.id, {
+    domainId,
+    statuses: parseStatuses(query.status),
+    inbox,
+    followsOnId
+  })
   const today = dateIn(caller.user.timeZone, now)
   const whens = parseWhens(query.when)
   const started = found.filter(
@@ -142,7 +150,7 @@ export const createTask = async (
   db: Db,
   log: ServerLogger,
   caller: Caller,
-  { id, domain, title, ...fields }: z.infer<typeof CreateTaskRequestSchema>,
+  { id, domain, title, followsOn, ...fields }: z.infer<typeof CreateTaskRequestSchema>,
   now: Instant
 ): Promise<Task> => {
   const { task, changes } = await db.transaction(async (tx) => {
@@ -151,7 +159,11 @@ export const createTask = async (
       throw new ProblemError(ProblemType.INVALID_REQUEST, `A task with id ${taskId} already exists.`)
     const domainId = domain === undefined ? undefined : (await findDomain(tx, caller.user.id, domain)).id
     const inboxUserId = domainId === undefined ? caller.user.id : undefined
-    const state = editTask(blankState(domainId, inboxUserId, title), { set: fields, clear: [] }).state
+    const followsOnId = followsOn === undefined ? undefined : await followsOnIdFor(tx, caller, followsOn, taskId)
+    const state = editTask(blankState(domainId, inboxUserId, title), {
+      set: { ...fields, ...(followsOnId && { followsOnId }) },
+      clear: []
+    }).state
     const at = new Date(now)
     await tx.insert(tasks).values({
       id: taskId,
@@ -191,6 +203,7 @@ const blankState = (domainId: DomainId | undefined, inboxUserId: UserId | undefi
   estimateMinutes: undefined,
   energy: undefined,
   horizon: undefined,
+  followsOnId: undefined,
   inProgressBy: undefined,
   waitingOn: undefined,
   followUp: undefined,
@@ -258,20 +271,26 @@ export const updateTask = (
   log: ServerLogger,
   caller: Caller,
   ref: string,
-  { set: { domain, inbox, ...set }, clear }: z.infer<typeof UpdateTaskRequestSchema>,
+  { set: { domain, inbox, followsOn, ...set }, clear }: z.infer<typeof UpdateTaskRequestSchema>,
   ifMatch: number | undefined,
   now: Instant
 ): Promise<Task> =>
   changeTask(db, log, caller, ref, ifMatch, now, {
     type: ActivityType.TASK_UPDATED,
     code: LOG_CODES.task.updated,
-    apply: async (state, _row, tx) => {
+    apply: async (state, row, tx) => {
       if (domain !== undefined && inbox)
         throw new ProblemError(ProblemType.INVALID_REQUEST, "A task is either in a domain or in the Inbox, not both.")
       const domainId = domain === undefined ? undefined : (await findDomain(tx, caller.user.id, domain)).id
       const inboxUserId = inbox && state.inboxUserId === undefined ? caller.user.id : undefined
+      const followsOnId = followsOn === undefined ? undefined : await followsOnIdFor(tx, caller, followsOn, row.id)
       return editTask(state, {
-        set: { ...set, ...(domainId && { domainId }), ...(inboxUserId && { inboxUserId }) },
+        set: {
+          ...set,
+          ...(domainId && { domainId }),
+          ...(inboxUserId && { inboxUserId }),
+          ...(followsOnId && { followsOnId })
+        },
         clear
       })
     }

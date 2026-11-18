@@ -1,12 +1,14 @@
 import type { Task } from "@taxa/shared/tasks/task"
-import { CircleCheck, Trash2 } from "lucide-react"
+import { CircleCheck, Plus, Trash2 } from "lucide-react"
 import styles from "./UndoToast.module.css"
 import { undoToastTestIds } from "./UndoToastTestIds.ts"
 import { Undo, useListSession } from "./list-session-service.ts"
+import { useFollowOn } from "../follow-ons/follow-on-service.ts"
 
-/** "Done: …, Undo" or "Deleted: …, Undo", while the list's session offers to undo ticking it off or deleting it. */
+/** "Done: …, + Follow-on, Undo" or "Deleted: …, Undo", while the list's session offers to undo ticking it off or deleting it. */
 export const UndoToast = ({ task, undoes }: { task: Task; undoes: Undo }) => {
   const { undo } = useListSession()
+  const { start } = useFollowOn()
   return (
     <div className={styles.toast} role="status" data-testid={undoToastTestIds.toast}>
       {undoes === Undo.DELETE ? (
@@ -17,6 +19,16 @@ export const UndoToast = ({ task, undoes }: { task: Task; undoes: Undo }) => {
       <span className={styles.text}>
         {undoes === Undo.DELETE ? "Deleted" : "Done"}: <span className={styles.title}>{task.title}</span>
       </span>
+      {undoes === Undo.TICK && (
+        <button
+          type="button"
+          className={styles.followOn}
+          onClick={() => start(task)}
+          data-testid={undoToastTestIds.followOn}
+        >
+          <Plus size={14} aria-hidden /> Follow-on
+        </button>
+      )}
       <button
         type="button"
         className={styles.undo}

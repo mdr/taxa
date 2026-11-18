@@ -1,0 +1,256 @@
+.dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 1.1rem 1.25rem 1.25rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-popover);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 25%);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  padding: 0.3rem;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+}
+
+.close:hover {
+  background: var(--hover);
+}
+
+.from {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
+.fromTitle {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ref {
+  flex: none;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.titleField {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.titleField:focus {
+  border-color: var(--accent);
+  outline: 3px solid var(--accent-soft);
+}
+
+.whens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.when {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.when:hover {
+  background: var(--hover);
+}
+
+.when[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.add {
+  padding: 0.45rem 1rem;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.add:disabled {
+  opacity: 0.5;
+}
+
+.links {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.4rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.88rem;
+}
+
+.linkRow {
+  display: contents;
+}
+
+.linkLabel {
+  padding-top: 0.2rem;
+  color: var(--muted);
+}
+
+.linked,
+.ledTo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.linked {
+  flex-direction: row;
+  align-items: center;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.link:hover {
+  background: var(--hover);
+}
+
+.linkTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unlink {
+  display: grid;
+  place-items: center;
+  padding: 0.2rem;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--faint);
+}
+
+.unlink:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.addFollowOn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.35rem;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.addFollowOn:hover {
+  background: var(--hover);
+}
+
+.picker {
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 0.4rem;
+}
+
+.search {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.candidates {
+  margin: 0.3rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.candidate {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+
+.candidate:hover,
+.candidate:focus-visible {
+  background: var(--hover);
+}

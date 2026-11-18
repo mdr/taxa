@@ -7,6 +7,7 @@ import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { TaskRowMenu } from "./TaskRowMenu.ts"
 import { DayPlanPage } from "./DayPlanPage.ts"
 import { TodayAttention } from "./TodayAttention.ts"
+import { FollowOnDialog } from "./FollowOnDialog.ts"
 import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
 import { taskListPageTestIds } from "../../src/tasks/list/TaskListPageTestIds.ts"
 import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
@@ -137,6 +138,14 @@ export class TaskListPage extends PageObject {
   /** The Undo offer goes by itself after a few seconds. */
   async expectUndoGoesAway(): Promise<void> {
     await expect(this.#page.getByTestId(undoToastTestIds.toast)).toHaveCount(0, { timeout: 10_000 })
+  }
+
+  /** From the offer to undo ticking one off, adds a task that follows on from it. */
+  async addFollowOnFromUndo(): Promise<FollowOnDialog> {
+    await this.#page.getByTestId(undoToastTestIds.followOn).click()
+    const dialog = new FollowOnDialog(this.#page)
+    await dialog.expectShown()
+    return dialog
   }
 
   async undo(): Promise<void> {

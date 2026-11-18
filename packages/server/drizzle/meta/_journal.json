@@ -43,6 +43,13 @@
       "when": 1795012968295,
       "tag": "0005_horizon_set_at",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795020118582,
+      "tag": "0006_follows_on",
+      "breakpoints": true
     }
   ]
 }

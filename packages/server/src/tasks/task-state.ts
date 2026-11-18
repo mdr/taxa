@@ -1,5 +1,5 @@
 import type { Minutes } from "@taxa/shared/units"
-import type { DomainId, UserId } from "@taxa/shared/ids"
+import type { DomainId, TaskId, UserId } from "@taxa/shared/ids"
 import type { FieldChange } from "@taxa/shared/activity/activity"
 import { addDays, type IsoDate, type IsoTime } from "@taxa/shared/dates/plain-date"
 import type { ClearableField, ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
@@ -24,6 +24,7 @@ export interface TaskState {
   estimateMinutes: Minutes | undefined
   energy: Energy | undefined
   horizon: Horizon | undefined
+  followsOnId: TaskId | undefined
   inProgressBy: ActorIds | undefined
   waitingOn: string | undefined
   followUp: IsoDate | undefined
