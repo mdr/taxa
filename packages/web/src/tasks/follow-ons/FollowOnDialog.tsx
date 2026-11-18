@@ -1,12 +1,14 @@
 import { When, whenRequest } from "@taxa/shared/tasks/when"
 import type { Task } from "@taxa/shared/tasks/task"
-import { CornerDownRight, X } from "lucide-react"
+import { CornerDownRight, Inbox, X } from "lucide-react"
 import { useEffect, useRef, useState, type SubmitEvent } from "react"
 import styles from "./FollowOn.module.css"
 import { followOnDialogTestIds } from "./FollowOnDialogTestIds.ts"
 import { useFollowOn } from "./follow-on-service.ts"
 import { problemMessage } from "../../api/problem-message.ts"
 import { useToday } from "../../dates/use-today.ts"
+import { DomainBadge } from "../../domains/DomainBadge.tsx"
+import { useDomains } from "../../domains/domain-queries.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { useCreateTask } from "../task-queries.ts"
@@ -22,12 +24,17 @@ const WHEN_TEXT: Record<(typeof WHENS)[number], string> = {
   [When.SOMEDAY]: "Someday"
 }
 
-/** Writes a task that follows on from another: in the same domain, linked to it, for when you choose. */
+/** Where a follow-on goes: a domain's id, or none for the Inbox. */
+type Place = string | undefined
+
+/** Writes a task that follows on from another, linked to it: in its domain unless another's chosen, for when you choose. */
 export const FollowOnDialog = ({ from }: { from: Task }) => {
   const { end } = useFollowOn()
   const today = useToday()
   const [title, setTitle] = useState("")
   const [when, setWhen] = useState<(typeof WHENS)[number]>(When.ANY_TIME)
+  const [place, setPlace] = useState<Place>(from.domainId)
+  const domains = useDomains()
   const create = useCreateTask()
   const dialog = useRef<HTMLDialogElement>(null)
   // Not closed on unmount: closing fires onClose, which in development's double effects shuts it at once.
@@ -36,7 +43,7 @@ export const FollowOnDialog = ({ from }: { from: Task }) => {
     event.preventDefault()
     if (title.trim() === "") return
     create.mutate(
-      { title: title.trim(), domain: from.domainId, followsOn: from.id, ...whenRequest(when, today).set },
+      { title: title.trim(), domain: place, followsOn: from.id, ...whenRequest(when, today).set },
       {
         onSuccess: (task) => {
           appAnalytics.track(ANALYTICS_CODES.task.followOnAdded, `added ${task.ref} following on from ${from.ref}`, {
@@ -98,6 +105,33 @@ export const FollowOnDialog = ({ from }: { from: Task }) => {
               </button>
             )
           })}
+        </div>
+        <div className={styles.whens} role="radiogroup" aria-label="Domain">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={place === undefined}
+            className={styles.when}
+            onClick={() => setPlace(undefined)}
+            data-testid={followOnDialogTestIds.place}
+          >
+            <Inbox size={13} aria-hidden />
+            Inbox
+          </button>
+          {(domains.data ?? []).map((domain) => (
+            <button
+              key={domain.id}
+              type="button"
+              role="radio"
+              aria-checked={place === domain.id}
+              className={styles.when}
+              onClick={() => setPlace(domain.id)}
+              data-testid={followOnDialogTestIds.place}
+            >
+              <DomainBadge prefix={domain.prefix} />
+              {domain.name}
+            </button>
+          ))}
         </div>
         {create.isError && (
           <p className={styles.error} role="alert" data-testid={followOnDialogTestIds.error}>

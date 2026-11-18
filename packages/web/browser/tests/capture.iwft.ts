@@ -121,3 +121,15 @@ test("finished tasks can be found again, and unticked", async ({ taxa }) => {
   await list.expectTasks(["H-1 Fix the tap", "H-2 Renew passport"])
   await taxa.expectTask("H-1", { status: TaskStatus.OPEN })
 })
+
+test("capturing in the Inbox straight into a domain", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  const inbox = await (await taxa.openTab("Matt")).openInbox()
+  await inbox.captureInto("Fix the tap", "H")
+  await inbox.expectFiled("Added H-1 to Home.")
+  await inbox.expectTasks([])
+  await inbox.expectAccessible()
+  await inbox.capture("Renew passport")
+  await inbox.expectTasks(["IN-2 Renew passport"])
+  await (await inbox.sidebar.openDomain("Home")).expectTasks(["H-1 Fix the tap"])
+})

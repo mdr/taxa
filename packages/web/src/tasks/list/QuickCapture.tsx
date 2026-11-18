@@ -1,4 +1,6 @@
-import { Plus } from "lucide-react"
+import type { Task } from "@taxa/shared/tasks/task"
+import { Inbox, Plus } from "lucide-react"
+import { Link } from "wouter"
 import { useEffect, useRef, useState, type SubmitEvent } from "react"
 import styles from "./QuickCapture.module.css"
 import { quickCaptureTestIds } from "./QuickCaptureTestIds.ts"
@@ -6,11 +8,64 @@ import { problemMessage } from "../../api/problem-message.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { useCreateTask } from "../task-queries.ts"
+import { DomainBadge } from "../../domains/DomainBadge.tsx"
+import { useDomains } from "../../domains/domain-queries.ts"
+import { OptionList } from "../../ui/OptionList.tsx"
+import { Popover, PopoverLook } from "../../ui/Popover.tsx"
+import { INBOX_CHOICE } from "../filing/filing.ts"
 import { FocusTarget, useFocusRequested, useShortcutActions } from "../../shortcuts/shortcut-service.ts"
 
-/** A title, and Enter: into this domain if given, else the Inbox. */
+/** In the Inbox, where a new task goes: the Inbox, or straight into a domain. */
+const FilingPicker = ({ filing, onChoose }: { filing: string; onChoose: (choice: string) => void }) => {
+  const domains = useDomains().data ?? []
+  const domain = domains.find(({ prefix }) => prefix === filing)
+  return (
+    <Popover
+      label="Where it goes"
+      look={PopoverLook.CHIP}
+      testId={quickCaptureTestIds.filing}
+      value={filing}
+      trigger={
+        domain ? (
+          <>
+            <DomainBadge prefix={domain.prefix} /> {domain.name}
+          </>
+        ) : (
+          <>
+            <Inbox size={14} aria-hidden /> Inbox
+          </>
+        )
+      }
+      alignEnd
+    >
+      {(close) => (
+        <OptionList
+          selected={filing}
+          options={[
+            { value: INBOX_CHOICE, label: "Inbox", icon: <Inbox size={15} aria-hidden /> },
+            ...domains.map(({ prefix, name }) => ({
+              value: prefix,
+              label: name,
+              icon: <DomainBadge prefix={prefix} />
+            }))
+          ]}
+          onChoose={(choice) => {
+            close()
+            onChoose(choice)
+          }}
+        />
+      )}
+    </Popover>
+  )
+}
+
+/** A title, and Enter: into this domain if given; else the Inbox, or a domain chosen for it there. */
 export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefined }) => {
   const [title, setTitle] = useState("")
+  const [filing, setFiling] = useState(INBOX_CHOICE)
+  /** The last task added straight into a domain from the Inbox, so it's not lost from sight. */
+  const [filed, setFiled] = useState<Task | undefined>(undefined)
+  const domains = useDomains().data ?? []
   const create = useCreateTask()
   const field = useRef<HTMLInputElement>(null)
   const { focusTaken } = useShortcutActions()
@@ -24,10 +79,13 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
     event.preventDefault()
     if (title.trim() === "") return
     create.mutate(
-      { title: title.trim(), domain: domainPrefix },
+      { title: title.trim(), domain: domainPrefix ?? (filing === INBOX_CHOICE ? undefined : filing) },
       {
         onSuccess: (task) => {
           setTitle("")
+          setFiled(domainPrefix === undefined && !task.inbox ? task : undefined)
+          // Each new task starts out bound for the Inbox again: a choice left over is easy to miss.
+          setFiling(INBOX_CHOICE)
           appAnalytics.track(ANALYTICS_CODES.task.captured, `captured ${task.ref}`, {
             taskId: task.id,
             taskRef: task.ref,
@@ -54,9 +112,16 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
         data-testid={quickCaptureTestIds.title}
       />
       {title.trim() !== "" && <kbd className={styles.hint}>Enter</kbd>}
+      {domainPrefix === undefined && <FilingPicker filing={filing} onChoose={setFiling} />}
       <button type="submit" className={styles.submit} disabled={create.isPending} data-testid={quickCaptureTestIds.add}>
         Add
       </button>
+      {filed && (
+        <p className={styles.filed} role="status" data-testid={quickCaptureTestIds.filed}>
+          Added <Link href={`/tasks/${filed.ref}`}>{filed.ref}</Link> to{" "}
+          {domains.find(({ id }) => id === filed.domainId)?.name ?? "its domain"}.
+        </p>
+      )}
       {create.isError && (
         <p className={styles.error} role="alert" data-testid={quickCaptureTestIds.error}>
           {problemMessage(create.error)}

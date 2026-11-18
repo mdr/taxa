@@ -82,6 +82,18 @@ export class TaskListPage extends PageObject {
     await expect(input).toHaveValue("")
   }
 
+  /** In the Inbox, chooses a domain for it before adding it, by prefix. */
+  async captureInto(title: string, prefix: string): Promise<void> {
+    await this.#page.getByTestId(quickCaptureTestIds.filing).click()
+    await this.#page.locator(`[data-testid="${optionListTestIds.option}"][data-value="${prefix}"]`).click()
+    await this.capture(title)
+  }
+
+  /** What the Inbox says of a task added straight into a domain: `Added H-3 to Home.` */
+  async expectFiled(text: string): Promise<void> {
+    await expect(this.#page.getByTestId(quickCaptureTestIds.filed)).toHaveText(text)
+  }
+
   /** The tasks listed, in order, as `ref title`, with ✓ before any ticked off. */
   async expectTasks(tasks: string[]): Promise<void> {
     if (tasks.length === 0) {

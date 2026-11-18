@@ -3,6 +3,7 @@ export const followOnDialogTestIds = {
   from: "FollowOnDialog.from",
   title: "FollowOnDialog.title",
   when: "FollowOnDialog.when",
+  place: "FollowOnDialog.place",
   add: "FollowOnDialog.add",
   error: "FollowOnDialog.error"
 }
