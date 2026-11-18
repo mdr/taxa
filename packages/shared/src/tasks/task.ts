@@ -32,6 +32,12 @@ export enum Energy {
   HIGH = "HIGH"
 }
 
+/** How far off a task without a date is: next up, or one day perhaps. Neither means any time. */
+export enum Horizon {
+  SOON = "SOON",
+  SOMEDAY = "SOMEDAY"
+}
+
 /** How many days a task waits before it asks to be followed up, unless told otherwise. */
 export const DEFAULT_FOLLOW_UP_DAYS = 7
 
@@ -57,6 +63,8 @@ export const TaskSchema = z.object({
   start: IsoDateSchema.optional(),
   estimateMinutes: flavoured<Minutes>(z.number().int()).optional(),
   energy: z.enum(Energy).optional(),
+  /** Soon or someday; a scheduled date says when instead. Someday tasks stay out of lists until looked for. */
+  horizon: z.enum(Horizon).optional(),
   /** While IN_PROGRESS: who is working on it. */
   inProgressBy: ActorSchema.optional(),
   /** While WAITING: what on, and when to follow it up. */

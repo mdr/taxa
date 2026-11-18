@@ -5,6 +5,8 @@ import { ClearableField } from "@taxa/shared/tasks/task-requests"
 import { setOrClear as fieldChange } from "../changes/field-change.ts"
 import { Energy, Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { ENERGY_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
+import { When, whenOf, whenRequest } from "@taxa/shared/tasks/when"
+import { WHEN_ICONS, whenLabel, whenOptions } from "../when/when-choices.tsx"
 import {
   BatteryFull,
   BatteryLow,
@@ -43,6 +45,8 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
   const today = useToday()
   const setOrClear = (field: ClearableField, value: string | number | undefined) => change(fieldChange(field, value))
   const EnergyIcon = task.energy ? ENERGY_ICONS[task.energy] : Zap
+  const when = whenOf(task, today)
+  const WhenIcon = WHEN_ICONS[when]
   const dueTone =
     task.due === undefined || task.due > today ? DateTone.PLAIN : task.due === today ? DateTone.TODAY : DateTone.OVERDUE
   return (
@@ -86,6 +90,22 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
           change({ type: TaskChangeType.UPDATE, request: { set: { priority: priority as Priority } } })
         }
       />
+      <ChoiceProperty
+        label="When"
+        testId={taskPropertiesTestIds.when}
+        shortcut={{ key: "w", description: "Choose when" }}
+        value={when}
+        empty={when === When.ANY_TIME}
+        trigger={
+          <>
+            <WhenIcon size={15} aria-hidden />
+            {when === When.ANY_TIME ? "When" : whenLabel(task, today)}
+          </>
+        }
+        // A day to come is the Scheduled date, just below.
+        options={whenOptions(task, today, false)}
+        onChoose={(choice) => change({ type: TaskChangeType.UPDATE, request: whenRequest(choice as When, today) })}
+      />
       <DomainChoice
         task={task}
         domains={domains}
@@ -110,7 +130,11 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
         shortcut={{ key: "t", description: "Schedule" }}
         value={task.scheduled}
         today={today}
-        onChange={(date) => setOrClear(ClearableField.SCHEDULED, date)}
+        onChange={(date) =>
+          date === undefined
+            ? setOrClear(ClearableField.SCHEDULED, date)
+            : change({ type: TaskChangeType.UPDATE, request: whenRequest(When.ON_A_DAY, today, date) })
+        }
         time={{ value: task.scheduledTime, onChange: (time) => setOrClear(ClearableField.SCHEDULED_TIME, time) }}
       />
       <DateProperty

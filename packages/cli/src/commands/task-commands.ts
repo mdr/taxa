@@ -1,3 +1,4 @@
+import { When } from "@taxa/shared/tasks/when"
 import { z } from "zod"
 import { CreateTaskRequestSchema, UpdateTaskRequestSchema } from "@taxa/shared/tasks/task-requests"
 import type { Task } from "@taxa/shared/tasks/task"
@@ -61,11 +62,14 @@ const list: Command = {
   --domain PREFIX       Only this domain's
   --inbox               Only your Inbox
   --status LIST         Only these statuses, e.g. done or open,waiting (default: open, in progress, waiting)
-  --all                 Include tasks whose start date is still to come`,
+  --when LIST           Only these, e.g. today or soon,someday (today, on a day, soon, any time, someday;
+                        default: all but someday)
+  --all                 Include tasks whose start date is still to come, and someday ones`,
   options: {
     domain: { type: "string" },
     inbox: { type: "boolean" },
     status: { type: "string" },
+    when: { type: "string" },
     all: { type: "boolean" }
   },
   run: async (context, values, positionals) => {
@@ -74,7 +78,11 @@ const list: Command = {
       domain: stringOption(values, "domain"),
       status: stringOption(values, "status")?.toUpperCase().replaceAll(" ", "_"),
       inbox: values["inbox"] === true ? "true" : undefined,
-      includeNotStarted: values["all"] === true ? "true" : undefined
+      includeNotStarted: values["all"] === true ? "true" : undefined,
+      when:
+        values["all"] === true
+          ? Object.values(When).join(",")
+          : stringOption(values, "when")?.toUpperCase().replaceAll(" ", "_")
     })
     print(context, tasks, () => taskLines(tasks, context.today()))
     return ExitCode.OK
@@ -98,7 +106,7 @@ const edit: Command = {
   usage: `<ref> [options]   or   taxa edit <ref> - < changes.json
   --title TEXT          A new title
 ${TASK_FIELD_HELP}
-  --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, energy)
+  --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, energy, horizon)
 ${VERSION_HELP}
 With -, stdin holds {"set": {...}, "clear": [...]}, as the API's UpdateTaskRequest.`,
   options: { ...TASK_FIELD_OPTIONS, title: { type: "string" }, clear: { type: "string" }, ...VERSION_OPTION },

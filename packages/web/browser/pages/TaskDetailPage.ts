@@ -1,3 +1,4 @@
+import type { When } from "@taxa/shared/tasks/when"
 import { expect, type Locator, type Page } from "@playwright/test"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import type { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
@@ -188,6 +189,18 @@ export class TaskDetailPage extends PageObject {
   async clearEstimate(): Promise<void> {
     await this.#page.getByTestId(taskPropertiesTestIds.estimate).click()
     await this.#page.getByTestId(estimatePropertyTestIds.clear).click()
+  }
+
+  /** Today, soon, any time or someday; a day to come is its scheduled date. */
+  async setWhen(when: Exclude<When, "ON_A_DAY">): Promise<void> {
+    await this.#choose(taskPropertiesTestIds.when, when)
+  }
+
+  /** When it's meant for, and how the chip puts it: `SOON`, `Soon`. */
+  async expectWhen(when: When, shown: string): Promise<void> {
+    const chip = this.#page.getByTestId(taskPropertiesTestIds.when)
+    await expect(chip).toHaveAttribute("data-value", when)
+    await expect(chip).toContainText(shown)
   }
 
   /** Chooses the energy it needs, or with none, clears it. */

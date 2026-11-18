@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import type { Priority, TaskStatus } from "@taxa/shared/tasks/task"
+import type { When } from "@taxa/shared/tasks/when"
 import { PageObject } from "./steps.ts"
 import { expectAccessible } from "./accessibility.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
@@ -10,11 +11,12 @@ import { taskRowTestIds } from "../../src/tasks/list/TaskRowTestIds.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
 
 /** The things the menu lists to change, as it names them. */
-type Thing = "Status" | "Priority" | "Due date" | "Estimate" | "Move to"
+type Thing = "Status" | "Priority" | "When" | "Due date" | "Estimate" | "Move to"
 
 const THING_CHOICE: Record<Thing, string> = {
   Status: "STATUS",
   Priority: "PRIORITY",
+  When: "WHEN",
   "Due date": "DUE",
   Estimate: "ESTIMATE",
   "Move to": "MOVE"
@@ -56,6 +58,21 @@ export class TaskRowMenu extends PageObject {
 
   async setPriority(priority: Priority): Promise<void> {
     await this.#choose("Priority", priority)
+  }
+
+  /** Today, soon, any time or someday. */
+  async setWhen(when: Exclude<When, "ON_A_DAY">): Promise<void> {
+    await this.#choose("When", when)
+  }
+
+  /** Plans it for a day to come, typed into the menu's date picker: `2026-01-09`, `fri`. */
+  async setWhenOnADay(date: IsoDate | string): Promise<void> {
+    await this.#option(THING_CHOICE.When).click()
+    await this.#option("ON_A_DAY").click()
+    const typed = this.#row.getByTestId(datePickerTestIds.typed)
+    await typed.fill(date)
+    await typed.press("Enter")
+    await this.#closed()
   }
 
   /** Moves it to a domain, by its prefix. */

@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { IsoDateSchema, IsoTimeSchema } from "../dates/plain-date.ts"
-import { Energy, Priority, TaskStatus } from "./task.ts"
+import { Energy, Horizon, Priority, TaskStatus } from "./task.ts"
 import { TaskIdSchema } from "../ids.ts"
 import { flavoured, type Minutes } from "../units.ts"
 
@@ -19,6 +19,7 @@ const EditableFieldsSchema = z.object({
   start: IsoDateSchema,
   estimateMinutes: flavoured<Minutes>(z.number().int().min(1).max(100_000)),
   energy: z.enum(Energy),
+  horizon: z.enum(Horizon),
   /** File it in this domain, by prefix or id. */
   domain: z.string()
 })
@@ -30,7 +31,8 @@ export enum ClearableField {
   SCHEDULED_TIME = "scheduledTime",
   START = "start",
   ESTIMATE_MINUTES = "estimateMinutes",
-  ENERGY = "energy"
+  ENERGY = "energy",
+  HORIZON = "horizon"
 }
 
 /** Without a domain, it goes in your Inbox. */
@@ -71,6 +73,8 @@ export const ListTasksQuerySchema = z.object({
   inbox: z.enum(["true", "false"]).optional(),
   /** true to include tasks whose start date is still to come, which are hidden otherwise. */
   includeNotStarted: z.enum(["true", "false"]).optional(),
+  /** Comma-separated: TODAY, ON_A_DAY, SOON, ANY_TIME, SOMEDAY. All but SOMEDAY by default. */
+  when: z.string().optional(),
   /** Words to find in a task's title or notes: each must be in one or the other. Best matches first. */
   search: z.string().max(200).optional()
 })

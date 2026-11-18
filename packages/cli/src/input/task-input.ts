@@ -2,7 +2,7 @@ import { DATE_INPUT_HELP, parseDateInput } from "@taxa/shared/dates/date-input"
 import { isIsoTime, type IsoDate } from "@taxa/shared/dates/plain-date"
 import { parseEstimate } from "@taxa/shared/tasks/estimate"
 import { ClearableField, type UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
-import { Energy, Priority } from "@taxa/shared/tasks/task"
+import { Energy, Horizon, Priority } from "@taxa/shared/tasks/task"
 import { stringOption, UsageError, type OptionValues } from "../command.ts"
 
 /** The options that set a task's fields, shared by `add` and `edit`. */
@@ -16,6 +16,7 @@ export const TASK_FIELD_OPTIONS = {
   priority: { type: "string" },
   estimate: { type: "string" },
   energy: { type: "string" },
+  horizon: { type: "string" },
   inbox: { type: "boolean" }
 } as const
 
@@ -28,6 +29,7 @@ export const TASK_FIELD_HELP = `  --domain PREFIX       File it in this domain, 
   --priority LEVEL      urgent, high, normal or low
   --estimate TIME       How long it'll take: 30m, 1h, 1h30m
   --energy LEVEL        low, medium or high
+  --horizon WHEN        soon or someday, for a task without a date
   --inbox               Put it back in the Inbox, out of its domain
 DATE is ${DATE_INPUT_HELP}.`
 
@@ -65,6 +67,7 @@ export const fieldsFrom = (values: OptionValues, today: IsoDate): NonNullable<Up
     start: dateOption(values, "start", today),
     priority: optional(stringOption(values, "priority"), (text) => choice(Priority, text, "--priority")),
     energy: optional(stringOption(values, "energy"), (text) => choice(Energy, text, "--energy")),
+    horizon: optional(stringOption(values, "horizon"), (text) => choice(Horizon, text, "--horizon")),
     estimateMinutes: optional(stringOption(values, "estimate"), (text) => {
       const minutes = parseEstimate(text)
       if (minutes === undefined)

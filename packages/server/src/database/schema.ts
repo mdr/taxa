@@ -19,7 +19,7 @@ import type { ActivityType, FieldChange } from "@taxa/shared/activity/activity"
 import type { IsoDate, IsoTime, TimeZone } from "@taxa/shared/dates/plain-date"
 import type { DomainPrefix } from "@taxa/shared/domains/domain"
 import type { AgentId, ApiKeyId, DomainId, SessionId, TaskId, UserId } from "@taxa/shared/ids"
-import type { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
+import type { Energy, Horizon, Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import type { ActivitySequence, Minutes, Ms, TaskNumber, Version } from "@taxa/shared/units"
 
 // Drizzle's column builder types are too intricate to write out.
@@ -117,6 +117,7 @@ export const tasks = pgTable(
     start: plainDate("start"),
     estimateMinutes: integer("estimate_minutes").$type<Minutes>(),
     energy: text("energy").$type<Energy>(),
+    horizon: text("horizon").$type<Horizon>(),
     inProgressUserId: userId("in_progress_user_id").references(() => users.id),
     inProgressAgentId: agentId("in_progress_agent_id").references(() => agents.id),
     inProgressAgentContext: text("in_progress_agent_context"),

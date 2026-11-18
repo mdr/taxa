@@ -5,6 +5,7 @@ import { formatEstimate } from "@taxa/shared/tasks/estimate"
 import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { ClearableField } from "@taxa/shared/tasks/task-requests"
 import { PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
+import { When, whenOf, whenRequest } from "@taxa/shared/tasks/when"
 import { CalendarClock, ChevronLeft, Copy, Ellipsis, FolderInput, Inbox, Timer, Trash2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import styles from "./TaskRowMenu.module.css"
@@ -22,12 +23,15 @@ import { EstimateEditor } from "../detail/properties/EstimateProperty.tsx"
 import { INBOX_CHOICE, filingChoice, filingRequest } from "../filing/filing.ts"
 import { PriorityIcon } from "../PriorityIcon.tsx"
 import { StatusIcon } from "../StatusIcon.tsx"
+import { WHEN_ICONS, whenLabel, whenOptions } from "../when/when-choices.tsx"
 
 /** What the menu shows: its list of things to change, or the choices for one of them. */
 enum Section {
   MAIN = "MAIN",
   STATUS = "STATUS",
   PRIORITY = "PRIORITY",
+  WHEN = "WHEN",
+  ON_A_DAY = "ON_A_DAY",
   DUE = "DUE",
   ESTIMATE = "ESTIMATE",
   MOVE = "MOVE"
@@ -37,6 +41,8 @@ const SECTION_TEXT: Record<Section, string> = {
   [Section.MAIN]: "",
   [Section.STATUS]: "Status",
   [Section.PRIORITY]: "Priority",
+  [Section.WHEN]: "When",
+  [Section.ON_A_DAY]: "On a day",
   [Section.DUE]: "Due date",
   [Section.ESTIMATE]: "Estimate",
   [Section.MOVE]: "Move to"
@@ -69,6 +75,7 @@ const MainOptions = ({
   open
 }: PanelProps & { open: (section: Section) => void }) => {
   const domain = domains.find(({ id }) => id === task.domainId)
+  const WhenIcon = WHEN_ICONS[whenOf(task, today)]
   return (
     <OptionList
       options={[
@@ -83,6 +90,12 @@ const MainOptions = ({
           label: "Priority",
           icon: <PriorityIcon priority={task.priority} />,
           detail: capitalised(PRIORITY_TEXT[task.priority])
+        },
+        {
+          value: Section.WHEN,
+          label: "When",
+          icon: <WhenIcon size={15} aria-hidden />,
+          detail: whenLabel(task, today)
         },
         {
           value: Section.DUE,
@@ -122,7 +135,14 @@ const MainOptions = ({
 }
 
 /** The choices for one thing about the task. */
-const SectionChoices = ({ section, task, today, domains, apply }: PanelProps & { section: Section }) => {
+const SectionChoices = ({
+  section,
+  task,
+  today,
+  domains,
+  apply,
+  open
+}: PanelProps & { section: Section; open: (section: Section) => void }) => {
   switch (section) {
     case Section.STATUS:
       return (
@@ -147,6 +167,31 @@ const SectionChoices = ({ section, task, today, domains, apply }: PanelProps & {
           selected={task.priority}
           onChoose={(priority) =>
             apply({ type: TaskChangeType.UPDATE, request: { set: { priority: priority as Priority } } })
+          }
+        />
+      )
+    case Section.WHEN:
+      return (
+        <OptionList
+          options={whenOptions(task, today)}
+          selected={whenOf(task, today)}
+          onChoose={(choice) => {
+            const when = choice as When
+            if (when === When.ON_A_DAY) open(Section.ON_A_DAY)
+            else apply({ type: TaskChangeType.UPDATE, request: whenRequest(when, today) })
+          }}
+        />
+      )
+    case Section.ON_A_DAY:
+      return (
+        <DatePicker
+          value={task.scheduled}
+          today={today}
+          onChoose={(date) =>
+            apply({
+              type: TaskChangeType.UPDATE,
+              request: date === undefined ? whenRequest(When.ANY_TIME, today) : whenRequest(When.ON_A_DAY, today, date)
+            })
           }
         />
       )
@@ -188,6 +233,11 @@ const MenuPanel = (props: PanelProps) => {
   /** The section last gone into, to come back out onto. */
   const [cameFrom, setCameFrom] = useState<Section | undefined>(undefined)
   const panel = useRef<HTMLDivElement>(null)
+  const openSection = (into: Section): void => {
+    // A section within a section comes back out onto the one it's in.
+    if (section === Section.MAIN) setCameFrom(into)
+    setSection(into)
+  }
   // Into a section, the keyboard goes to its first choice; back out, to the section it came from.
   useEffect(() => {
     const focusable = [...(panel.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])]
@@ -197,13 +247,7 @@ const MenuPanel = (props: PanelProps) => {
   return (
     <div ref={panel} className={styles.menu}>
       {section === Section.MAIN ? (
-        <MainOptions
-          {...props}
-          open={(into) => {
-            setCameFrom(into)
-            setSection(into)
-          }}
-        />
+        <MainOptions {...props} open={openSection} />
       ) : (
         <>
           <button
@@ -215,7 +259,7 @@ const MenuPanel = (props: PanelProps) => {
             <ChevronLeft size={15} aria-hidden />
             {SECTION_TEXT[section]}
           </button>
-          <SectionChoices {...props} section={section} />
+          <SectionChoices {...props} section={section} open={openSection} />
         </>
       )}
     </div>

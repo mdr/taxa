@@ -5,7 +5,7 @@ import { actorText } from "@taxa/shared/identity/actor-text"
 import { formatEstimate } from "@taxa/shared/tasks/estimate"
 import type { Task } from "@taxa/shared/tasks/task"
 import { taskHighlights } from "@taxa/shared/tasks/task-highlights"
-import { ENERGY_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
+import { ENERGY_TEXT, HORIZON_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 
 /** One line per task, references lined up. */
 export const taskLines = (tasks: Task[], today: IsoDate): string => {
@@ -40,6 +40,7 @@ export const taskDetail = (task: Task, domain: Domain | undefined, today: IsoDat
     ...row("Starts", day(task.start, today)),
     ...row("Estimate", task.estimateMinutes === undefined ? undefined : formatEstimate(task.estimateMinutes)),
     ...row("Energy", task.energy && ENERGY_TEXT[task.energy]),
+    ...row("Horizon", task.horizon && HORIZON_TEXT[task.horizon]),
     ...row("Working", task.inProgressBy && actorText(task.inProgressBy)),
     ...row("Waiting", task.waitingOn),
     ...row("Follow up", day(task.followUp, today)),

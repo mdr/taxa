@@ -58,6 +58,7 @@ hard security boundary, and the two are kept separate.
 | due       | The real deadline                                                   |
 | scheduled | When you plan to do it: a day, optionally with a time or time block |
 | start     | Hidden until then                                                   |
+| horizon   | Soon or someday, for a task with no scheduled day                   |
 | estimate  | Roughly how long it will take                                       |
 | energy    | Low, medium or high                                                 |
 | assignee  | A member of the task's domain                                       |
@@ -136,6 +137,11 @@ which aren't stored as comments.
   or overdue, follow-ups that have come round, and newly assigned tasks, as
   suggestions to pull in or dismiss. Unfinished planned tasks show as
   "carried over" rather than rolling forward silently.
+- **When** is one choice made of the scheduled day and the horizon: today
+  (scheduled today or before), on a day to come, soon, any time (neither: the
+  default) or someday. A date beats a horizon, and choosing one clears the
+  other. Someday tasks stay out of lists and suggestions until you look at
+  Someday, though search still finds them.
 - Other built-in views: **Inbox** (not yet organised), **Upcoming**,
   **Someday**, and per project.
 - **Saved filters** are named queries in the query language, built by

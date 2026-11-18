@@ -2,8 +2,8 @@ import { formatDay } from "../dates/date-format.ts"
 import type { IsoDate } from "../dates/plain-date.ts"
 import { actorText } from "../identity/actor-text.ts"
 import { formatEstimate } from "../tasks/estimate.ts"
-import { Energy, Priority, TaskStatus } from "../tasks/task.ts"
-import { ENERGY_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "../tasks/task-text.ts"
+import { Energy, Horizon, Priority, TaskStatus } from "../tasks/task.ts"
+import { ENERGY_TEXT, HORIZON_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "../tasks/task-text.ts"
 import { ActivityType, type Activity, type FieldChange } from "./activity.ts"
 
 export interface ActivityContext {
@@ -48,6 +48,11 @@ const PHRASES: Record<string, Phrase> = {
   notes: notesPhrase,
   priority: ({ to }) => (isOneOf(Priority, to) ? `set priority to ${PRIORITY_TEXT[to]}` : undefined),
   energy: ({ to }) => (isOneOf(Energy, to) ? `marked it ${ENERGY_TEXT[to]}` : "cleared the energy"),
+  horizon: ({ from, to }) => {
+    if (to === Horizon.SOON) return "put it down for soon"
+    if (to === Horizon.SOMEDAY) return "put it off to someday"
+    return isOneOf(Horizon, from) ? `took it out of ${HORIZON_TEXT[from]}` : undefined
+  },
   estimateMinutes: ({ to }) =>
     typeof to === "number" ? `estimated it at ${formatEstimate(to)}` : "cleared the estimate",
   scheduledTime: ({ to }) => (typeof to === "string" ? `set the time to ${to}` : "cleared the time"),

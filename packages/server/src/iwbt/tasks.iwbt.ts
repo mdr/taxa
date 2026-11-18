@@ -1,7 +1,7 @@
 import { describe, expect } from "vite-plus/test"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { uuidv7 } from "@taxa/shared/ids"
-import { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
+import { Energy, Horizon, Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import type { ListTasksQuery } from "@taxa/shared/tasks/task-requests"
 import { expectProblem } from "../test-support/problems.ts"
 import type { TestUser } from "../test-support/test-user.ts"
@@ -152,6 +152,23 @@ describe("listing tasks", () => {
     expect(await matt.client.tasks({ includeNotStarted: "true" })).toHaveLength(1)
     server.advance(15 * 60 * 60 * 1000)
     expect(await matt.client.tasks()).toHaveLength(1)
+  })
+
+  it("lists tasks by when they're meant for, leaving out someday ones unless asked", async ({ server }) => {
+    const matt = await mattWithDomains(server)
+    await matt.addTask("Today's", { scheduled: "2026-01-05" })
+    await matt.addTask("Yesterday's", { scheduled: "2026-01-04" })
+    await matt.addTask("Next week's", { scheduled: "2026-01-12" })
+    await matt.addTask("Soon", { horizon: Horizon.SOON })
+    await matt.addTask("One day", { horizon: Horizon.SOMEDAY })
+    await matt.addTask("Whenever")
+    const titles = async (query: ListTasksQuery): Promise<string[]> =>
+      (await matt.client.tasks(query)).map(({ title }) => title).sort()
+    expect(await titles({})).toEqual(["Next week's", "Soon", "Today's", "Whenever", "Yesterday's"])
+    expect(await titles({ when: "TODAY" })).toEqual(["Today's", "Yesterday's"])
+    expect(await titles({ when: "soon,someday" })).toEqual(["One day", "Soon"])
+    expect(await titles({ when: "ANY_TIME" })).toEqual(["Whenever"])
+    await expectProblem(matt.client.tasks({ when: "LATER" }), ProblemType.INVALID_REQUEST)
   })
 
   it("shows nobody else's tasks, in their domains or their Inbox", async ({ server }) => {

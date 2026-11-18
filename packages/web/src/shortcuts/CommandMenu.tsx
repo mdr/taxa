@@ -1,3 +1,4 @@
+import { When } from "@taxa/shared/tasks/when"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { Search } from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
@@ -25,7 +26,12 @@ export const CommandMenu = () => {
       new CommandMenuService(menuCommands(active()), (ref) => navigate(`/tasks/${ref}`), appAnalytics, {
         scheduler: realScheduler,
         find: (search) =>
-          taxaApi.tasks({ search, status: Object.values(TaskStatus).join(","), includeNotStarted: "true" })
+          taxaApi.tasks({
+            search,
+            status: Object.values(TaskStatus).join(","),
+            includeNotStarted: "true",
+            when: Object.values(When).join(",")
+          })
       })
   )
   useEffect(() => menu.dispose, [menu])

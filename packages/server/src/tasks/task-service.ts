@@ -1,3 +1,4 @@
+import { DEFAULT_WHENS, When, whenOf } from "@taxa/shared/tasks/when"
 import { eq } from "drizzle-orm"
 import type { z } from "zod"
 import { ActivityType, type Activity, type FieldChange } from "@taxa/shared/activity/activity"
@@ -67,13 +68,30 @@ const parseStatuses = (text: string | undefined): TaskStatus[] => {
   return statuses as TaskStatus[]
 }
 
+const parseWhens = (text: string | undefined): ReadonlySet<When> => {
+  if (text === undefined) return new Set(DEFAULT_WHENS)
+  const whens = text.split(",").map((when) => when.trim().toUpperCase())
+  const unknown = whens.filter((when) => !Object.values<string>(When).includes(when))
+  if (unknown.length) {
+    throw new ProblemError(
+      ProblemType.INVALID_REQUEST,
+      `Unknown when ${unknown.join(", ")}: use ${Object.values(When).join(", ")}.`
+    )
+  }
+  return new Set(whens as When[])
+}
+
 export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, now: Instant): Promise<Task[]> => {
   const domainId = query.domain === undefined ? undefined : (await findDomain(db, caller.user.id, query.domain)).id
   const inbox = query.inbox === undefined ? undefined : query.inbox === "true"
   const found = await findTasks(db, caller.user.id, { domainId, statuses: parseStatuses(query.status), inbox })
   const today = dateIn(caller.user.timeZone, now)
-  const started =
-    query.includeNotStarted === "true" ? found : found.filter(({ row }) => !row.start || row.start <= today)
+  const whens = parseWhens(query.when)
+  const started = found.filter(
+    ({ row }) =>
+      (query.includeNotStarted === "true" || !row.start || row.start <= today) &&
+      whens.has(whenOf({ scheduled: row.scheduled ?? undefined, horizon: row.horizon ?? undefined }, today))
+  )
   const { search } = query
   if (search === undefined) return (await tasksOf(db, started)).sort(compareTasks)
   const matching = started.filter(({ row }) => matchesSearch(row, search))
@@ -149,6 +167,7 @@ const blankState = (domainId: DomainId | undefined, inboxUserId: UserId | undefi
   start: undefined,
   estimateMinutes: undefined,
   energy: undefined,
+  horizon: undefined,
   inProgressBy: undefined,
   waitingOn: undefined,
   followUp: undefined,

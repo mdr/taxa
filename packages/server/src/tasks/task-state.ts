@@ -3,7 +3,7 @@ import type { DomainId, UserId } from "@taxa/shared/ids"
 import type { FieldChange } from "@taxa/shared/activity/activity"
 import { addDays, type IsoDate, type IsoTime } from "@taxa/shared/dates/plain-date"
 import type { ClearableField, ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
-import { DEFAULT_FOLLOW_UP_DAYS, TaskStatus, type Energy, type Priority } from "@taxa/shared/tasks/task"
+import { DEFAULT_FOLLOW_UP_DAYS, TaskStatus, type Energy, type Horizon, type Priority } from "@taxa/shared/tasks/task"
 import type { Instant } from "@taxa/shared/units"
 import { definedFields } from "@taxa/shared/objects"
 import type { ActorIds } from "../activity/actor-names.ts"
@@ -23,6 +23,7 @@ export interface TaskState {
   start: IsoDate | undefined
   estimateMinutes: Minutes | undefined
   energy: Energy | undefined
+  horizon: Horizon | undefined
   inProgressBy: ActorIds | undefined
   waitingOn: string | undefined
   followUp: IsoDate | undefined
