@@ -35,6 +35,7 @@ import { PriorityIcon } from "../../PriorityIcon.tsx"
 import { StatusIcon } from "../../StatusIcon.tsx"
 import { WHEN_ICONS, whenLabel, whenOptions } from "../../when/when-choices.tsx"
 import { useFollowOn } from "../../follow-ons/follow-on-service.ts"
+import { useListSession } from "../list-session-service.ts"
 
 /** What the menu shows: its list of things to change, or the choices for one of them. */
 enum Section {
@@ -300,6 +301,7 @@ export const TaskRowMenu = ({
   onDelete: () => void
 }) => {
   const { change } = useTaskChanges()
+  const { complete } = useListSession()
   return (
     <Popover
       label={`Change ${task.title}`}
@@ -320,7 +322,9 @@ export const TaskRowMenu = ({
           }}
           apply={(taskChange) => {
             close()
-            void change(task, taskChange)
+            // Done from here as from its box: with the offer to undo it, or add what follows on.
+            const done = taskChange.type === TaskChangeType.STATUS && taskChange.request.status === TaskStatus.DONE
+            void (done ? complete(task) : change(task, taskChange))
           }}
         />
       )}

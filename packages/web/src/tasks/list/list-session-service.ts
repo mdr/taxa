@@ -49,6 +49,8 @@ export interface ListSessionActions {
   /** Starts working on a task, or stops if it's in progress. */
   startOrStop: (task: Task) => Promise<void>
   undo: () => Promise<void>
+  /** Marks a task done, with a chance to undo it, as a tick does. */
+  complete: (task: Task) => Promise<void>
   /** Deletes a task, with a chance to undo it; if it's highlighted, the highlight goes on to the task after it. */
   delete: (task: Task, shown: readonly TaskId[]) => Promise<void>
   dismissUndo: () => void
@@ -97,6 +99,11 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
 
   readonly toggle = async (task: Task): Promise<void> => {
     await this.#setStatus(task, isShownDone(this.state, task) ? TaskStatus.OPEN : TaskStatus.DONE)
+  }
+
+  /** Marks it done, with a chance to undo it, as a tick does. */
+  readonly complete = async (task: Task): Promise<void> => {
+    await this.#setStatus(task, TaskStatus.DONE)
   }
 
   readonly startOrStop = async (task: Task): Promise<void> => {

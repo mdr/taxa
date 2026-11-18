@@ -1,4 +1,4 @@
-import { Horizon } from "@taxa/shared/tasks/task"
+import { Horizon, TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
 test("finishing a task, adding what follows on from it, and following the trail both ways", async ({ taxa }) => {
@@ -62,4 +62,27 @@ test("a follow-on from a task in the Inbox can go in a domain", async ({ taxa })
   await dialog.add("Dispose of the disks")
   const home = await inbox.sidebar.openDomain("Home")
   await home.expectTasks(["H-2 Dispose of the disks"])
+})
+
+test("marking a task done on its page offers to undo it, or add what follows on", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Back up the floppy disks", { domain: "H" })
+  const home = await (await taxa.openTab("Matt")).openInbox().then((inbox) => inbox.sidebar.openDomain("Home"))
+  const disks = await home.openTask("Back up the floppy disks")
+
+  await disks.setStatus(TaskStatus.DONE)
+  await disks.toast.expectOffered("Done: Back up the floppy disks")
+  await disks.toast.undo()
+  await disks.expectStatus(TaskStatus.OPEN)
+
+  await disks.setStatus(TaskStatus.DONE)
+  await (await disks.toast.addFollowOn()).add("Dispose of the disks")
+  await disks.expectStatus(TaskStatus.DONE)
+  await disks.followOns.expectLedTo(["H-2 Dispose of the disks"])
+
+  // Done from a row's menu, as from its box.
+  await taxa.matt.addTask("Sort the loft boxes", { domain: "H" })
+  await disks.sidebar.openDomain("Home")
+  await (await home.openMenu("Sort the loft boxes")).setStatus(TaskStatus.DONE)
+  await home.expectUndoOffered("Sort the loft boxes")
 })
