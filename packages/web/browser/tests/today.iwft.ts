@@ -73,3 +73,15 @@ test("a session starts from today's tasks, in the order planned", async ({ taxa 
   const planner = await setup.chooseTasks()
   await planner.plan.expectSuggestions(["Send the quote", "Fix the tap", "Bleed the radiators"])
 })
+
+test("an empty Today leads straight to planning it", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  const today = await (await taxa.openTab("Matt")).openInbox().then((inbox) => inbox.sidebar.openList("Today"))
+  await today.expectTasks([])
+  await today.expectAccessible()
+  const planning = await today.planToday()
+  await planning.plan.search("tap")
+  await planning.plan.add("Fix the tap")
+  await (await planning.done()).expectTasks(["H-1 Fix the tap"])
+})

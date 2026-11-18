@@ -18,13 +18,14 @@ describe("daySuggestions", () => {
     makeTask({ number: 9, title: "Waiting", status: TaskStatus.WAITING, due: "2026-01-05" })
   ]
 
-  it("offers what pulls hardest first, leaving out today's, another day's and waiting ones", () => {
+  it("offers what pulls hardest first, then the rest, leaving out today's, another day's and waiting ones", () => {
     expect(daySuggestions(tasks, today, [], "").map(({ title }) => title)).toEqual([
       "Overdue",
       "Under way",
       "Lined up",
       "Due Thursday",
-      "Important"
+      "Important",
+      "Whenever"
     ])
   })
 

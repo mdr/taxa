@@ -2,6 +2,9 @@ import type { Domain } from "@taxa/shared/domains/domain"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { When } from "@taxa/shared/tasks/when"
 import { Inbox } from "lucide-react"
+import { Link } from "wouter"
+import { taskListPageTestIds } from "./TaskListPageTestIds.ts"
+import { PLAN_TODAY_PATH } from "../when/when-paths.ts"
 import styles from "./TaskListPage.module.css"
 import { ListType, type TaskList } from "./task-list.ts"
 import { DomainBadge } from "../../domains/DomainBadge.tsx"
@@ -59,7 +62,7 @@ const EMPTY: Record<ListType, { title?: string; text: string }> = {
   },
   [ListType.TODAY]: {
     title: "Nothing planned for today",
-    text: "Choose When › Today in a task's ⋯ menu to plan it for today."
+    text: "Choose what you mean to do today from what's due, lined up for soon, or anything else."
   },
   [ListType.SOON]: {
     title: "Nothing lined up",
@@ -77,6 +80,11 @@ export const EmptyList = ({ list }: { list: TaskList }) => {
     <>
       {title && <p className={styles.emptyTitle}>{title}</p>}
       <p>{text}</p>
+      {list.type === ListType.TODAY && (
+        <Link href={PLAN_TODAY_PATH} className={styles.emptyAction} data-testid={taskListPageTestIds.planToday}>
+          Plan today
+        </Link>
+      )}
     </>
   )
 }

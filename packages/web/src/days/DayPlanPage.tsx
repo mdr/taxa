@@ -37,6 +37,7 @@ const estimatedText = (entries: readonly PlannedEntry[]): string => {
   const estimates = entries.flatMap(({ task }) => task.estimateMinutes ?? [])
   const unestimated = entries.length - estimates.length
   const total = estimates.reduce((sum, minutes) => sum + minutes, 0)
+  if (entries.length === 0) return "Nothing planned yet."
   const parts = [
     `${entries.length} ${entries.length === 1 ? "task" : "tasks"}`,
     ...(estimates.length > 0 ? [`about ${minutesText(total)} estimated`] : []),

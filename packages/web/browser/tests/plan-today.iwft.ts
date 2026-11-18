@@ -16,7 +16,8 @@ test("planning today: choosing what to do from suggestions, in the order you'll 
   const planning = await today.planToday()
   await planning.plan.expectPlan(["1 Fix the tap", "2 Send the quote"])
   await planning.expectEstimated("2 tasks · about 1 h 15 min estimated")
-  await planning.plan.expectSuggestions(["Pay the bill", "Research boilers", "Back up the disks"])
+  // Those that most want doing today first, then everything else to choose from.
+  await planning.plan.expectSuggestions(["Pay the bill", "Research boilers", "Back up the disks", "Whenever"])
   await planning.expectAccessible()
 
   // Put in, a task is planned for today; taken out, it's left for soon.

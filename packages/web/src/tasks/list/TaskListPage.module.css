@@ -49,6 +49,23 @@
   color: var(--text);
 }
 
+.emptyAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-top: 1rem;
+  padding: 0.5rem 1.4rem;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.emptyAction:hover {
+  filter: brightness(0.95);
+}
+
 .problem {
   padding: 0.6rem 0.85rem;
   border-radius: var(--radius);

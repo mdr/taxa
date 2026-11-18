@@ -3,6 +3,9 @@ import type { TaskId } from "@taxa/shared/ids"
 import { Horizon, Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { When, whenOf } from "@taxa/shared/tasks/when"
 
+/** For a task that doesn't ask to be done today: after all those that do. */
+const NO_PULL = Number.MAX_SAFE_INTEGER
+
 /**
  * How strongly a task asks to be done today, strongest first: due now, under
  * way, lined up for soon, due this week, important. Nothing, for the rest.
@@ -17,9 +20,10 @@ const pull = (task: Task, today: IsoDate): number | undefined => {
 }
 
 /**
- * The tasks to offer for today, strongest pull first, then in the lists'
- * order; not those meant for today already or another day, nor those
- * waiting. Searching, any of the rest whose title or ref matches.
+ * The tasks to offer for today: those that pull hardest first, strongest
+ * first, then every other in the lists' order; not those meant for today
+ * already or another day, nor those waiting. Searching, any of the rest
+ * whose title or ref matches.
  */
 export const daySuggestions = (
   tasks: readonly Task[],
@@ -38,8 +42,7 @@ export const daySuggestions = (
   if (wanted !== "")
     return open.filter((task) => task.title.toLowerCase().includes(wanted) || task.ref.toLowerCase() === wanted)
   return open
-    .map((task, index) => ({ task, index, pull: pull(task, today) }))
-    .filter((suggestion): suggestion is { task: Task; index: number; pull: number } => suggestion.pull !== undefined)
+    .map((task, index) => ({ task, index, pull: pull(task, today) ?? NO_PULL }))
     .sort((a, b) => a.pull - b.pull || a.index - b.index)
     .map(({ task }) => task)
 }

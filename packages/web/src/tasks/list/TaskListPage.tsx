@@ -130,7 +130,8 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
           </h1>
           {openCount > 0 && <span className={styles.count}>{openCount}</span>}
           <ListSearch value={search} onSearch={session.search} input={searchBox} />
-          {list.type === ListType.TODAY && (
+          {/* Empty, Today offers planning as its main action instead. */}
+          {list.type === ListType.TODAY && shown?.length !== 0 && (
             <Link href={PLAN_TODAY_PATH} className={styles.planToday} data-testid={taskListPageTestIds.planToday}>
               Plan today
             </Link>
