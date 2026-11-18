@@ -118,6 +118,8 @@ export const tasks = pgTable(
     estimateMinutes: integer("estimate_minutes").$type<Minutes>(),
     energy: text("energy").$type<Energy>(),
     horizon: text("horizon").$type<Horizon>(),
+    /** When it was put in its horizon. */
+    horizonSetAt: instant("horizon_set_at"),
     inProgressUserId: userId("in_progress_user_id").references(() => users.id),
     inProgressAgentId: agentId("in_progress_agent_id").references(() => agents.id),
     inProgressAgentContext: text("in_progress_agent_context"),

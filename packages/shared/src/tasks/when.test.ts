@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test"
 import { Horizon } from "./task.ts"
 import { ClearableField } from "./task-requests.ts"
-import { isCarriedOver, When, whenOf, whenRequest } from "./when.ts"
+import { isCarriedOver, weeksInSoon, When, whenOf, whenRequest } from "./when.ts"
 
 const today = "2026-01-05"
 
@@ -28,6 +28,20 @@ describe("isCarriedOver", () => {
     expect(isCarriedOver({ scheduled: "2026-01-02" }, today)).toBe(true)
     expect(isCarriedOver({ scheduled: "2026-01-05" }, today)).toBe(false)
     expect(isCarriedOver({}, today)).toBe(false)
+  })
+})
+
+describe("weeksInSoon", () => {
+  it("counts the weeks a task's been in soon, from four", () => {
+    const since = (date: string): { horizon: Horizon; horizonSetAt: string } => ({
+      horizon: Horizon.SOON,
+      horizonSetAt: `${date}T09:00:00.000Z`
+    })
+    expect(weeksInSoon(since("2025-12-08"), today)).toBe(4)
+    expect(weeksInSoon(since("2025-11-20"), today)).toBe(6)
+    expect(weeksInSoon(since("2025-12-09"), today)).toBeUndefined()
+    expect(weeksInSoon({ horizon: Horizon.SOMEDAY, horizonSetAt: "2025-01-01T09:00:00.000Z" }, today)).toBeUndefined()
+    expect(weeksInSoon({ horizon: Horizon.SOON }, today)).toBeUndefined()
   })
 })
 

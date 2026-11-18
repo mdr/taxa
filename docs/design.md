@@ -147,6 +147,10 @@ which aren't stored as comments.
   in order. Putting one in schedules it for today; taking one out leaves it
   for soon. The order is a day plan, kept per person per date; Today lists
   tasks in that order, those it doesn't place after.
+- Below Today, **Might want attention** offers what isn't planned for it but
+  is due, overdue, or urgent and lined up for soon, with + Today on each. A
+  task in Soon for four weeks says so, to ask whether it's still soon or
+  someday. Sessions offer today's tasks first, in the order planned.
 - Other built-in views: **Inbox** (not yet organised), **Upcoming**,
   **Someday**, and per project.
 - **Saved filters** are named queries in the query language, built by

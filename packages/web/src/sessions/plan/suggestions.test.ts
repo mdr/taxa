@@ -1,7 +1,7 @@
 import { Energy, Horizon, Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { makeTask } from "@taxa/shared/test-support/make-task"
 import { describe, expect, it } from "vite-plus/test"
-import { suggestedTasks, suggestionReason } from "./suggestions.ts"
+import { suggestedTasks, suggestionReason, todayFirst } from "./suggestions.ts"
 
 const TODAY = "2026-01-05"
 
@@ -12,6 +12,7 @@ describe("suggestionReason", () => {
     expect(reason({ status: TaskStatus.IN_PROGRESS, due: TODAY })).toBe("In progress")
     expect(reason({ due: "2026-01-04" })).toBe("Overdue")
     expect(reason({ due: TODAY })).toBe("Due today")
+    expect(reason({ scheduled: "2026-01-02", priority: Priority.URGENT })).toBe("Today")
     expect(reason({ due: "2026-01-09" })).toBe("Due Fri")
     expect(reason({ due: "2026-01-20", priority: Priority.URGENT })).toBe("Urgent")
     expect(reason({ priority: Priority.HIGH })).toBe("High priority")
@@ -29,6 +30,10 @@ describe("suggestedTasks", () => {
 
   it("leaves out tasks planned already and ones waiting on others", () => {
     expect(suggestedTasks([tap, radiators, builder], [tap.id], "")).toEqual([radiators])
+  })
+
+  it("puts today's tasks first, in their order", () => {
+    expect(todayFirst([radiators], [tap, radiators])).toEqual([radiators, tap])
   })
 
   it("finds tasks by title or ref", () => {

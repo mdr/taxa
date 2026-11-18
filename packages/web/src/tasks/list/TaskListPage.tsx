@@ -13,6 +13,7 @@ import { ListSessionContext, ListSessionService } from "./list-session-service.t
 import { listShortcuts } from "./list-shortcuts.ts"
 import { Link, useLocation } from "wouter"
 import { PLAN_TODAY_PATH } from "../when/when-paths.ts"
+import { TodayAttention } from "../../days/TodayAttention.tsx"
 import { realScheduler } from "../../services/scheduler.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
@@ -197,6 +198,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
             )}
           </div>
         )}
+        {list.type === ListType.TODAY && !search && <TodayAttention />}
         {undoable && <UndoToast task={undoable} undoes={undoes} />}
       </section>
     </ListSessionContext.Provider>

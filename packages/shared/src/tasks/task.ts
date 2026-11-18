@@ -65,6 +65,8 @@ export const TaskSchema = z.object({
   energy: z.enum(Energy).optional(),
   /** Soon or someday; a scheduled date says when instead. Someday tasks stay out of lists until looked for. */
   horizon: z.enum(Horizon).optional(),
+  /** When it was put in its horizon. */
+  horizonSetAt: z.iso.datetime().optional(),
   /** While IN_PROGRESS: who is working on it. */
   inProgressBy: ActorSchema.optional(),
   /** While WAITING: what on, and when to follow it up. */

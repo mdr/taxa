@@ -20,7 +20,7 @@ import { useServiceState } from "../../services/service-hooks.ts"
 import { ShortcutGroup, ShortcutScope, useShortcuts } from "../../shortcuts/shortcut-service.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { StatusIcon } from "../../tasks/StatusIcon.tsx"
-import { useTasks } from "../../tasks/task-queries.ts"
+import { useSessionCandidates } from "../plan/use-candidates.ts"
 
 const MINUTE = 60_000
 
@@ -226,7 +226,7 @@ export const SessionNow = ({ session }: { session: Session }) => {
   const [replanning, setReplanning] = useState(false)
   const [search, setSearch] = useState("")
   const [, navigate] = useLocation()
-  const tasks = useTasks({}, replanning)
+  const tasks = useSessionCandidates(replanning)
   const timeline = sessionTimeline(session, useNow())
   const { current } = timeline
 
@@ -303,7 +303,7 @@ export const SessionNow = ({ session }: { session: Session }) => {
         <PlanEditor
           rows={planRows(timeline, true)}
           suggestions={suggestedTasks(
-            tasks.data ?? [],
+            tasks,
             session.items.map(({ task }) => task.id),
             search
           )}

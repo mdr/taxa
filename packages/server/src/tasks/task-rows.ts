@@ -20,6 +20,9 @@ export enum Deletion {
   RESTORE = "RESTORE"
 }
 
+/** When a task was put in its horizon, as stored: now, if it has one; none, if not. */
+export const horizonSetAtFor = (state: TaskState, now: number): Date | null => (state.horizon ? new Date(now) : null)
+
 export const deletedAtFor = (deletion: Deletion, at: number): Date | null =>
   deletion === Deletion.DELETE ? new Date(at) : null
 
@@ -98,6 +101,7 @@ export const taskOf = (row: TaskRow, prefix: DomainPrefix | undefined, actorOf: 
     estimateMinutes: row.estimateMinutes ?? undefined,
     energy: row.energy ?? undefined,
     horizon: row.horizon ?? undefined,
+    horizonSetAt: isoOf(row.horizonSetAt),
     inProgressBy: inProgressBy && actorOf(inProgressBy),
     waitingOn: row.waitingOn ?? undefined,
     followUp: row.followUp ?? undefined,

@@ -1,4 +1,4 @@
-import type { IsoDate } from "../dates/plain-date.ts"
+import { daysBetween, type IsoDate } from "../dates/plain-date.ts"
 import { Horizon, type Task } from "./task.ts"
 import { ClearableField, type UpdateTaskRequest } from "./task-requests.ts"
 
@@ -29,6 +29,19 @@ export const whenOf = (task: Pick<Task, "scheduled" | "horizon">, today: IsoDate
 
 /** Every When but someday: what lists show unless asked for more. */
 export const DEFAULT_WHENS: readonly When[] = [When.TODAY, When.ON_A_DAY, When.SOON, When.ANY_TIME]
+
+/** How long a task can sit in soon before it asks whether it still belongs there. */
+const SOON_FOR_DAYS = 28
+
+/**
+ * For a task that's been in soon four weeks or more, how many whole weeks:
+ * time to ask whether it's still soon, or someday.
+ */
+export const weeksInSoon = (task: Pick<Task, "horizon" | "horizonSetAt">, today: IsoDate): number | undefined => {
+  if (task.horizon !== Horizon.SOON || !task.horizonSetAt) return undefined
+  const days = daysBetween(task.horizonSetAt.slice(0, 10), today)
+  return days >= SOON_FOR_DAYS ? Math.floor(days / 7) : undefined
+}
 
 /** Whether a task scheduled for today was meant for an earlier day, and is still to do. */
 export const isCarriedOver = (task: Pick<Task, "scheduled">, today: IsoDate): boolean =>

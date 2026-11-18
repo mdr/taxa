@@ -2,7 +2,7 @@ import { describe, expect } from "vite-plus/test"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { uuidv7 } from "@taxa/shared/ids"
 import { Energy, Horizon, Priority, TaskStatus } from "@taxa/shared/tasks/task"
-import type { ListTasksQuery } from "@taxa/shared/tasks/task-requests"
+import { ClearableField, type ListTasksQuery } from "@taxa/shared/tasks/task-requests"
 import { expectProblem } from "../test-support/problems.ts"
 import type { TestUser } from "../test-support/test-user.ts"
 import { useInProcessServer } from "../test-support/use-in-process-server.ts"
@@ -169,6 +169,21 @@ describe("listing tasks", () => {
     expect(await titles({ when: "soon,someday" })).toEqual(["One day", "Soon"])
     expect(await titles({ when: "ANY_TIME" })).toEqual(["Whenever"])
     await expectProblem(matt.client.tasks({ when: "LATER" }), ProblemType.INVALID_REQUEST)
+  })
+
+  it("keeps when a task was put in soon or someday, until it comes out", async ({ server }) => {
+    const matt = await mattWithDomains(server)
+    const started = new Date(server.clock.now()).toISOString()
+    const task = await matt.addTask("Research boilers", { horizon: Horizon.SOON })
+    expect(task.horizonSetAt).toBe(started)
+    server.advance(60_000)
+    expect((await matt.client.updateTask(task.ref, { set: { title: "Research heat pumps" } })).horizonSetAt).toBe(
+      started
+    )
+    const someday = await matt.client.updateTask(task.ref, { set: { horizon: Horizon.SOMEDAY } })
+    expect(someday.horizonSetAt).toBe(new Date(server.clock.now()).toISOString())
+    const out = await matt.client.updateTask(task.ref, { clear: [ClearableField.HORIZON] })
+    expect(out.horizonSetAt).toBeUndefined()
   })
 
   it("shows nobody else's tasks, in their domains or their Inbox", async ({ server }) => {

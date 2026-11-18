@@ -12,7 +12,7 @@ import { draftSession, planRows } from "../session-rows.ts"
 import { durationText, minutesText, timeSpan } from "../session-text.ts"
 import { useNow } from "../use-now.ts"
 import { useService, useServiceState } from "../../services/service-hooks.ts"
-import { useTasks } from "../../tasks/task-queries.ts"
+import { useSessionCandidates } from "./use-candidates.ts"
 
 const PRESET_TEXT: Readonly<Record<number, string>> = {
   30: "30 min",
@@ -111,7 +111,7 @@ const TaskChoice = ({ plan }: { plan: SessionPlanService }) => {
   const search = useServiceState(plan, (state) => state.search)
   const starting = useServiceState(plan, (state) => state.starting)
   const problem = useServiceState(plan, (state) => state.problem)
-  const tasks = useTasks({})
+  const tasks = useSessionCandidates()
   const now = useNow()
   const endsAt = endsAtFor(window, now) ?? now
   const timeline = sessionTimeline(draftSession(entries, now, endsAt), now)
@@ -171,7 +171,7 @@ const TaskChoice = ({ plan }: { plan: SessionPlanService }) => {
       <PlanEditor
         rows={planRows(timeline, false)}
         suggestions={suggestedTasks(
-          tasks.data ?? [],
+          tasks,
           entries.map(({ taskId }) => taskId),
           search
         )}

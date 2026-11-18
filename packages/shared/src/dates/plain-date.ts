@@ -23,6 +23,10 @@ export const isIsoDate = (text: string): boolean => ISO_DATE.test(text) && fromU
 
 export const isIsoTime = (text: string): boolean => ISO_TIME.test(text)
 
+/** How many days on `to` is from `from`. */
+export const daysBetween = (from: IsoDate, to: IsoDate): number =>
+  Math.round((utcMidnight(to) - utcMidnight(from)) / DAY_MS)
+
 export const addDays = (date: IsoDate, days: number): IsoDate => fromUtcMidnight(utcMidnight(date) + days * DAY_MS)
 
 /** 0 for Monday through 6 for Sunday. */

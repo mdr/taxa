@@ -6,6 +6,7 @@ import { Sidebar } from "./Sidebar.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { TaskRowMenu } from "./TaskRowMenu.ts"
 import { DayPlanPage } from "./DayPlanPage.ts"
+import { TodayAttention } from "./TodayAttention.ts"
 import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
 import { taskListPageTestIds } from "../../src/tasks/list/TaskListPageTestIds.ts"
 import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
@@ -17,11 +18,14 @@ export class TaskListPage extends PageObject {
   readonly #page: Page
   readonly sidebar: Sidebar
   readonly keyboard: Keyboard
+  /** On Today: what might want planning for it. */
+  readonly attention: TodayAttention
 
   constructor(page: Page) {
     super()
     this.#page = page
     this.sidebar = new Sidebar(page)
+    this.attention = new TodayAttention(page)
     this.keyboard = new Keyboard(page)
   }
 

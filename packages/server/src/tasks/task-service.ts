@@ -27,7 +27,16 @@ import { findDomain } from "../domains/domain-store.ts"
 import { ProblemError } from "../http/problem-error.ts"
 import { callerFields } from "../telemetry/change-fields.ts"
 import { LOG_CODES, type ServerLogCode, type ServerLogger } from "../telemetry/log.ts"
-import { Deletion, deletedAtFor, inProgressIdsOf, stateOf, taskOf, valuesOf, type TaskRow } from "./task-rows.ts"
+import {
+  Deletion,
+  deletedAtFor,
+  horizonSetAtFor,
+  inProgressIdsOf,
+  stateOf,
+  taskOf,
+  valuesOf,
+  type TaskRow
+} from "./task-rows.ts"
 import { changeStatus, changesFromNothing, editTask, type Outcome, type TaskState } from "./task-state.ts"
 import { findTask, findTasks, findTasksWithIds, taskIdExists, type FoundTask } from "./task-store.ts"
 
@@ -144,7 +153,14 @@ export const createTask = async (
     const inboxUserId = domainId === undefined ? caller.user.id : undefined
     const state = editTask(blankState(domainId, inboxUserId, title), { set: fields, clear: [] }).state
     const at = new Date(now)
-    await tx.insert(tasks).values({ id: taskId, ...valuesOf(state), createdAt: at, updatedAt: at, version: 1 })
+    await tx.insert(tasks).values({
+      id: taskId,
+      ...valuesOf(state),
+      horizonSetAt: horizonSetAtFor(state, now),
+      createdAt: at,
+      updatedAt: at,
+      version: 1
+    })
     const created = changesFromNothing(state)
     await recordActivity(tx, caller, now, {
       type: ActivityType.TASK_CREATED,
@@ -223,6 +239,8 @@ const changeTask = async (
       .set({
         ...valuesOf(state),
         ...(deletion && { deletedAt: deletedAtFor(deletion, now) }),
+        // When it last went into soon or someday, or came out: bookkeeping, not a change to log.
+        ...(changes["horizon"] && { horizonSetAt: horizonSetAtFor(state, now) }),
         updatedAt: new Date(now),
         version: row.version + 1
       })

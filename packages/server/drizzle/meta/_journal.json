@@ -36,6 +36,13 @@
       "when": 1795011473382,
       "tag": "0004_day_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795012968295,
+      "tag": "0005_horizon_set_at",
+      "breakpoints": true
     }
   ]
 }
