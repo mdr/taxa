@@ -46,3 +46,52 @@ test("planning today: choosing what to do from suggestions, in the order you'll 
     await again.sidebar.openList("Today")
   ).expectTasks(["H-3 Pay the bill", "H-4 Research boilers", "H-1 Fix the tap"])
 })
+
+test("dragging into the plan shows where a task will go, and anywhere on its side will do", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  for (const title of [
+    "Fix the tap",
+    "Pay the bill",
+    "Call Mum",
+    "Book the MOT",
+    "Bleed the radiators",
+    "Renew passport"
+  ])
+    await taxa.matt.addTask(title, { domain: "H" })
+  const planning = await (
+    await (await taxa.openTab("Matt")).openInbox()
+  ).sidebar
+    .openList("Today")
+    .then((today) => today.planToday())
+
+  // Empty, the plan is one big place to drop a task; past its edge counts too.
+  await planning.plan.dragInBelowPlan("Fix the tap")
+  await planning.plan.dragInPastPlanAfter("Pay the bill", "Fix the tap")
+  await planning.plan.expectPlan(["1 Fix the tap", "2 Pay the bill"])
+
+  // Rows move apart to show where it'll go.
+  await planning.plan.dragInSeeingGap("Call Mum", "Pay the bill", "before", [
+    "Fix the tap",
+    "[gap] Call Mum",
+    "Pay the bill"
+  ])
+  await planning.plan.dragInSeeingGap("Book the MOT", "Fix the tap", "after", [
+    "Fix the tap",
+    "[gap] Book the MOT",
+    "Call Mum",
+    "Pay the bill"
+  ])
+  await planning.plan.expectPlan(["1 Fix the tap", "2 Book the MOT", "3 Call Mum", "4 Pay the bill"])
+
+  // Let go in the gutter, it goes by how far down; in the space under the plan, last.
+  await planning.plan.dragInToGutterAfter("Bleed the radiators", "Call Mum")
+  await planning.plan.dragInBelowPlan("Renew passport")
+  await planning.plan.expectPlan([
+    "1 Fix the tap",
+    "2 Book the MOT",
+    "3 Call Mum",
+    "4 Bleed the radiators",
+    "5 Pay the bill",
+    "6 Renew passport"
+  ])
+})

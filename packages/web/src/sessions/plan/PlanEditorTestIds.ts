@@ -12,6 +12,7 @@ export const planEditorTestIds = {
   estimate: "PlanEditor.estimate",
   remove: "PlanEditor.remove",
   empty: "PlanEditor.empty",
+  gap: "PlanEditor.gap",
   suggestionsColumn: "PlanEditor.suggestionsColumn",
   planColumn: "PlanEditor.planColumn",
   announcer: "PlanEditor.announcer"

@@ -1,17 +1,14 @@
 import {
-  closestCenter,
   DndContext,
-  pointerWithin,
   DragOverlay,
   KeyboardSensor,
+  MeasuringStrategy,
   MouseSensor,
   TouchSensor,
   useDraggable,
-  useDroppable,
   useSensor,
   useSensors,
   type Announcements,
-  type CollisionDetection,
   type DragEndEvent,
   type DragMoveEvent,
   type DraggableSyntheticListeners,
@@ -24,20 +21,32 @@ import {
   verticalListSortingStrategy,
   type SortingStrategy
 } from "@dnd-kit/sortable"
-import { CSS, getEventCoordinates } from "@dnd-kit/utilities"
+import { CSS } from "@dnd-kit/utilities"
 import type { TaskId } from "@taxa/shared/ids"
 import type { Task, TaskStatus } from "@taxa/shared/tasks/task"
 import type { Minutes } from "@taxa/shared/units"
 import { GripVertical, Plus, X } from "lucide-react"
-import { useCallback, useState, type KeyboardEventHandler, type ReactNode } from "react"
+import { Fragment, useCallback, useRef, useState, type KeyboardEventHandler } from "react"
 import styles from "./PlanEditor.module.css"
 import { planEditorTestIds } from "./PlanEditorTestIds.ts"
 import { suggestionReason } from "./suggestions.ts"
+import { middlesIn, pointerY, underPointer } from "./plan-collisions.ts"
+import { Gap, PlanColumn, SuggestionsColumn } from "./PlanColumns.tsx"
 import { minutesText } from "../session-text.ts"
 import { useToday } from "../../dates/use-today.ts"
 import { StatusIcon } from "../../tasks/StatusIcon.tsx"
 import { TaskEstimate } from "./TaskEstimate.tsx"
-import { draggedTask, dropOf, DropType, isSuggestion, PLAN_END, suggestionDragId, SUGGESTIONS } from "./plan-drop.ts"
+import {
+  draggedTask,
+  dropOf,
+  DropType,
+  gapAt,
+  isSuggestion,
+  PLAN_END,
+  PLAN_GAP,
+  suggestionDragId,
+  SUGGESTIONS
+} from "./plan-drop.ts"
 import { Link } from "wouter"
 
 export interface PlanRow {
@@ -74,26 +83,7 @@ export interface PlanEditorProps {
   numbered?: boolean
 }
 
-/**
- * With a mouse or finger, only what's under the pointer: a row before the
- * column it's in, and nothing at all elsewhere, so letting go there puts it
- * back. With the keyboard, which has no pointer, the nearest row.
- */
-const underPointer: CollisionDetection = (args) => {
-  if (!args.pointerCoordinates) return closestCenter(args)
-  const hits = pointerWithin(args)
-  const rows = hits.filter(({ id }) => id !== PLAN_END && id !== SUGGESTIONS)
-  return rows.length > 0 ? rows : hits
-}
-
-/** Whether the pointer is in the lower half of what it's over: a suggestion dropped there goes after it, not before. */
-const inLowerHalf = ({ activatorEvent, delta, over }: DragMoveEvent | DragEndEvent): boolean => {
-  const start = getEventCoordinates(activatorEvent)
-  if (!start || !over) return false
-  return start.y + delta.y > over.rect.top + over.rect.height / 2
-}
-
-/** Planned tasks make room for one moved among them; a suggestion coming in shows where it'll go with a line instead, so the rows stay under the pointer. */
+/** Planned tasks make room for one moved among them; for a suggestion coming in, the plan opens a gap instead. */
 const makeRoom: SortingStrategy = (args) =>
   // oxlint-disable-next-line eslint-js/no-restricted-syntax -- the library's "no change"
   args.activeIndex < 0 ? null : verticalListSortingStrategy(args)
@@ -157,8 +147,6 @@ const SuggestionRow = ({ task, busy, onAdd }: { task: Task; busy: boolean; onAdd
 interface PlanRowItemProps {
   row: PlanRow
   busy: boolean
-  /** Where a suggestion over this row would go: after it, rather than before. */
-  dropAfter: boolean
   onRemove: (taskId: TaskId) => void
   onEstimated: (task: Task) => void
 }
@@ -181,22 +169,19 @@ const LockedRow = ({ row: { task, minutes, span, status, detail } }: { row: Plan
   </li>
 )
 
-const PlanRowItem = ({ row, busy, dropAfter, onRemove, onEstimated }: PlanRowItemProps) => {
+const PlanRowItem = ({ row, busy, onRemove, onEstimated }: PlanRowItemProps) => {
   const { task, span, status, detail } = row
-  const { setNodeRef, setActivatorNodeRef, listeners, attributes, transform, transition, isDragging, isOver, active } =
-    useSortable({ id: task.id, disabled: busy })
-  const suggestionOver = isOver && isSuggestion(String(active?.id))
+  const { setNodeRef, setActivatorNodeRef, listeners, attributes, transform, transition, isDragging } = useSortable({
+    id: task.id,
+    disabled: busy
+  })
   return (
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={[
-        styles.row,
-        styles.draggable,
-        isDragging ? styles.dragging : "",
-        suggestionOver ? (dropAfter ? styles.dropAfter : styles.dropBefore) : ""
-      ].join(" ")}
+      className={`${styles.row} ${styles.draggable} ${isDragging ? styles.dragging : ""}`}
       data-testid={planEditorTestIds.row}
+      data-movable
       {...pointerOnly(listeners)}
     >
       <button
@@ -242,36 +227,6 @@ const PlanRowItem = ({ row, busy, dropAfter, onRemove, onEstimated }: PlanRowIte
   )
 }
 
-/** The plan: a suggestion dropped on it, but not on a row, goes last. */
-const PlanColumn = ({ accepting, children }: { accepting: boolean; children: ReactNode }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: PLAN_END, disabled: !accepting })
-  return (
-    <section
-      ref={setNodeRef}
-      className={`${styles.column} ${accepting && isOver ? styles.dropAtEnd : ""}`}
-      aria-labelledby="plan-heading"
-      data-testid={planEditorTestIds.planColumn}
-    >
-      {children}
-    </section>
-  )
-}
-
-/** The suggestions, which take a planned task dragged back to them out of the plan. */
-const SuggestionsColumn = ({ accepting, children }: { accepting: boolean; children: ReactNode }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: SUGGESTIONS, disabled: !accepting })
-  return (
-    <section
-      ref={setNodeRef}
-      className={`${styles.column} ${accepting ? styles.takesBack : ""} ${accepting && isOver ? styles.takingBack : ""}`}
-      aria-labelledby="suggestions-heading"
-      data-testid={planEditorTestIds.suggestionsColumn}
-    >
-      {children}
-    </section>
-  )
-}
-
 /** Tasks to choose from beside the plan: in order, each with its time and when that falls. */
 export const PlanEditor = ({
   rows,
@@ -290,7 +245,14 @@ export const PlanEditor = ({
   const [byKeyboard, setByKeyboard] = useState(false)
   /** What the dragged task is over now, if anything: let go over nothing, and it glides back. */
   const [target, setTarget] = useState<UniqueIdentifier | undefined>(undefined)
-  const [dropAfter, setDropAfter] = useState(false)
+  /** The plan's list of tasks, to see where they are. */
+  const planList = useRef<HTMLElement | undefined>(undefined)
+  // oxlint-disable-next-line eslint-js/no-restricted-syntax -- React gives a ref null when the element goes
+  const planListIn = useCallback((node: HTMLElement | null) => {
+    planList.current = node ?? undefined
+  }, [])
+  /** Where the plan has room open for a suggestion dragged over it, if it does. */
+  const [gap, setGap] = useState<number | undefined>(undefined)
   /** Where what's dragged is announced, for screen readers. */
   const [announcer, setAnnouncer] = useState<HTMLElement | undefined>(undefined)
   // oxlint-disable-next-line eslint-js/no-restricted-syntax -- React gives a ref null when the element goes
@@ -302,9 +264,12 @@ export const PlanEditor = ({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
   const movable = rows.filter(({ locked }) => !locked).map(({ task }) => task.id)
+  /** The task the gap opens above: none, with it at the end. */
+  const gapBefore = gap === undefined ? undefined : movable[gap]
   const titleOf = (id: UniqueIdentifier | undefined): string => {
     const taskId = draggedTask(String(id))
     if (id === PLAN_END) return "the end of the plan"
+    if (id === PLAN_GAP) return "its place in the plan"
     if (id === SUGGESTIONS) return "the suggestions, to take it out"
     return (
       rows.find(({ task }) => task.id === taskId)?.task.title ??
@@ -321,14 +286,27 @@ export const PlanEditor = ({
   }
 
   /** The drop target stays as it was until the next drag: the overlay reads it as it lets go, to glide back or not. */
-  const finished = () => setDragged(undefined)
+  const finished = () => {
+    setDragged(undefined)
+    setGap(undefined)
+  }
+
+  /** As a task moves, what it's over; for a suggestion, where the plan opens room for it. */
+  const track = (event: DragMoveEvent) => {
+    setTarget(event.over?.id)
+    if (!isSuggestion(String(event.active.id))) return
+    const over = event.over ? String(event.over.id) : undefined
+    const y = pointerY(event)
+    const middles = middlesIn(planList.current)
+    setGap((open) => gapAt({ over, y, middles, movable, open }))
+  }
 
   const dropped = (event: DragEndEvent) => {
     finished()
     const drop = dropOf({
       dragged: String(event.active.id),
       over: event.over ? String(event.over.id) : undefined,
-      lowerHalf: inLowerHalf(event),
+      gap,
       movable
     })
     if (drop?.type === DropType.ADD) {
@@ -342,6 +320,8 @@ export const PlanEditor = ({
     <DndContext
       sensors={sensors}
       collisionDetection={underPointer}
+      // Rows move as the gap opens and moves: measure where they are again as the task moves.
+      measuring={{ droppable: { strategy: MeasuringStrategy.WhileDragging, frequency: 50 } }}
       accessibility={{
         container: announcer,
         announcements,
@@ -353,10 +333,11 @@ export const PlanEditor = ({
       onDragStart={({ active, activatorEvent }) => {
         setDragged(active.id)
         setTarget(undefined)
+        setGap(undefined)
         setByKeyboard(activatorEvent instanceof KeyboardEvent)
       }}
-      onDragOver={({ over }) => setTarget(over?.id)}
-      onDragMove={(event) => setDropAfter(inLowerHalf(event))}
+      onDragOver={track}
+      onDragMove={track}
       onDragCancel={() => {
         setTarget(undefined)
         finished()
@@ -391,34 +372,31 @@ export const PlanEditor = ({
           )}
         </SuggestionsColumn>
 
-        <PlanColumn accepting={draggingSuggestion}>
+        <PlanColumn accepting={draggingSuggestion} receiving={draggingSuggestion && gap !== undefined}>
           <div className={styles.columnHeader}>
             <h2 id="plan-heading" className={styles.columnTitle}>
               {planTitle}
             </h2>
           </div>
           <SortableContext items={movable} strategy={makeRoom}>
-            {rows.length > 0 && (
-              <ol className={styles.list}>
-                {rows.map((row) =>
-                  row.locked ? (
-                    <LockedRow key={row.task.id} row={row} />
-                  ) : (
-                    <PlanRowItem
-                      key={row.task.id}
-                      row={row}
-                      busy={busy}
-                      dropAfter={dropAfter}
-                      onRemove={onRemove}
-                      onEstimated={onEstimated}
-                    />
-                  )
-                )}
+            {(rows.length > 0 || gap !== undefined) && (
+              <ol ref={planListIn} className={styles.list}>
+                {rows.map((row) => (
+                  <Fragment key={row.task.id}>
+                    {gap !== undefined && row.task.id === gapBefore && <Gap title={titleOf(dragged)} />}
+                    {row.locked ? (
+                      <LockedRow row={row} />
+                    ) : (
+                      <PlanRowItem row={row} busy={busy} onRemove={onRemove} onEstimated={onEstimated} />
+                    )}
+                  </Fragment>
+                ))}
+                {gap !== undefined && gapBefore === undefined && <Gap title={titleOf(dragged)} />}
               </ol>
             )}
           </SortableContext>
-          {rows.length === 0 && (
-            <p className={styles.empty} data-testid={planEditorTestIds.empty}>
+          {rows.length === 0 && gap === undefined && (
+            <p className={styles.dropZone} data-testid={planEditorTestIds.empty}>
               Drag tasks here, or add them from the suggestions, in the order you'll do them.
             </p>
           )}

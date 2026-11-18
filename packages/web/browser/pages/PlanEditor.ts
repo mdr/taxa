@@ -5,8 +5,18 @@ import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { planEditorTestIds } from "../../src/sessions/plan/PlanEditorTestIds.ts"
 import { estimatePropertyTestIds } from "../../src/tasks/detail/properties/EstimatePropertyTestIds.ts"
 
+interface Box {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 /** Where on what's under it a drag is let go. */
-type Spot = (box: { y: number; height: number }) => number
+type Spot = (box: Box) => number
+
+/** Where, by what's there, a drag is let go. */
+type Point = (box: Box) => { x: number; y: number }
 
 /** Over a task: before it on its top half, after it on its bottom half. */
 const HALF: Record<"before" | "after", Spot> = {
@@ -60,8 +70,8 @@ export class PlanEditor extends PageObject {
     await this.#planned(title).getByTestId(planEditorTestIds.remove).click()
   }
 
-  /** Drags with the mouse as a hand does: press, move in steps, and let go at that spot on the target. */
-  async #drag(from: Locator, to: Locator, spot: Spot): Promise<void> {
+  /** Picks up with the mouse as a hand does, and moves in steps to that point by the target, holding on. */
+  async #hold(from: Locator, to: Locator, point: Point): Promise<void> {
     // Tasks glide to new places after a change: wait for them to settle before measuring.
     await from.hover({ trial: true })
     await to.hover({ trial: true })
@@ -70,10 +80,60 @@ export class PlanEditor extends PageObject {
     if (!start || !end) throw new Error("Can't drag: the task or the place isn't showing.")
     await this.#page.mouse.move(start.x + Math.min(start.width / 2, 40), start.y + start.height / 2)
     await this.#page.mouse.down()
-    await this.#page.mouse.move(end.x + end.width / 2, spot(end), { steps: 12 })
+    const { x, y } = point(end)
+    await this.#page.mouse.move(x, y, { steps: 12 })
+  }
+
+  async #letGo(): Promise<void> {
     await this.#page.mouse.up()
     // Letting go, the drag library swallows clicks for 50ms from a timer, so the drop isn't a click too: outlast it.
     await this.#page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 50)))
+  }
+
+  /** Drags and lets go at that spot on the target. */
+  async #drag(from: Locator, to: Locator, spot: Spot): Promise<void> {
+    await this.#hold(from, to, (box) => ({ x: box.x + box.width / 2, y: spot(box) }))
+    await this.#letGo()
+  }
+
+  /** Drags a suggestion over a planned task, and before letting go, the plan has opened a gap for it: `[gap]` in the rows. */
+  async dragInSeeingGap(title: string, onto: string, side: "before" | "after", rows: string[]): Promise<void> {
+    await this.#hold(this.#suggestion(title), this.#planned(onto), (box) => ({
+      x: box.x + box.width / 2,
+      y: HALF[side](box)
+    }))
+    await expect(this.#byId(planEditorTestIds.planColumn)).toHaveAttribute("data-receiving", "true")
+    await expect.poll(() => this.#planRowsWithGap()).toEqual(rows)
+    await this.#letGo()
+  }
+
+  /** Drags a suggestion into the gutter between the columns, level with a planned task's lower half: it's on the plan's side, and goes after that task. */
+  async dragInToGutterAfter(title: string, level: string): Promise<void> {
+    const plan = await this.#byId(planEditorTestIds.planColumn).boundingBox()
+    if (!plan) throw new Error("The plan isn't showing.")
+    await this.#hold(this.#suggestion(title), this.#planned(level), (box) => ({
+      x: plan.x - 8,
+      y: HALF.after(box)
+    }))
+    await this.#letGo()
+  }
+
+  /** Drags a suggestion past the plan's right edge, level with a planned task's lower half: it goes after that task. */
+  async dragInPastPlanAfter(title: string, level: string): Promise<void> {
+    await this.#hold(this.#suggestion(title), this.#planned(level), (box) => ({
+      x: box.x + box.width + 40,
+      y: HALF.after(box)
+    }))
+    await this.#letGo()
+  }
+
+  /** Drags a suggestion into the page's white space under the plan: it goes last. */
+  async dragInBelowPlan(title: string): Promise<void> {
+    await this.#hold(this.#suggestion(title), this.#byId(planEditorTestIds.planColumn), (box) => ({
+      x: box.x + box.width / 2,
+      y: box.y + box.height + 24
+    }))
+    await this.#letGo()
   }
 
   /** Drags a suggestion onto a planned task, to go in before it or after it. */
@@ -180,6 +240,21 @@ export class PlanEditor extends PageObject {
         ),
       { time: planEditorTestIds.time, title: planEditorTestIds.title }
     )
+  }
+
+  /** The plan's tasks, in order, each by title; the gap opened for a suggestion as `[gap] title`. */
+  async #planRowsWithGap(): Promise<string[]> {
+    return this.#byId(planEditorTestIds.planColumn)
+      .locator("li")
+      .evaluateAll(
+        (rows, ids) =>
+          rows.map((row) =>
+            row.dataset["testid"] === ids.gap
+              ? `[gap] ${row.textContent}`
+              : (row.querySelector(`[data-testid="${ids.title}"]`)?.textContent ?? "")
+          ),
+        { gap: planEditorTestIds.gap, title: planEditorTestIds.title }
+      )
   }
 
   /** The plan's tasks, in order, each as `time span title`: `9:00 – 9:30 Bleed the radiators`. */
