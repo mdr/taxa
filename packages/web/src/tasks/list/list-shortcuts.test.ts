@@ -21,6 +21,7 @@ const setUp = (
   toggled: Task[]
   made: TaskChange[]
   left: number[]
+  found: number[]
 } => {
   const toggled: Task[] = []
   const made: TaskChange[] = []
@@ -35,6 +36,7 @@ const setUp = (
   const session = new ListSessionService(changes, new FakeScheduler(), testTelemetry().analytics)
   const opened: Task[] = []
   const left: number[] = []
+  const found: number[] = []
   const shortcuts = new ShortcutService(
     new FakeScheduler(),
     { loadSingleKeys: () => true, saveSingleKeys: () => undefined },
@@ -45,10 +47,11 @@ const setUp = (
       listed,
       session,
       (task) => opened.push(task),
-      () => left.push(1)
+      () => left.push(1),
+      () => found.push(1)
     )
   )
-  return { press: shortcuts.press, session, opened, toggled, made, left }
+  return { press: shortcuts.press, session, opened, toggled, made, left, found }
 }
 
 describe("listShortcuts", () => {
@@ -104,6 +107,12 @@ describe("listShortcuts", () => {
     expect(press("Escape")).toBe(true)
     expect(session.state.highlighted).toBeUndefined()
     expect(left).toHaveLength(1)
+  })
+
+  it("goes to the search box with /", () => {
+    const { press, found } = setUp()
+    press("/")
+    expect(found).toEqual([1])
   })
 
   it("leaves ⌘Z to the browser when there's no tick to undo", () => {

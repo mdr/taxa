@@ -1,4 +1,3 @@
-import { expect } from "@playwright/test"
 import { Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
@@ -49,9 +48,10 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
   await help.expectShortcuts([
     "Add a task C",
     "Show keyboard shortcuts ?",
-    "Search commands ⌘K",
+    "Find a command or task ⌘K",
     "Inbox G then I",
     "Home G then H",
+    "Search the list /",
     "Next task J or ↓",
     "Previous task K or ↑",
     "Open the task Enter",
@@ -63,7 +63,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
   await help.expectAccessible()
   await help.setSingleKeys(false)
   await help.expectShortcuts([
-    "Search commands ⌘K",
+    "Find a command or task ⌘K",
     "Next task ↓",
     "Previous task ↑",
     "Open the task Enter",
@@ -126,19 +126,13 @@ test("changing a task from the keyboard on its page", async ({ taxa }) => {
   await detail.expectNotesText("Washers")
   await detail.keyboard.choose("m", "W")
   await detail.expectRef("W-1")
-  await expect
-    .poll(async () => {
-      const { priority, status, due, title, notes, ref } = await taxa.matt.client.task("W-1")
-      return { priority, status, due, title, notes, ref }
-    })
-    .toEqual({
-      priority: Priority.HIGH,
-      status: TaskStatus.IN_PROGRESS,
-      due: "2026-03-02",
-      title: "Fix the kitchen tap",
-      notes: "Washers",
-      ref: "W-1"
-    })
+  await taxa.expectTask("W-1", {
+    priority: Priority.HIGH,
+    status: TaskStatus.IN_PROGRESS,
+    due: "2026-03-02",
+    title: "Fix the kitchen tap",
+    notes: "Washers"
+  })
 
   const work = await detail.keyboard.backToList()
   await work.expectHeading("Work")
@@ -169,5 +163,5 @@ test("finding and running commands from the command menu", async ({ taxa }) => {
   await changing.run()
   await detail.keyboard.chooseInOpenPicker(Priority.URGENT)
   await detail.expectPriority(Priority.URGENT)
-  await expect.poll(async () => (await taxa.matt.client.task("H-1")).priority).toBe(Priority.URGENT)
+  await taxa.expectTask("H-1", { priority: Priority.URGENT })
 })

@@ -22,7 +22,7 @@ export const appShortcuts = (
     }
   },
   { keys: ["?"], description: "Show keyboard shortcuts", group: ShortcutGroup.GENERAL, run: shortcuts.openHelp },
-  { keys: [MENU_KEY], description: "Search commands", group: ShortcutGroup.GENERAL, run: shortcuts.openMenu },
+  { keys: [MENU_KEY], description: "Find a command or task", group: ShortcutGroup.GENERAL, run: shortcuts.openMenu },
   { keys: ["g", "i"], description: "Inbox", group: ShortcutGroup.GO, run: () => navigate("/") },
   ...domains.map((domain): Shortcut => ({
     keys: ["g", ...domain.prefix.toLowerCase().split("")],

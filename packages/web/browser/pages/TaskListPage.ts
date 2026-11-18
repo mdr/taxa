@@ -127,6 +127,32 @@ export class TaskListPage extends PageObject {
     await this.#page.getByTestId(undoToastTestIds.undo).click()
   }
 
+  /** Types into the list's search box. */
+  async search(text: string): Promise<void> {
+    await this.#page.getByTestId(taskListPageTestIds.search).fill(text)
+  }
+
+  /** Goes to the search box with `/`, and types there. */
+  async searchFromKeyboard(text: string): Promise<void> {
+    await this.#page.keyboard.press("/")
+    const box = this.#page.getByTestId(taskListPageTestIds.search)
+    await expect(box).toBeFocused()
+    await this.#page.keyboard.type(text)
+  }
+
+  /** Escape, in the search box: it empties, and the whole list shows again. */
+  async clearSearchWithEscape(): Promise<void> {
+    const box = this.#page.getByTestId(taskListPageTestIds.search)
+    await box.press("Escape")
+    await expect(box).toHaveValue("")
+    await expect(box).not.toBeFocused()
+  }
+
+  /** What the list says when a search finds nothing still to do. */
+  async expectNoMatches(text: string): Promise<void> {
+    await expect(this.#page.getByTestId(taskListPageTestIds.noMatches)).toHaveText(text)
+  }
+
   async showCompleted(): Promise<void> {
     await this.#page.getByTestId(taskListPageTestIds.showCompleted).click()
   }

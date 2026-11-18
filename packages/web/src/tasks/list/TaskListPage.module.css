@@ -68,3 +68,22 @@
   font-size: 0.85rem;
   color: var(--muted);
 }
+
+/* Search, at the header's far end. */
+.searchBox {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted);
+}
+
+.search {
+  width: 12rem;
+  font-size: 0.85rem;
+}
+
+.noMatches {
+  color: var(--muted);
+  padding: 0.5rem 0;
+}

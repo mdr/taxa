@@ -1,8 +1,18 @@
 import { describe, expect, it } from "vite-plus/test"
-import { CommandMenuService, matchCommands, menuCommands, type Command } from "./command-menu-service.ts"
+import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
+import { makeTask } from "@taxa/shared/test-support/make-task"
+import {
+  CommandMenuService,
+  matchCommands,
+  menuCommands,
+  MOST_FOUND,
+  SEARCH_PAUSE_MS,
+  type Command
+} from "./command-menu-service.ts"
+import { FakeScheduler } from "../test-support/fake-scheduler.ts"
 import { ShortcutGroup, type Shortcut } from "./shortcut-service.ts"
 import { ANALYTICS_CODES } from "../telemetry/codes.ts"
-import { testTelemetry } from "../test-support/test-telemetry.ts"
+import { testTelemetry, type TestTelemetry } from "../test-support/test-telemetry.ts"
 
 const shortcut = (keys: string, description: string, group: ShortcutGroup, available?: () => boolean): Shortcut => ({
   keys: keys.split(" "),
@@ -102,5 +112,84 @@ describe("CommandMenuService", () => {
     const menu = new CommandMenuService(commands, () => undefined, testTelemetry().analytics)
     menu.select(3)
     expect(menu.chosen()?.description).toBe("Set priority")
+  })
+
+  describe("finding tasks", () => {
+    const tap = makeTask({ number: 1, title: "Fix the kitchen tap" })
+    const washer = makeTask({ number: 2, title: "Buy a tap washer", status: TaskStatus.DONE })
+
+    /** A menu whose server answers each search when the test says. */
+    const setUp = (): {
+      menu: CommandMenuService
+      scheduler: FakeScheduler
+      asked: { search: string; answer: (tasks: Task[]) => void }[]
+      answer: (index: number, tasks: Task[]) => Promise<void>
+      opened: string[]
+      telemetry: TestTelemetry
+    } => {
+      const scheduler = new FakeScheduler()
+      const asked: { search: string; answer: (tasks: Task[]) => void }[] = []
+      const opened: string[] = []
+      const telemetry = testTelemetry()
+      const menu = new CommandMenuService(commands, (ref) => opened.push(ref), telemetry.analytics, {
+        scheduler,
+        find: (search) => new Promise((answer) => asked.push({ search, answer }))
+      })
+      const answer = async (index: number, tasks: Task[]): Promise<void> => {
+        asked[index]?.answer(tasks)
+        await Promise.resolve()
+        await Promise.resolve()
+      }
+      return { menu, scheduler, asked, answer, opened, telemetry }
+    }
+
+    it("lists the tasks found after the commands, once typing pauses, and opens one", async () => {
+      const { menu, scheduler, asked, answer, opened, telemetry } = setUp()
+      menu.type("t")
+      menu.type("ta")
+      menu.type("tap ")
+      scheduler.advance(SEARCH_PAUSE_MS)
+      expect(asked.map(({ search }) => search)).toEqual(["tap"])
+      await answer(0, [tap, washer])
+      const found = menu.matches(menu.state.query).filter(({ task }) => task)
+      expect(descriptions(found)).toEqual(["Fix the kitchen tap", "Buy a tap washer"])
+      for (const command of found) menu.run(command)
+      expect(opened).toEqual(["H-1", "H-2"])
+      expect(telemetry.tracked()).toEqual([
+        [ANALYTICS_CODES.commandMenu.taskOpened, {}],
+        [ANALYTICS_CODES.commandMenu.taskOpened, {}]
+      ])
+    })
+
+    it("searches for nothing shorter than two letters", () => {
+      const { menu, scheduler, asked } = setUp()
+      menu.type(" t ")
+      scheduler.advance(SEARCH_PAUSE_MS)
+      expect(asked).toEqual([])
+    })
+
+    it("ignores an answer for earlier typing, and meanwhile keeps only what's still found", async () => {
+      const { menu, scheduler, answer } = setUp()
+      menu.type("tap")
+      scheduler.advance(SEARCH_PAUSE_MS)
+      await answer(0, [tap, washer])
+      menu.type("tap wash")
+      expect(descriptions(menu.matches(menu.state.query))).toEqual(["Buy a tap washer"])
+      scheduler.advance(SEARCH_PAUSE_MS)
+      menu.type("tap washer")
+      await answer(1, [tap])
+      expect(menu.state.found).toEqual([tap, washer])
+    })
+
+    it("lists only the first few found", async () => {
+      const { menu, scheduler, answer } = setUp()
+      menu.type("tap")
+      scheduler.advance(SEARCH_PAUSE_MS)
+      await answer(
+        0,
+        Array.from({ length: MOST_FOUND + 3 }, (_, index) => makeTask({ title: `Tap ${index}` }))
+      )
+      expect(menu.state.found).toHaveLength(MOST_FOUND)
+    })
   })
 })

@@ -7,12 +7,13 @@ type Session = Pick<ListSessionActions, "moveHighlight" | "highlight" | "toggle"
   readonly state: Pick<ListSessionState, "highlighted" | "undoable">
 }
 
-/** The keys for a list, given the tasks it shows in order, its session, and how to open a task. */
+/** The keys for a list, given the tasks it shows in order, its session, how to open a task, leave the list, and search it. */
 export const listShortcuts = (
   listed: readonly Task[],
   session: Session,
   open: (task: Task) => void,
-  leave: () => void
+  leave: () => void,
+  find: () => void
 ): readonly Shortcut[] => {
   const highlighted = (): Task | undefined => listed.find(({ id }) => id === session.state.highlighted)
   const isHighlighted = (): boolean => highlighted() !== undefined
@@ -30,6 +31,7 @@ export const listShortcuts = (
     run: move(Step.PREVIOUS)
   }
   return [
+    { keys: ["/"], description: "Search the list", group: ShortcutGroup.TASKS, run: find },
     { keys: ["j"], ...next },
     { keys: ["ArrowDown"], ...next },
     { keys: ["k"], ...previous },

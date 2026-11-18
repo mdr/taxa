@@ -185,6 +185,13 @@ documented grammar, and a query string compiles to a JSON form that the API
 also accepts. Relative dates (`today`, `friday`, `+3d`) mean the same thing
 here as in CLI flags. A prefix (e.g. `cf.`) is reserved for custom fields.
 
+Plain words in a query, not `field:value`, find tasks by their title or
+notes: every word in one or the other, in any case, those still to do and
+found by title first. Until the language exists, the API's `?search=` does
+just that. In the app, each list has a search box (`/`) that narrows it as
+you type, its finished tasks included, and ⌘K finds any task, whatever its
+status, as well as commands.
+
 ## Agents and the API
 
 The API is the product: an HTTP JSON API with an OpenAPI spec generated from

@@ -25,6 +25,8 @@ export interface ListSessionState {
   undoable: Task | undefined
   /** The task the keyboard is on, if any. */
   highlighted: TaskId | undefined
+  /** What's typed to find tasks in the list: only those it finds show. */
+  search: string
 }
 
 /** Which way to move the highlight through the list. */
@@ -44,6 +46,8 @@ export interface ListSessionActions {
   highlight: (id: TaskId | undefined) => void
   /** Moves the highlight through the tasks shown, in order: from none, to the first or last. */
   moveHighlight: (shown: readonly TaskId[], step: Step) => void
+  /** Finds tasks in the list by words in their titles or notes; nothing typed shows them all. */
+  search: (text: string) => void
   /** Files a task out of the list; if it's highlighted, the highlight goes on to the task after it. */
   file: (task: Task, request: UpdateTaskRequest, shown: readonly TaskId[]) => Promise<void>
   dispose: () => void
@@ -63,12 +67,22 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   readonly #scheduler: Scheduler
   readonly #analytics: Analytics
   #cancelUndoOffer: (() => void) | undefined
+  /** Whether this visit's search has been tracked: once is enough. */
+  #searched = false
 
   constructor(changes: TaskChangesActions, scheduler: Scheduler, analytics: Analytics) {
-    super({ ticked: {}, pending: {}, undoable: undefined, highlighted: undefined })
+    super({ ticked: {}, pending: {}, undoable: undefined, highlighted: undefined, search: "" })
     this.#changes = changes
     this.#scheduler = scheduler
     this.#analytics = analytics
+  }
+
+  readonly search = (text: string): void => {
+    if (this.state.search === "" && text.trim() !== "" && !this.#searched) {
+      this.#searched = true
+      this.#analytics.track(ANALYTICS_CODES.list.searched, "searched a list")
+    }
+    this.setState({ search: text })
   }
 
   readonly toggle = async (task: Task): Promise<void> => {

@@ -33,7 +33,8 @@ export const ANALYTICS_CODES = {
     refCopied: "task.refCopied"
   },
   list: {
-    completedShown: "list.completedShown"
+    completedShown: "list.completedShown",
+    searched: "list.searched"
   },
   shortcut: {
     used: "shortcut.used",
@@ -44,7 +45,8 @@ export const ANALYTICS_CODES = {
   },
   commandMenu: {
     opened: "commandMenu.opened",
-    commandRun: "commandMenu.commandRun"
+    commandRun: "commandMenu.commandRun",
+    taskOpened: "commandMenu.taskOpened"
   },
   notes: {
     modeSwitched: "notes.modeSwitched"

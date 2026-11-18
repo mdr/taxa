@@ -70,7 +70,9 @@ export const ListTasksQuerySchema = z.object({
   /** true for your Inbox only, false for tasks filed in domains only. */
   inbox: z.enum(["true", "false"]).optional(),
   /** true to include tasks whose start date is still to come, which are hidden otherwise. */
-  includeNotStarted: z.enum(["true", "false"]).optional()
+  includeNotStarted: z.enum(["true", "false"]).optional(),
+  /** Words to find in a task's title or notes: each must be in one or the other. Best matches first. */
+  search: z.string().max(200).optional()
 })
 
 export type ListTasksQuery = z.infer<typeof ListTasksQuerySchema>

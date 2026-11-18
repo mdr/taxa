@@ -2,6 +2,7 @@ import { describe, expect } from "vite-plus/test"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { uuidv7 } from "@taxa/shared/ids"
 import { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
+import type { ListTasksQuery } from "@taxa/shared/tasks/task-requests"
 import { expectProblem } from "../test-support/problems.ts"
 import type { TestUser } from "../test-support/test-user.ts"
 import { useInProcessServer } from "../test-support/use-in-process-server.ts"
@@ -108,6 +109,29 @@ describe("listing tasks", () => {
     await matt.client.changeStatus(done.ref, { status: TaskStatus.DONE })
     expect((await matt.client.tasks()).map(({ title }) => title)).toEqual(["Now", "Soon", "Later"])
     expect((await matt.client.tasks({ status: "done" })).map(({ title }) => title)).toEqual(["Done already"])
+  })
+
+  it("finds tasks by words in their title or notes, those still to do and found by title first", async ({ server }) => {
+    const matt = await mattWithDomains(server)
+    await matt.addTask("Call the plumber", { notes: "About the kitchen tap" })
+    const ordered = await matt.addTask("Order a tap")
+    await matt.client.changeStatus(ordered.ref, { status: TaskStatus.DONE })
+    await matt.addTask("Fix the kitchen tap", { domain: "H" })
+    await matt.addTask("Bleed the radiators")
+    const titles = async (query: ListTasksQuery): Promise<string[]> =>
+      (await matt.client.tasks(query)).map(({ title }) => title)
+    expect(await titles({ search: "tap" })).toEqual(["Fix the kitchen tap", "Call the plumber"])
+    expect(await titles({ search: "Kitchen TAP", status: "open,done" })).toEqual([
+      "Fix the kitchen tap",
+      "Call the plumber"
+    ])
+    expect(await titles({ search: "tap", status: "open,done" })).toEqual([
+      "Fix the kitchen tap",
+      "Call the plumber",
+      "Order a tap"
+    ])
+    expect(await titles({ search: "tap", domain: "H" })).toEqual(["Fix the kitchen tap"])
+    expect(await titles({ search: "tap boiler" })).toEqual([])
   })
 
   it("filters by domain and by Inbox", async ({ server }) => {

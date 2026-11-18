@@ -19,15 +19,20 @@ export class CommandMenu extends PageObject {
 
   /** The commands offered, each as its description. */
   async expectCommands(commands: string[]): Promise<void> {
-    await expect(this.#page.getByTestId(commandMenuTestIds.command).locator(":scope > span:first-child")).toHaveText(
-      commands
-    )
+    await expect(
+      this.#page.getByTestId(commandMenuTestIds.command).getByTestId(commandMenuTestIds.description)
+    ).toHaveText(commands)
   }
 
   /** The command Enter would run. */
   async expectPicked(command: string): Promise<void> {
     await expect(
-      this.#page.locator(`[data-testid="${commandMenuTestIds.command}"][aria-selected="true"] > span:first-child`)
+      this.#page
+        .locator(`[aria-selected="true"]`)
+        .and(
+          this.#page.getByTestId(commandMenuTestIds.command).or(this.#page.getByTestId(commandMenuTestIds.foundTask))
+        )
+        .getByTestId(commandMenuTestIds.description)
     ).toHaveText(command)
   }
 
@@ -47,6 +52,36 @@ export class CommandMenu extends PageObject {
     await this.expectPicked(`Open ${ref}`)
     await this.run()
     return new TaskDetailPage(this.#page)
+  }
+
+  /** The tasks found by what's typed, best first, each as `ref title`. */
+  async expectFoundTasks(tasks: string[]): Promise<void> {
+    await expect
+      .poll(() =>
+        this.#page
+          .getByTestId(commandMenuTestIds.foundTask)
+          .evaluateAll(
+            (rows, ids) =>
+              rows.map(
+                (row) =>
+                  `${row.querySelector(`[data-testid="${ids.detail}"]`)?.textContent ?? ""} ${row.querySelector(`[data-testid="${ids.description}"]`)?.textContent ?? ""}`
+              ),
+            { detail: commandMenuTestIds.detail, description: commandMenuTestIds.description }
+          )
+      )
+      .toEqual(tasks)
+  }
+
+  /** Clicks a task found by searching, to open it. */
+  async openFoundTask(title: string): Promise<TaskDetailPage> {
+    await this.#page
+      .getByTestId(commandMenuTestIds.foundTask)
+      .filter({ has: this.#page.getByTestId(commandMenuTestIds.description).getByText(title, { exact: true }) })
+      .click()
+    await expect(this.#page.getByTestId(commandMenuTestIds.dialog)).toHaveCount(0)
+    const detail = new TaskDetailPage(this.#page)
+    await detail.expectTitle(title)
+    return detail
   }
 
   async expectAccessible(): Promise<void> {

@@ -1,12 +1,13 @@
 import { TaskStatus } from "@taxa/shared/tasks/task"
-import { ChevronDown, ChevronRight, Inbox } from "lucide-react"
-import { useEffect, useState } from "react"
+import { ChevronDown, ChevronRight, Inbox, Search } from "lucide-react"
+import { useEffect, useRef, useState, type Ref } from "react"
 import styles from "./TaskListPage.module.css"
 import { taskListPageTestIds } from "./TaskListPageTestIds.ts"
 import { QuickCapture } from "./QuickCapture.tsx"
 import { TaskRow, type Filing } from "./TaskRow.tsx"
 import { UndoToast } from "./UndoToast.tsx"
 import { withTicked } from "./with-ticked.ts"
+import { listSearch } from "./list-search.ts"
 import { ListSessionContext, ListSessionService } from "./list-session-service.ts"
 import { listShortcuts } from "./list-shortcuts.ts"
 import { useLocation } from "wouter"
@@ -24,6 +25,36 @@ import { useTasks } from "../task-queries.ts"
 import { StatusIcon } from "../StatusIcon.tsx"
 import { isHome, listQuery, ListType, type TaskList } from "./task-list.ts"
 
+/** Finds tasks in the list as you type; Escape clears it and leaves. */
+const ListSearch = ({
+  value,
+  onSearch,
+  input
+}: {
+  value: string
+  onSearch: (text: string) => void
+  input: Ref<HTMLInputElement>
+}) => (
+  <label className={styles.searchBox}>
+    <Search size={15} aria-hidden />
+    <input
+      ref={input}
+      type="search"
+      className={styles.search}
+      value={value}
+      onChange={(event) => onSearch(event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return
+        onSearch("")
+        event.currentTarget.blur()
+      }}
+      placeholder="Search"
+      aria-label="Search the list"
+      data-testid={taskListPageTestIds.search}
+    />
+  </label>
+)
+
 const HEADINGS: Record<ListType, string | undefined> = {
   [ListType.INBOX]: "Inbox",
   [ListType.DOMAIN]: undefined,
@@ -40,6 +71,8 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
   useEffect(() => session.dispose, [session])
   const ticked = useServiceState(session, (state) => state.ticked)
   const undoable = useServiceState(session, (state) => state.undoable)
+  const search = useServiceState(session, (state) => state.search)
+  const searchBox = useRef<HTMLInputElement>(null)
   const domains = useDomains()
   const query = listQuery(list)
   const tasks = useTasks(query)
@@ -47,18 +80,24 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
   const today = useToday()
   const [showCompleted, setShowCompleted] = useState(false)
   const domain = domains.data?.find(({ prefix }) => prefix === domainPrefix?.toUpperCase())
-  const shown = tasks.data ? withTicked(tasks.data, ticked) : undefined
-  const earlier = (completed.data ?? []).filter(({ id }) => ticked[id] === undefined)
+  const found = listSearch(
+    tasks.data ? withTicked(tasks.data, ticked) : undefined,
+    (completed.data ?? []).filter(({ id }) => ticked[id] === undefined),
+    search,
+    showCompleted
+  )
+  const { open: shown, completed: earlierFound, completedOpen } = found
   const [, navigate] = useLocation()
   useShortcuts(
     ShortcutScope.PAGE,
     listShortcuts(
-      [...(shown ?? []), ...(showCompleted ? earlier : [])],
+      [...(shown ?? []), ...(completedOpen ? earlierFound : [])],
       session,
       (task) => navigate(`/tasks/${task.ref}`),
       () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-      }
+      },
+      () => searchBox.current?.focus()
     )
   )
   const openCount = tasks.data?.length ?? 0
@@ -85,11 +124,16 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
             {HEADINGS[list.type] ?? domain?.name ?? domainPrefix}
           </h1>
           {openCount > 0 && <span className={styles.count}>{openCount}</span>}
+          <ListSearch value={search} onSearch={session.search} input={searchBox} />
         </header>
         {home && <QuickCapture domainPrefix={domain?.prefix} />}
         {tasks.isError ? (
           <p className={styles.problem} role="alert" data-testid={taskListPageTestIds.error}>
             {problemMessage(tasks.error)}
+          </p>
+        ) : found.noMatches ? (
+          <p className={styles.noMatches} data-testid={taskListPageTestIds.noMatches}>
+            {found.noMatches}
           </p>
         ) : shown?.length === 0 ? (
           <div className={styles.empty} data-testid={taskListPageTestIds.empty}>
@@ -114,27 +158,27 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
             ))}
           </ul>
         )}
-        {earlier.length > 0 && (
+        {earlierFound.length > 0 && (
           <div className={styles.completed}>
             <button
               type="button"
               className={styles.toggle}
-              aria-expanded={showCompleted}
+              aria-expanded={completedOpen}
               onClick={() => {
-                if (!showCompleted)
+                if (!completedOpen)
                   appAnalytics.track(ANALYTICS_CODES.list.completedShown, "showed completed tasks", {
                     domainPrefix: domain?.prefix
                   })
-                setShowCompleted(!showCompleted)
+                setShowCompleted(!completedOpen)
               }}
               data-testid={taskListPageTestIds.showCompleted}
             >
-              {showCompleted ? <ChevronDown size={15} aria-hidden /> : <ChevronRight size={15} aria-hidden />}
-              {earlier.length} completed
+              {completedOpen ? <ChevronDown size={15} aria-hidden /> : <ChevronRight size={15} aria-hidden />}
+              {earlierFound.length} completed
             </button>
-            {showCompleted && (
+            {completedOpen && (
               <ul className={styles.tasks} data-testid={taskListPageTestIds.completed}>
-                {earlier.map((task) => (
+                {earlierFound.map((task) => (
                   <TaskRow key={task.id} task={task} today={today} filing={filing} />
                 ))}
               </ul>

@@ -1,3 +1,4 @@
+import { TaskStatus } from "@taxa/shared/tasks/task"
 import { Search } from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
 import { useLocation } from "wouter"
@@ -9,6 +10,9 @@ import { GROUP_TEXT } from "./shortcut-list.ts"
 import { useShortcutActions } from "./shortcut-service.ts"
 import { useServiceState } from "../services/service-hooks.ts"
 import { appAnalytics } from "../telemetry/app-telemetry.ts"
+import { taxaApi } from "../api/taxa-api.ts"
+import { realScheduler } from "../services/scheduler.ts"
+import { StatusIcon } from "../tasks/StatusIcon.tsx"
 
 const MAC = navigator.userAgent.includes("Mac")
 
@@ -17,10 +21,18 @@ export const CommandMenu = () => {
   const { active, closeMenu } = useShortcutActions()
   const [, navigate] = useLocation()
   const [menu] = useState(
-    () => new CommandMenuService(menuCommands(active()), (ref) => navigate(`/tasks/${ref}`), appAnalytics)
+    () =>
+      new CommandMenuService(menuCommands(active()), (ref) => navigate(`/tasks/${ref}`), appAnalytics, {
+        scheduler: realScheduler,
+        find: (search) =>
+          taxaApi.tasks({ search, status: Object.values(TaskStatus).join(","), includeNotStarted: "true" })
+      })
   )
+  useEffect(() => menu.dispose, [menu])
   const query = useServiceState(menu, (state) => state.query)
   const selected = useServiceState(menu, (state) => state.selected)
+  // Read so the list follows the server's answers.
+  useServiceState(menu, (state) => state.found)
   const dialog = useRef<HTMLDialogElement>(null)
   const listId = useId()
   // Not closed on unmount: closing fires onClose, which in development's double effects shuts it at once.
@@ -56,7 +68,7 @@ export const CommandMenu = () => {
               run(menu.chosen())
             }
           }}
-          placeholder="Type a command, or a task like H-12"
+          placeholder="Type a command, or find a task"
           role="combobox"
           aria-expanded
           aria-controls={listId}
@@ -71,7 +83,7 @@ export const CommandMenu = () => {
         <div id={listId} className={styles.commands} role="listbox" aria-label="Commands">
           {matches.map((command, index) => (
             <div
-              key={`${command.group} ${command.description}`}
+              key={command.task?.id ?? `${command.group} ${command.description}`}
               id={`${listId}-${index}`}
               className={styles.command}
               role="option"
@@ -82,10 +94,15 @@ export const CommandMenu = () => {
                 if (event.key === "Enter") run(command)
               }}
               tabIndex={-1}
-              data-testid={commandMenuTestIds.command}
+              data-testid={command.task ? commandMenuTestIds.foundTask : commandMenuTestIds.command}
             >
-              <span className={styles.description}>{command.description}</span>
-              <span className={styles.group}>{GROUP_TEXT[command.group]}</span>
+              {command.task && <StatusIcon status={command.task.status} size={15} />}
+              <span className={styles.description} data-testid={commandMenuTestIds.description}>
+                {command.description}
+              </span>
+              <span className={styles.group} data-testid={commandMenuTestIds.detail}>
+                {command.task ? command.task.ref : GROUP_TEXT[command.group]}
+              </span>
               {command.keys?.map((key) => (
                 <kbd key={key} className={styles.key}>
                   {keyLabel(key, MAC)}

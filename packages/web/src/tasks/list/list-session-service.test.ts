@@ -40,6 +40,15 @@ const makeListSessionService = (): {
 }
 
 describe("ListSessionService", () => {
+  it("keeps what's typed to search the list, tracked once a visit", () => {
+    const { session, telemetry } = makeListSessionService()
+    session.search("tap")
+    session.search("")
+    session.search("radiators")
+    expect(session.state.search).toBe("radiators")
+    expect(telemetry.tracked()).toEqual([[ANALYTICS_CODES.list.searched, {}]])
+  })
+
   it("shows a tick at once, keeps the task in place once it's done, and offers to undo it", async () => {
     const { changes, session } = makeListSessionService()
     const task = makeTask()

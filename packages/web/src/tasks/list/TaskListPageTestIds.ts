@@ -4,5 +4,7 @@ export const taskListPageTestIds = {
   empty: "TaskListPage.empty",
   error: "TaskListPage.error",
   showCompleted: "TaskListPage.showCompleted",
-  completed: "TaskListPage.completed"
+  completed: "TaskListPage.completed",
+  search: "TaskListPage.search",
+  noMatches: "TaskListPage.noMatches"
 }

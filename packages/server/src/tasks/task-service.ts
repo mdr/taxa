@@ -5,6 +5,7 @@ import { ProblemType } from "@taxa/shared/api/problem"
 import { dateIn } from "@taxa/shared/dates/plain-date"
 import { taskId as newTaskId, uuidv7, type DomainId, type TaskId, type UserId } from "@taxa/shared/ids"
 import { compareTasks } from "@taxa/shared/tasks/task-order"
+import { matchesSearch, searchResults } from "@taxa/shared/tasks/task-search"
 import { parseTaskLookup, type TaskLookup } from "@taxa/shared/tasks/task-ref"
 import type {
   ChangeStatusRequestSchema,
@@ -73,7 +74,10 @@ export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, n
   const today = dateIn(caller.user.timeZone, now)
   const started =
     query.includeNotStarted === "true" ? found : found.filter(({ row }) => !row.start || row.start <= today)
-  return (await tasksOf(db, started)).sort(compareTasks)
+  const { search } = query
+  if (search === undefined) return (await tasksOf(db, started)).sort(compareTasks)
+  const matching = started.filter(({ row }) => matchesSearch(row, search))
+  return searchResults((await tasksOf(db, matching)).sort(compareTasks), search)
 }
 
 /** The live tasks among these that the caller can see, by id. */
