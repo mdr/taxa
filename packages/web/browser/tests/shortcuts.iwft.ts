@@ -58,7 +58,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Tick off, or untick X",
     "Start, or stop working on it I",
     "Leave the list Esc",
-    "Undo ticking a task off ⌘Z"
+    "Undo ticking off or deleting a task ⌘Z"
   ])
   await help.expectAccessible()
   await help.setSingleKeys(false)
@@ -68,7 +68,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Previous task ↑",
     "Open the task Enter",
     "Leave the list Esc",
-    "Undo ticking a task off ⌘Z"
+    "Undo ticking off or deleting a task ⌘Z"
   ])
   await help.closeWithEscape()
 

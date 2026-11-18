@@ -81,7 +81,7 @@ export const listShortcuts = (
     },
     {
       keys: ["mod+z"],
-      description: "Undo ticking a task off",
+      description: "Undo ticking off or deleting a task",
       group: ShortcutGroup.TASKS,
       available: () => session.state.undoable !== undefined,
       run: () => void session.undo()

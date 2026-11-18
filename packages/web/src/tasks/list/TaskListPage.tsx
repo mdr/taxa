@@ -1,4 +1,4 @@
-import { TaskStatus } from "@taxa/shared/tasks/task"
+import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { ChevronDown, ChevronRight, Inbox, Search } from "lucide-react"
 import { useEffect, useRef, useState, type Ref } from "react"
 import styles from "./TaskListPage.module.css"
@@ -71,6 +71,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
   useEffect(() => session.dispose, [session])
   const ticked = useServiceState(session, (state) => state.ticked)
   const undoable = useServiceState(session, (state) => state.undoable)
+  const undoes = useServiceState(session, (state) => state.undoes)
   const search = useServiceState(session, (state) => state.search)
   const searchBox = useRef<HTMLInputElement>(null)
   const domains = useDomains()
@@ -101,6 +102,11 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
     )
   )
   const openCount = tasks.data?.length ?? 0
+  const remove = (task: Task): void =>
+    void session.delete(
+      task,
+      (shown ?? []).map(({ id }) => id)
+    )
   const filing: Filing | undefined =
     list.type !== ListType.INBOX || !domains.data
       ? undefined
@@ -154,7 +160,14 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
         ) : (
           <ul className={styles.tasks} data-testid={taskListPageTestIds.tasks}>
             {shown?.map((task) => (
-              <TaskRow key={task.id} task={task} today={today} domains={domains.data ?? []} filing={filing} />
+              <TaskRow
+                key={task.id}
+                task={task}
+                today={today}
+                domains={domains.data ?? []}
+                filing={filing}
+                onDelete={remove}
+              />
             ))}
           </ul>
         )}
@@ -179,13 +192,20 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
             {completedOpen && (
               <ul className={styles.tasks} data-testid={taskListPageTestIds.completed}>
                 {earlierFound.map((task) => (
-                  <TaskRow key={task.id} task={task} today={today} domains={domains.data ?? []} filing={filing} />
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    today={today}
+                    domains={domains.data ?? []}
+                    filing={filing}
+                    onDelete={remove}
+                  />
                 ))}
               </ul>
             )}
           </div>
         )}
-        {undoable && <UndoToast task={undoable} />}
+        {undoable && <UndoToast task={undoable} undoes={undoes} />}
       </section>
     </ListSessionContext.Provider>
   )

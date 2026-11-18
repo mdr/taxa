@@ -1,7 +1,7 @@
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { makeTask } from "@taxa/shared/test-support/make-task"
 import { describe, expect, it } from "vite-plus/test"
-import { isCelebrated, isShownDone, ListSessionService, Step, UNDO_OFFERED_MS } from "./list-session-service.ts"
+import { isCelebrated, isShownDone, ListSessionService, Step, Undo, UNDO_OFFERED_MS } from "./list-session-service.ts"
 import { FakeScheduler } from "../../test-support/fake-scheduler.ts"
 import { testTelemetry, type TestTelemetry } from "../../test-support/test-telemetry.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
@@ -10,9 +10,13 @@ import { TaskChangeType, type TaskChange, type TaskChangesActions } from "../cha
 /** Task changes the test answers itself, one at a time, as the server would. */
 class FakeTaskChanges implements TaskChangesActions {
   readonly asked: { task: Task; change: TaskChange; answer: (task: Task | undefined) => void }[] = []
+  /** Every change asked for, in order, answered or not. */
+  readonly made: { task: Task; change: TaskChange }[] = []
 
-  readonly change = (task: Task, change: TaskChange): Promise<Task | undefined> =>
-    new Promise((answer) => this.asked.push({ task, change, answer }))
+  readonly change = (task: Task, change: TaskChange): Promise<Task | undefined> => {
+    this.made.push({ task, change })
+    return new Promise((answer) => this.asked.push({ task, change, answer }))
+  }
 
   readonly clearProblems = (): void => undefined
 
@@ -40,6 +44,32 @@ const makeListSessionService = (): {
 }
 
 describe("ListSessionService", () => {
+  it("deletes a task, offering to undo it, which restores it", async () => {
+    const { changes, session, telemetry } = makeListSessionService()
+    const task = makeTask({ title: "Fix the tap" })
+    const deleting = session.delete(task, [task.id])
+    await changes.answer()
+    await deleting
+    expect(changes.made.map(({ change }) => change.type)).toEqual([TaskChangeType.DELETE])
+    expect(session.state.undoable?.id).toBe(task.id)
+    expect(session.state.undoes).toBe(Undo.DELETE)
+    const undoing = session.undo()
+    await changes.answer()
+    await undoing
+    expect(changes.made.map(({ change }) => change.type)).toEqual([TaskChangeType.DELETE, TaskChangeType.RESTORE])
+    expect(session.state.undoable).toBeUndefined()
+    expect(telemetry.tracked().at(-1)).toEqual([ANALYTICS_CODES.task.undone, { taskId: task.id, undoes: Undo.DELETE }])
+  })
+
+  it("offers nothing to undo when the server refuses a delete", async () => {
+    const { changes, session } = makeListSessionService()
+    const task = makeTask()
+    const deleting = session.delete(task, [task.id])
+    await changes.answer(false)
+    await deleting
+    expect(session.state.undoable).toBeUndefined()
+  })
+
   it("keeps what's typed to search the list, tracked once a visit", () => {
     const { session, telemetry } = makeListSessionService()
     session.search("tap")
@@ -84,7 +114,7 @@ describe("ListSessionService", () => {
     await ticking
 
     const undoing = session.undo()
-    expect(telemetry.tracked()).toEqual([[ANALYTICS_CODES.task.undone, { taskId: task.id }]])
+    expect(telemetry.tracked()).toEqual([[ANALYTICS_CODES.task.undone, { taskId: task.id, undoes: Undo.TICK }]])
     expect(session.state.undoable).toBeUndefined()
     expect(isShownDone(session.state, task)).toBe(false)
     expect(changes.asked[0]?.change).toEqual({ type: TaskChangeType.STATUS, request: { status: TaskStatus.OPEN } })

@@ -45,4 +45,16 @@ test("changing a task from its menu in a list, without opening it", async ({ tax
   await menu.delete()
   await home.expectTasks(["H-2 Bleed the radiators"])
   await taxa.expectTaskCount(2)
+
+  // Deleted by mistake: undone, it is back where it was; and again with the keyboard.
+  await home.expectUndoOffered("Deleted: Book the MOT")
+  await home.undo()
+  await home.expectTasks(["H-2 Bleed the radiators", "H-3 Book the MOT"])
+  await taxa.expectTaskCount(3)
+  menu = await home.openMenu("Book the MOT")
+  await menu.delete()
+  await home.expectTasks(["H-2 Bleed the radiators"])
+  await home.keyboard.press("mod+z")
+  await home.expectTasks(["H-2 Bleed the radiators", "H-3 Book the MOT"])
+  await taxa.expectTaskCount(3)
 })

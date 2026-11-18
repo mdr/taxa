@@ -31,13 +31,16 @@ export const TaskRow = ({
   task,
   today,
   domains,
-  filing
+  filing,
+  onDelete
 }: {
   task: Task
   today: IsoDate
   /** Where it can be moved to, from its menu. */
   domains: readonly Domain[]
   filing?: Filing
+  /** Deletes it from its menu, with a chance to undo it. */
+  onDelete: (task: Task) => void
 }) => {
   const { toggle, highlight } = useListSession()
   const highlighted = useHighlighted(task.id)
@@ -124,7 +127,7 @@ export const TaskRow = ({
         {task.ref}
       </span>
       <span className={styles.menu}>
-        <TaskRowMenu task={task} today={today} domains={domains} />
+        <TaskRowMenu task={task} today={today} domains={domains} onDelete={() => onDelete(task)} />
       </span>
       {problem && (
         <span className={styles.problem} role="alert" data-testid={taskRowTestIds.problem}>

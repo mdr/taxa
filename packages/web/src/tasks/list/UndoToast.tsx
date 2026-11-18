@@ -1,17 +1,21 @@
 import type { Task } from "@taxa/shared/tasks/task"
-import { CircleCheck } from "lucide-react"
+import { CircleCheck, Trash2 } from "lucide-react"
 import styles from "./UndoToast.module.css"
 import { undoToastTestIds } from "./UndoToastTestIds.ts"
-import { useListSession } from "./list-session-service.ts"
+import { Undo, useListSession } from "./list-session-service.ts"
 
-/** "Done: …, Undo", while the list's session offers to undo ticking it off. */
-export const UndoToast = ({ task }: { task: Task }) => {
+/** "Done: …, Undo" or "Deleted: …, Undo", while the list's session offers to undo ticking it off or deleting it. */
+export const UndoToast = ({ task, undoes }: { task: Task; undoes: Undo }) => {
   const { undo } = useListSession()
   return (
     <div className={styles.toast} role="status" data-testid={undoToastTestIds.toast}>
-      <CircleCheck size={16} className={styles.icon} aria-hidden />
+      {undoes === Undo.DELETE ? (
+        <Trash2 size={16} className={styles.icon} aria-hidden />
+      ) : (
+        <CircleCheck size={16} className={styles.icon} aria-hidden />
+      )}
       <span className={styles.text}>
-        Done: <span className={styles.title}>{task.title}</span>
+        {undoes === Undo.DELETE ? "Deleted" : "Done"}: <span className={styles.title}>{task.title}</span>
       </span>
       <button
         type="button"

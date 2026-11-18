@@ -55,6 +55,8 @@ interface PanelProps {
   domains: readonly Domain[]
   /** Makes the change and closes the menu. */
   apply: (change: TaskChange) => void
+  /** Deletes the task, with a chance to undo it, and closes the menu. */
+  remove: () => void
   close: () => void
 }
 
@@ -62,7 +64,7 @@ const MainOptions = ({
   task,
   today,
   domains,
-  apply,
+  remove,
   close,
   open
 }: PanelProps & { open: (section: Section) => void }) => {
@@ -112,7 +114,7 @@ const MainOptions = ({
             taskId: task.id,
             taskRef: task.ref
           })
-        } else if (chosen === Action.DELETE) apply({ type: TaskChangeType.DELETE })
+        } else if (chosen === Action.DELETE) remove()
         else open(chosen)
       }}
     />
@@ -221,7 +223,17 @@ const MenuPanel = (props: PanelProps) => {
 }
 
 /** ⋯ on a task's row: change it without opening it. */
-export const TaskRowMenu = ({ task, today, domains }: { task: Task; today: IsoDate; domains: readonly Domain[] }) => {
+export const TaskRowMenu = ({
+  task,
+  today,
+  domains,
+  onDelete
+}: {
+  task: Task
+  today: IsoDate
+  domains: readonly Domain[]
+  onDelete: () => void
+}) => {
   const { change } = useTaskChanges()
   return (
     <Popover
@@ -237,6 +249,10 @@ export const TaskRowMenu = ({ task, today, domains }: { task: Task; today: IsoDa
           today={today}
           domains={domains}
           close={close}
+          remove={() => {
+            close()
+            onDelete()
+          }}
           apply={(taskChange) => {
             close()
             void change(task, taskChange)

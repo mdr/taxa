@@ -13,6 +13,12 @@ import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 /** How long the offer to undo a tick stays. */
 export const UNDO_OFFERED_MS: Ms = 6000
 
+/** What the offer to undo would take back. */
+export enum Undo {
+  TICK = "TICK",
+  DELETE = "DELETE"
+}
+
 /** Tasks ticked off here, by id. */
 export type TickedTasks = Readonly<Partial<Record<TaskId, Task>>>
 
@@ -21,8 +27,10 @@ export interface ListSessionState {
   ticked: TickedTasks
   /** What a box shows while the server hasn't answered yet: ticked or not. */
   pending: Readonly<Partial<Record<TaskId, boolean>>>
-  /** The task ticked off last, with a chance to undo it. */
+  /** The task ticked off or deleted last, with a chance to undo it. */
   undoable: Task | undefined
+  /** Which of those it was. */
+  undoes: Undo
   /** The task the keyboard is on, if any. */
   highlighted: TaskId | undefined
   /** What's typed to find tasks in the list: only those it finds show. */
@@ -41,6 +49,8 @@ export interface ListSessionActions {
   /** Starts working on a task, or stops if it's in progress. */
   startOrStop: (task: Task) => Promise<void>
   undo: () => Promise<void>
+  /** Deletes a task, with a chance to undo it; if it's highlighted, the highlight goes on to the task after it. */
+  delete: (task: Task, shown: readonly TaskId[]) => Promise<void>
   dismissUndo: () => void
   /** Puts the highlight on a task, or takes it away. */
   highlight: (id: TaskId | undefined) => void
@@ -71,7 +81,7 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   #searched = false
 
   constructor(changes: TaskChangesActions, scheduler: Scheduler, analytics: Analytics) {
-    super({ ticked: {}, pending: {}, undoable: undefined, highlighted: undefined, search: "" })
+    super({ ticked: {}, pending: {}, undoable: undefined, undoes: Undo.TICK, highlighted: undefined, search: "" })
     this.#changes = changes
     this.#scheduler = scheduler
     this.#analytics = analytics
@@ -95,11 +105,24 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   }
 
   readonly undo = async (): Promise<void> => {
-    const task = this.state.undoable
+    const { undoable: task, undoes } = this.state
     if (!task) return
     this.dismissUndo()
-    this.#analytics.track(ANALYTICS_CODES.task.undone, `undid ticking off ${task.ref}`, { taskId: task.id })
+    if (undoes === Undo.DELETE) {
+      this.#analytics.track(ANALYTICS_CODES.task.undone, `undid deleting ${task.ref}`, { taskId: task.id, undoes })
+      await this.#changes.change(task, { type: TaskChangeType.RESTORE })
+      return
+    }
+    this.#analytics.track(ANALYTICS_CODES.task.undone, `undid ticking off ${task.ref}`, { taskId: task.id, undoes })
     await this.#setStatus(task, TaskStatus.OPEN)
+  }
+
+  readonly delete = async (task: Task, shown: readonly TaskId[]): Promise<void> => {
+    this.#highlightPast(task.id, shown)
+    const deleted = await this.#changes.change(task, { type: TaskChangeType.DELETE })
+    if (!deleted) return
+    this.setState({ undoable: deleted, undoes: Undo.DELETE })
+    this.#offerUndo()
   }
 
   readonly dismissUndo = (): void => {
@@ -124,11 +147,15 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   }
 
   readonly file = async (task: Task, request: UpdateTaskRequest, shown: readonly TaskId[]): Promise<void> => {
-    if (this.state.highlighted === task.id) {
-      const others = shown.filter((id) => id !== task.id)
-      this.highlight(others[Math.min(shown.indexOf(task.id), others.length - 1)])
-    }
+    this.#highlightPast(task.id, shown)
     await this.#changes.change(task, { type: TaskChangeType.UPDATE, request })
+  }
+
+  /** A task's leaving the list: if it's highlighted, the highlight goes on to the task after it. */
+  #highlightPast(id: TaskId, shown: readonly TaskId[]): void {
+    if (this.state.highlighted !== id) return
+    const others = shown.filter((other) => other !== id)
+    this.highlight(others[Math.min(shown.indexOf(id), others.length - 1)])
   }
 
   readonly dispose = (): void => {
@@ -153,7 +180,8 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
     this.updateState((state) => ({
       ...state,
       ticked: { ...state.ticked, [task.id]: done ? changed : undefined },
-      undoable: done ? changed : state.undoable?.id === task.id ? undefined : state.undoable
+      undoable: done ? changed : state.undoable?.id === task.id ? undefined : state.undoable,
+      undoes: done ? Undo.TICK : state.undoes
     }))
     if (done) this.#offerUndo()
   }
