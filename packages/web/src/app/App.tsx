@@ -9,6 +9,7 @@ import { TaskDetailPage } from "../tasks/detail/TaskDetailPage.tsx"
 import { TaskListPage } from "../tasks/list/TaskListPage.tsx"
 import { ListType, type TaskList } from "../tasks/list/task-list.ts"
 import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
+import { SOMEDAY_PATH, SOON_PATH, TODAY_PATH } from "../tasks/when/when-paths.ts"
 import { SessionPage } from "../sessions/SessionPage.tsx"
 import { SessionSummary } from "../sessions/run/SessionSummary.tsx"
 import { SESSION_PATH } from "../sessions/session-paths.ts"
@@ -18,6 +19,9 @@ import { realClock } from "@taxa/shared/clock"
 
 const INBOX_LIST: TaskList = { type: ListType.INBOX }
 const IN_PROGRESS_LIST: TaskList = { type: ListType.IN_PROGRESS }
+const TODAY_LIST: TaskList = { type: ListType.TODAY }
+const SOON_LIST: TaskList = { type: ListType.SOON }
+const SOMEDAY_LIST: TaskList = { type: ListType.SOMEDAY }
 import { useDomains } from "../domains/domain-queries.ts"
 import { Onboarding } from "../onboarding/Onboarding.tsx"
 import { problemMessage } from "../api/problem-message.ts"
@@ -64,10 +68,19 @@ const NotFound = () => (
 const Pages = () => (
   <Switch>
     <Route path="/">
-      <TaskListPage list={INBOX_LIST} />
+      <TaskListPage key="INBOX" list={INBOX_LIST} />
     </Route>
     <Route path={IN_PROGRESS_PATH}>
-      <TaskListPage list={IN_PROGRESS_LIST} />
+      <TaskListPage key="IN_PROGRESS" list={IN_PROGRESS_LIST} />
+    </Route>
+    <Route path={TODAY_PATH}>
+      <TaskListPage key="TODAY" list={TODAY_LIST} />
+    </Route>
+    <Route path={SOON_PATH}>
+      <TaskListPage key="SOON" list={SOON_LIST} />
+    </Route>
+    <Route path={SOMEDAY_PATH}>
+      <TaskListPage key="SOMEDAY" list={SOMEDAY_LIST} />
     </Route>
     <Route path="/domains/:prefix">
       {({ prefix }) => <TaskListPage key={prefix} list={{ type: ListType.DOMAIN, prefix }} />}

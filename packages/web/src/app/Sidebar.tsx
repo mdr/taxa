@@ -8,6 +8,10 @@ import { useDomains } from "../domains/domain-queries.ts"
 import { useTasks } from "../tasks/task-queries.ts"
 import { StatusIcon } from "../tasks/StatusIcon.tsx"
 import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
+import { SOMEDAY_PATH, SOON_PATH, TODAY_PATH } from "../tasks/when/when-paths.ts"
+import { WHEN_ICONS } from "../tasks/when/when-choices.tsx"
+import { When } from "@taxa/shared/tasks/when"
+import type { ReactNode } from "react"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { useShortcutActions } from "../shortcuts/shortcut-service.ts"
 import type { Session } from "@taxa/shared/sessions/session"
@@ -33,6 +37,69 @@ const SessionLeft = ({ session }: { session: Session }) => {
   )
 }
 
+/** A list in the sidebar, with how many tasks it has, if any. */
+const ListLink = ({
+  href,
+  icon,
+  name,
+  count,
+  testId,
+  countTestId
+}: {
+  href: string
+  icon: ReactNode
+  name: string
+  count: number
+  testId: string
+  countTestId: string
+}) => {
+  const [location] = useLocation()
+  return (
+    <Link
+      href={href}
+      className={styles.link}
+      aria-current={location === href ? "page" : undefined}
+      data-testid={testId}
+    >
+      <span className={styles.linkIcon}>{icon}</span>
+      <span className={styles.name}>{name}</span>
+      {count > 0 && (
+        <span className={styles.count} data-testid={countTestId}>
+          {count}
+        </span>
+      )}
+    </Link>
+  )
+}
+
+/** One of the lists of what's meant for when. */
+const WhenLink = ({
+  when,
+  href,
+  name,
+  testId,
+  countTestId
+}: {
+  when: When
+  href: string
+  name: string
+  testId: string
+  countTestId: string
+}) => {
+  const tasks = useTasks({ when })
+  const Icon = WHEN_ICONS[when]
+  return (
+    <ListLink
+      href={href}
+      icon={<Icon size={16} aria-hidden />}
+      name={name}
+      count={tasks.data?.length ?? 0}
+      testId={testId}
+      countTestId={countTestId}
+    />
+  )
+}
+
 export const Sidebar = () => {
   const [location] = useLocation()
   const domains = useDomains()
@@ -49,6 +116,20 @@ export const Sidebar = () => {
         <Sprout size={20} className={styles.logo} aria-hidden />
         Taxa
       </p>
+      <WhenLink
+        when={When.TODAY}
+        href={TODAY_PATH}
+        name="Today"
+        testId={sidebarTestIds.today}
+        countTestId={sidebarTestIds.todayCount}
+      />
+      <WhenLink
+        when={When.SOON}
+        href={SOON_PATH}
+        name="Soon"
+        testId={sidebarTestIds.soon}
+        countTestId={sidebarTestIds.soonCount}
+      />
       <Link href="/" className={styles.link} aria-current={current("/")} data-testid={sidebarTestIds.inbox}>
         <Inbox size={16} className={styles.linkIcon} aria-hidden />
         <span className={styles.name}>Inbox</span>
@@ -104,6 +185,13 @@ export const Sidebar = () => {
         })}
       </ul>
       <NewDomainForm />
+      <WhenLink
+        when={When.SOMEDAY}
+        href={SOMEDAY_PATH}
+        name="Someday"
+        testId={sidebarTestIds.someday}
+        countTestId={sidebarTestIds.somedayCount}
+      />
       <button
         type="button"
         className={styles.shortcuts}

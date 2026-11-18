@@ -7,7 +7,7 @@ import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { TaskRowMenu } from "./TaskRowMenu.ts"
 import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
 import { taskListPageTestIds } from "../../src/tasks/list/TaskListPageTestIds.ts"
-import { taskRowTestIds } from "../../src/tasks/list/TaskRowTestIds.ts"
+import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
 import { undoToastTestIds } from "../../src/tasks/list/UndoToastTestIds.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
 

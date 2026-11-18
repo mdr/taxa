@@ -7,6 +7,15 @@ import { TaskListPage } from "./TaskListPage.ts"
 import { SessionPlannerPage } from "./SessionPlannerPage.ts"
 import { SessionSetupPage } from "./SessionSetupPage.ts"
 
+/** The lists of what's meant for when. */
+type WhenList = "Today" | "Soon" | "Someday"
+
+const WHEN_LINKS: Record<WhenList, { link: string; count: string }> = {
+  Today: { link: sidebarTestIds.today, count: sidebarTestIds.todayCount },
+  Soon: { link: sidebarTestIds.soon, count: sidebarTestIds.soonCount },
+  Someday: { link: sidebarTestIds.someday, count: sidebarTestIds.somedayCount }
+}
+
 /** The lists down the side, on every page. */
 export class Sidebar extends PageObject {
   readonly #page: Page
@@ -50,6 +59,19 @@ export class Sidebar extends PageObject {
   async expectInProgressCount(count: number): Promise<void> {
     const shown = this.#page.getByTestId(sidebarTestIds.inProgressCount)
     await (count === 0 ? expect(shown).toHaveCount(0) : expect(shown).toHaveText(String(count)))
+  }
+
+  /** How many tasks are in Today, Soon or Someday, as the sidebar shows; none shows no count. */
+  async expectCount(list: WhenList, count: number): Promise<void> {
+    const shown = this.#page.getByTestId(WHEN_LINKS[list].count)
+    await (count === 0 ? expect(shown).toHaveCount(0) : expect(shown).toHaveText(String(count)))
+  }
+
+  async openList(list: WhenList): Promise<TaskListPage> {
+    await this.#page.getByTestId(WHEN_LINKS[list].link).click()
+    const page = new TaskListPage(this.#page)
+    await page.expectHeading(list)
+    return page
   }
 
   async openInProgress(): Promise<TaskListPage> {

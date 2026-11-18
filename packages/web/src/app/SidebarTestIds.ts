@@ -1,4 +1,10 @@
 export const sidebarTestIds = {
+  today: "Sidebar.today",
+  todayCount: "Sidebar.todayCount",
+  soon: "Sidebar.soon",
+  soonCount: "Sidebar.soonCount",
+  someday: "Sidebar.someday",
+  somedayCount: "Sidebar.somedayCount",
   inbox: "Sidebar.inbox",
   inboxCount: "Sidebar.inboxCount",
   inProgress: "Sidebar.inProgress",

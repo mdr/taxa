@@ -4,19 +4,21 @@ import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
-import { CalendarClock, CalendarDays } from "lucide-react"
+import { CalendarClock } from "lucide-react"
 import { useEffect, useRef } from "react"
 import { Link } from "wouter"
 import styles from "./TaskRow.module.css"
 import { taskRowTestIds } from "./TaskRowTestIds.ts"
 import { TickBox } from "./TickBox.tsx"
-import { PriorityIcon } from "../PriorityIcon.tsx"
-import { StatusIcon } from "../StatusIcon.tsx"
-import { capitalised } from "../../ui/capitalised.ts"
-import { useCelebrated, useHighlighted, useListSession, useShownDone } from "./list-session-service.ts"
-import { useTaskProblem } from "../changes/task-changes-service.ts"
-import { DomainChoice } from "../filing/DomainChoice.tsx"
+import { PriorityIcon } from "../../PriorityIcon.tsx"
+import { StatusIcon } from "../../StatusIcon.tsx"
+import { capitalised } from "../../../ui/capitalised.ts"
+import { useCelebrated, useHighlighted, useListSession, useShownDone } from "../list-session-service.ts"
+import { useTaskProblem } from "../../changes/task-changes-service.ts"
+import { DomainChoice } from "../../filing/DomainChoice.tsx"
 import { TaskRowMenu } from "./TaskRowMenu.tsx"
+import type { When } from "@taxa/shared/tasks/when"
+import { WhenTag } from "../../when/WhenTag.tsx"
 
 /** In the Inbox: the domains to file a task in, and how. */
 export interface Filing {
@@ -32,6 +34,7 @@ export const TaskRow = ({
   today,
   domains,
   filing,
+  listedBy,
   onDelete
 }: {
   task: Task
@@ -39,6 +42,8 @@ export const TaskRow = ({
   /** Where it can be moved to, from its menu. */
   domains: readonly Domain[]
   filing?: Filing
+  /** The When the list is made of, which its rows needn't say. */
+  listedBy?: When
   /** Deletes it from its menu, with a chance to undo it. */
   onDelete: (task: Task) => void
 }) => {
@@ -100,13 +105,7 @@ export const TaskRow = ({
             {capitalised(PRIORITY_TEXT[task.priority])}
           </span>
         )}
-        {task.scheduled && (
-          <span className={styles.meta}>
-            <CalendarDays size={14} aria-hidden />
-            {formatDay(task.scheduled, today)}
-            {task.scheduledTime && ` ${task.scheduledTime}`}
-          </span>
-        )}
+        <WhenTag task={task} today={today} listedBy={listedBy} className={styles.meta} />
         {task.due && (
           <span className={dueClass(task.due, today)}>
             <CalendarClock size={14} aria-hidden />

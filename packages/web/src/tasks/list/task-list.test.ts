@@ -9,9 +9,16 @@ describe("task lists", () => {
     expect(listQuery({ type: ListType.IN_PROGRESS })).toEqual({ status: TaskStatus.IN_PROGRESS })
   })
 
+  it("ask for what's meant for today, soon or someday", () => {
+    expect(listQuery({ type: ListType.TODAY })).toEqual({ when: "TODAY" })
+    expect(listQuery({ type: ListType.SOON })).toEqual({ when: "SOON" })
+    expect(listQuery({ type: ListType.SOMEDAY })).toEqual({ when: "SOMEDAY" })
+  })
+
   it("take new tasks only where tasks live", () => {
     expect(isHome({ type: ListType.INBOX })).toBe(true)
     expect(isHome({ type: ListType.DOMAIN, prefix: "H" })).toBe(true)
     expect(isHome({ type: ListType.IN_PROGRESS })).toBe(false)
+    expect(isHome({ type: ListType.TODAY })).toBe(false)
   })
 })

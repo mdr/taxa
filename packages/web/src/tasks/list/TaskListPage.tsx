@@ -1,10 +1,10 @@
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
-import { ChevronDown, ChevronRight, Inbox, Search } from "lucide-react"
+import { ChevronDown, ChevronRight, Search } from "lucide-react"
 import { useEffect, useRef, useState, type Ref } from "react"
 import styles from "./TaskListPage.module.css"
 import { taskListPageTestIds } from "./TaskListPageTestIds.ts"
 import { QuickCapture } from "./QuickCapture.tsx"
-import { TaskRow, type Filing } from "./TaskRow.tsx"
+import { TaskRow, type Filing } from "./row/TaskRow.tsx"
 import { UndoToast } from "./UndoToast.tsx"
 import { withTicked } from "./with-ticked.ts"
 import { listSearch } from "./list-search.ts"
@@ -19,10 +19,9 @@ import { useTaskChanges } from "../changes/task-changes-service.ts"
 import { ShortcutScope, useShortcuts } from "../../shortcuts/shortcut-service.ts"
 import { problemMessage } from "../../api/problem-message.ts"
 import { useToday } from "../../dates/use-today.ts"
-import { DomainBadge } from "../../domains/DomainBadge.tsx"
 import { useDomains } from "../../domains/domain-queries.ts"
 import { useTasks } from "../task-queries.ts"
-import { StatusIcon } from "../StatusIcon.tsx"
+import { EmptyList, ListIcon, listHeading, listWhen } from "./ListLooks.tsx"
 import { isHome, listQuery, ListType, type TaskList } from "./task-list.ts"
 
 /** Finds tasks in the list as you type; Escape clears it and leaves. */
@@ -54,12 +53,6 @@ const ListSearch = ({
     />
   </label>
 )
-
-const HEADINGS: Record<ListType, string | undefined> = {
-  [ListType.INBOX]: "Inbox",
-  [ListType.DOMAIN]: undefined,
-  [ListType.IN_PROGRESS]: "In progress"
-}
 
 /** A list of tasks: the Inbox, a domain's, or everything in progress. */
 export const TaskListPage = ({ list }: { list: TaskList }) => {
@@ -123,11 +116,9 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
     <ListSessionContext.Provider value={session}>
       <section className={styles.page} aria-labelledby="list-heading">
         <header className={styles.header}>
-          {list.type === ListType.DOMAIN && domain && <DomainBadge prefix={domain.prefix} />}
-          {list.type === ListType.INBOX && <Inbox size={22} className={styles.icon} aria-hidden />}
-          {list.type === ListType.IN_PROGRESS && <StatusIcon status={TaskStatus.IN_PROGRESS} size={22} />}
+          <ListIcon list={list} domain={domain} />
           <h1 id="list-heading" className={styles.heading} data-testid={taskListPageTestIds.heading}>
-            {HEADINGS[list.type] ?? domain?.name ?? domainPrefix}
+            {listHeading(list, domain)}
           </h1>
           {openCount > 0 && <span className={styles.count}>{openCount}</span>}
           <ListSearch value={search} onSearch={session.search} input={searchBox} />
@@ -143,19 +134,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
           </p>
         ) : shown?.length === 0 ? (
           <div className={styles.empty} data-testid={taskListPageTestIds.empty}>
-            {list.type === ListType.DOMAIN && <p>Nothing to do here. Enjoy it.</p>}
-            {list.type === ListType.INBOX && (
-              <>
-                <p className={styles.emptyTitle}>Your Inbox is clear</p>
-                <p>Capture anything above as it occurs to you, and file it into a domain later.</p>
-              </>
-            )}
-            {list.type === ListType.IN_PROGRESS && (
-              <>
-                <p className={styles.emptyTitle}>Nothing in progress</p>
-                <p>Press I on a task to start working on it, and it shows here until you stop.</p>
-              </>
-            )}
+            <EmptyList list={list} />
           </div>
         ) : (
           <ul className={styles.tasks} data-testid={taskListPageTestIds.tasks}>
@@ -166,6 +145,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
                 today={today}
                 domains={domains.data ?? []}
                 filing={filing}
+                listedBy={listWhen(list)}
                 onDelete={remove}
               />
             ))}

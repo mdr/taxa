@@ -7,7 +7,7 @@ import { expectAccessible } from "./accessibility.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
 import { INBOX_CHOICE } from "../../src/tasks/filing/filing.ts"
 import { estimatePropertyTestIds } from "../../src/tasks/detail/properties/EstimatePropertyTestIds.ts"
-import { taskRowTestIds } from "../../src/tasks/list/TaskRowTestIds.ts"
+import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
 
 /** The things the menu lists to change, as it names them. */

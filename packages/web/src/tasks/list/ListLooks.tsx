@@ -1,0 +1,82 @@
+import type { Domain } from "@taxa/shared/domains/domain"
+import { TaskStatus } from "@taxa/shared/tasks/task"
+import { When } from "@taxa/shared/tasks/when"
+import { Inbox } from "lucide-react"
+import styles from "./TaskListPage.module.css"
+import { ListType, type TaskList } from "./task-list.ts"
+import { DomainBadge } from "../../domains/DomainBadge.tsx"
+import { StatusIcon } from "../StatusIcon.tsx"
+import { WHEN_ICONS } from "../when/when-choices.tsx"
+
+const HEADINGS: Record<ListType, string | undefined> = {
+  [ListType.INBOX]: "Inbox",
+  [ListType.DOMAIN]: undefined,
+  [ListType.IN_PROGRESS]: "In progress",
+  [ListType.TODAY]: "Today",
+  [ListType.SOON]: "Soon",
+  [ListType.SOMEDAY]: "Someday"
+}
+
+/** What a list is called: a domain by its name, once known. */
+export const listHeading = (list: TaskList, domain: Domain | undefined): string | undefined =>
+  HEADINGS[list.type] ?? domain?.name ?? (list.type === ListType.DOMAIN ? list.prefix : undefined)
+
+const LIST_WHENS: Partial<Record<ListType, When>> = {
+  [ListType.TODAY]: When.TODAY,
+  [ListType.SOON]: When.SOON,
+  [ListType.SOMEDAY]: When.SOMEDAY
+}
+
+/** The When a list is made of, which goes without saying on its rows. */
+export const listWhen = (list: TaskList): When | undefined => LIST_WHENS[list.type]
+
+export const ListIcon = ({ list, domain }: { list: TaskList; domain: Domain | undefined }) => {
+  switch (list.type) {
+    case ListType.DOMAIN:
+      return domain && <DomainBadge prefix={domain.prefix} />
+    case ListType.INBOX:
+      return <Inbox size={22} className={styles.icon} aria-hidden />
+    case ListType.IN_PROGRESS:
+      return <StatusIcon status={TaskStatus.IN_PROGRESS} size={22} />
+    case ListType.TODAY:
+    case ListType.SOON:
+    case ListType.SOMEDAY: {
+      const Icon = WHEN_ICONS[LIST_WHENS[list.type] ?? When.ANY_TIME]
+      return <Icon size={22} className={styles.icon} aria-hidden />
+    }
+  }
+}
+
+const EMPTY: Record<ListType, { title?: string; text: string }> = {
+  [ListType.DOMAIN]: { text: "Nothing to do here. Enjoy it." },
+  [ListType.INBOX]: {
+    title: "Your Inbox is clear",
+    text: "Capture anything above as it occurs to you, and file it into a domain later."
+  },
+  [ListType.IN_PROGRESS]: {
+    title: "Nothing in progress",
+    text: "Press I on a task to start working on it, and it shows here until you stop."
+  },
+  [ListType.TODAY]: {
+    title: "Nothing planned for today",
+    text: "Choose When › Today in a task's ⋯ menu to plan it for today."
+  },
+  [ListType.SOON]: {
+    title: "Nothing lined up",
+    text: "Put what you mean to get to next in Soon, from a task's ⋯ menu."
+  },
+  [ListType.SOMEDAY]: {
+    title: "No somedays",
+    text: "Things you might do one day go here, out of sight until you look."
+  }
+}
+
+export const EmptyList = ({ list }: { list: TaskList }) => {
+  const { title, text } = EMPTY[list.type]
+  return (
+    <>
+      {title && <p className={styles.emptyTitle}>{title}</p>}
+      <p>{text}</p>
+    </>
+  )
+}
