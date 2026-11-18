@@ -9,7 +9,8 @@ import type { KeyShortcut } from "../../../shortcuts/shortcut-service.ts"
 
 const QUICK = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240]
 
-const EstimateEditor = ({
+/** A time typed, or one of the usual lengths chosen; and, if it can be, cleared. */
+export const EstimateEditor = ({
   minutes,
   label,
   clearable,

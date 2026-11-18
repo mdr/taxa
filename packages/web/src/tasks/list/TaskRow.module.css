@@ -96,3 +96,21 @@
 .row[data-highlighted="true"] {
   background: var(--selected);
 }
+
+/* ⋯ shows where it's wanted: on the row pointed at, the one the keyboard's on, or while open; always, without a pointer. */
+.menu {
+  opacity: 0;
+}
+
+.row:hover .menu,
+.row:focus-within .menu,
+.row[data-highlighted="true"] .menu,
+.menu:has([aria-expanded="true"]) {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .menu {
+    opacity: 1;
+  }
+}

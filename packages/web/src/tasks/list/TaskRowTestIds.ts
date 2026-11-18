@@ -5,5 +5,7 @@ export const taskRowTestIds = {
   domain: "TaskRow.domain",
   title: "TaskRow.title",
   highlights: "TaskRow.highlights",
-  problem: "TaskRow.problem"
+  problem: "TaskRow.problem",
+  menu: "TaskRow.menu",
+  menuBack: "TaskRow.menuBack"
 }

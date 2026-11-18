@@ -16,6 +16,7 @@ import { capitalised } from "../../ui/capitalised.ts"
 import { useCelebrated, useHighlighted, useListSession, useShownDone } from "./list-session-service.ts"
 import { useTaskProblem } from "../changes/task-changes-service.ts"
 import { DomainChoice } from "../filing/DomainChoice.tsx"
+import { TaskRowMenu } from "./TaskRowMenu.tsx"
 
 /** In the Inbox: the domains to file a task in, and how. */
 export interface Filing {
@@ -26,7 +27,18 @@ export interface Filing {
 const dueClass = (due: IsoDate, today: IsoDate): string | undefined =>
   due < today ? styles.overdue : due === today ? styles.dueToday : styles.meta
 
-export const TaskRow = ({ task, today, filing }: { task: Task; today: IsoDate; filing?: Filing }) => {
+export const TaskRow = ({
+  task,
+  today,
+  domains,
+  filing
+}: {
+  task: Task
+  today: IsoDate
+  /** Where it can be moved to, from its menu. */
+  domains: readonly Domain[]
+  filing?: Filing
+}) => {
   const { toggle, highlight } = useListSession()
   const highlighted = useHighlighted(task.id)
   const row = useRef<HTMLLIElement>(null)
@@ -110,6 +122,9 @@ export const TaskRow = ({ task, today, filing }: { task: Task; today: IsoDate; f
       )}
       <span className={styles.ref} data-testid={taskRowTestIds.ref}>
         {task.ref}
+      </span>
+      <span className={styles.menu}>
+        <TaskRowMenu task={task} today={today} domains={domains} />
       </span>
       {problem && (
         <span className={styles.problem} role="alert" data-testid={taskRowTestIds.problem}>

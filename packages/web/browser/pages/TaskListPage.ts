@@ -4,6 +4,7 @@ import { expectAccessible } from "./accessibility.ts"
 import { Keyboard } from "./Keyboard.ts"
 import { Sidebar } from "./Sidebar.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
+import { TaskRowMenu } from "./TaskRowMenu.ts"
 import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
 import { taskListPageTestIds } from "../../src/tasks/list/TaskListPageTestIds.ts"
 import { taskRowTestIds } from "../../src/tasks/list/TaskRowTestIds.ts"
@@ -166,6 +167,15 @@ export class TaskListPage extends PageObject {
   async file(title: string, prefix: string): Promise<void> {
     await this.#row(title).getByTestId(taskRowTestIds.domain).click()
     await this.#page.locator(`[data-testid="${optionListTestIds.option}"][data-value="${prefix}"]`).click()
+  }
+
+  /** Opens the ⋯ menu on a task's row. */
+  async openMenu(title: string): Promise<TaskRowMenu> {
+    const row = this.#row(title)
+    await row.hover()
+    await row.getByTestId(taskRowTestIds.menu).click()
+    await expect(row.getByTestId(taskRowTestIds.menu)).toHaveAttribute("aria-expanded", "true")
+    return new TaskRowMenu(this.#page, row)
   }
 
   async openTask(title: string): Promise<TaskDetailPage> {

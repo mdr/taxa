@@ -2,6 +2,7 @@ import { formatDay } from "@taxa/shared/dates/date-format"
 import type { Domain } from "@taxa/shared/domains/domain"
 import { actorText } from "@taxa/shared/identity/actor-text"
 import { ClearableField } from "@taxa/shared/tasks/task-requests"
+import { setOrClear as fieldChange } from "../changes/field-change.ts"
 import { Energy, Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { ENERGY_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 import {
@@ -40,11 +41,7 @@ interface TaskPropertiesProps {
 
 export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) => {
   const today = useToday()
-  const setOrClear = (field: ClearableField, value: string | number | undefined) =>
-    change({
-      type: TaskChangeType.UPDATE,
-      request: value === undefined ? { clear: [field] } : { set: { [field]: value } }
-    })
+  const setOrClear = (field: ClearableField, value: string | number | undefined) => change(fieldChange(field, value))
   const EnergyIcon = task.energy ? ENERGY_ICONS[task.energy] : Zap
   const dueTone =
     task.due === undefined || task.due > today ? DateTone.PLAIN : task.due === today ? DateTone.TODAY : DateTone.OVERDUE

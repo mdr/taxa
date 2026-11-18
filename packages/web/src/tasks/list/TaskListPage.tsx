@@ -154,7 +154,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
         ) : (
           <ul className={styles.tasks} data-testid={taskListPageTestIds.tasks}>
             {shown?.map((task) => (
-              <TaskRow key={task.id} task={task} today={today} filing={filing} />
+              <TaskRow key={task.id} task={task} today={today} domains={domains.data ?? []} filing={filing} />
             ))}
           </ul>
         )}
@@ -179,7 +179,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
             {completedOpen && (
               <ul className={styles.tasks} data-testid={taskListPageTestIds.completed}>
                 {earlierFound.map((task) => (
-                  <TaskRow key={task.id} task={task} today={today} filing={filing} />
+                  <TaskRow key={task.id} task={task} today={today} domains={domains.data ?? []} filing={filing} />
                 ))}
               </ul>
             )}
