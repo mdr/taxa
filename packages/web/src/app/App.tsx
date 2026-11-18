@@ -12,6 +12,9 @@ import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
 import { SessionPage } from "../sessions/SessionPage.tsx"
 import { SessionSummary } from "../sessions/run/SessionSummary.tsx"
 import { SESSION_PATH } from "../sessions/session-paths.ts"
+import { SessionPlanContext, SessionPlanService } from "../sessions/plan/session-plan-service.ts"
+import { sessionChanged } from "../sessions/session-queries.ts"
+import { realClock } from "@taxa/shared/clock"
 
 const INBOX_LIST: TaskList = { type: ListType.INBOX }
 const IN_PROGRESS_LIST: TaskList = { type: ListType.IN_PROGRESS }
@@ -120,14 +123,20 @@ export const App = () => {
     () => new TaskChangesService(taxaApi, queryTaskCache(queryClient), appAnalytics, appLogger)
   )
   const [shortcuts] = useState(() => new ShortcutService(realScheduler, localShortcutSettings, appAnalytics))
+  // Here, not on the planner's page, so a plan being made survives a look at one of its tasks.
+  const [sessionPlan] = useState(
+    () => new SessionPlanService(taxaApi, realClock, appAnalytics, (session) => sessionChanged(queryClient, session))
+  )
   useEffect(() => shortcuts.dispose, [shortcuts])
   useKeyboardShortcuts(shortcuts)
   return (
     <QueryClientProvider client={queryClient}>
       <TaskChangesContext.Provider value={taskChanges}>
-        <ShortcutContext.Provider value={shortcuts}>
-          <Layout />
-        </ShortcutContext.Provider>
+        <SessionPlanContext.Provider value={sessionPlan}>
+          <ShortcutContext.Provider value={shortcuts}>
+            <Layout />
+          </ShortcutContext.Provider>
+        </SessionPlanContext.Provider>
       </TaskChangesContext.Provider>
     </QueryClientProvider>
   )

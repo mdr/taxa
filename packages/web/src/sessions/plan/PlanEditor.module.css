@@ -40,6 +40,7 @@
 
 .row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
   padding: 0.5rem 1rem;
@@ -57,19 +58,23 @@
 }
 
 .title {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 0;
+  /* Never squeezed out by the controls beside it: they wrap first. */
+  min-width: 8rem;
   display: flex;
   flex-direction: column;
 }
 
+/* Titles wrap in full: a task has to be recognisable. */
 .titleText {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.75rem;
   color: var(--muted);
 }
@@ -90,8 +95,7 @@
 }
 
 .reason {
-  flex: none;
-  padding: 0.05rem 0.5rem;
+  padding: 0 0.5rem;
   border-radius: 999px;
   background: var(--selected);
   font-size: 0.75rem;
@@ -138,4 +142,97 @@
   padding: 1rem;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.end {
+  margin: 0.5rem;
+  padding: 0.6rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* A planned task being dragged can go back to the suggestions. */
+.takesBack {
+  border-style: dashed;
+  border-color: var(--border-strong);
+}
+
+.takingBack {
+  border-color: var(--accent);
+  background: var(--selected);
+}
+
+.endOver {
+  border-color: var(--accent);
+  background: var(--selected);
+}
+
+.draggable {
+  cursor: grab;
+  user-select: none;
+}
+
+.dragging {
+  opacity: 0.4;
+}
+
+/* A suggestion dropped here goes in before this row, or after it. */
+.dropBefore {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.dropAfter {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* A suggestion dropped on the plan but not on a row goes last: the line shows under the last row, or the empty plan lights up. */
+.dropAtEnd .list > li:last-child {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.dropAtEnd .empty {
+  background: var(--selected);
+}
+
+.grip {
+  width: 1.5rem;
+  cursor: grab;
+}
+
+.gripSpace {
+  flex: none;
+  width: 1.5rem;
+}
+
+.overlay {
+  padding: 0.6rem 1rem;
+  max-width: 24rem;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 15%);
+  font-size: 0.9rem;
+  cursor: grabbing;
+}
+
+/* The grip on a suggestion is only a cue, not a button: sized and coloured as the plan's grips. */
+.gripCue {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  height: 2rem;
+  color: var(--muted);
+}
+
+/* Titles go to the task's page: plain until pointed at, so the plan reads as a list. */
+.taskLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.taskLink:hover {
+  text-decoration: underline;
 }

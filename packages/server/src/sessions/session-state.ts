@@ -149,7 +149,12 @@ export const statusMoves = (before: SessionState | undefined, after: SessionStat
         : { taskId: was, to: TaskStatus.OPEN, from: [TaskStatus.IN_PROGRESS] }
     )
   }
+  // Done too: starting a task the session ticked off is taking that back.
   if (is && is !== was)
-    moves.push({ taskId: is, to: TaskStatus.IN_PROGRESS, from: [TaskStatus.OPEN, TaskStatus.WAITING] })
+    moves.push({
+      taskId: is,
+      to: TaskStatus.IN_PROGRESS,
+      from: [TaskStatus.OPEN, TaskStatus.WAITING, TaskStatus.DONE]
+    })
   return moves
 }

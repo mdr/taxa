@@ -92,6 +92,34 @@ describe("sessions", () => {
     expect((await matt.client.task(tap.ref)).status).toBe(TaskStatus.DONE)
   })
 
+  it("take back a task finished by mistake: it's under way again, and the one moved on to waits", async ({
+    server
+  }) => {
+    const matt = await server.user("Matt")
+    const tap = await matt.addTask("Fix the tap")
+    const radiators = await matt.addTask("Bleed the radiators")
+    const session = await matt.client.createSession({
+      endsAt: new Date(server.clock.now() + 60 * MINUTE).toISOString(),
+      items: [
+        { taskId: tap.id, minutes: 15 },
+        { taskId: radiators.id, minutes: 30 }
+      ],
+      start: tap.id
+    })
+    server.advance(5 * MINUTE)
+    await matt.client.updateSession(session.id, { finish: SessionOutcome.DONE, start: radiators.id })
+    expect((await matt.client.task(tap.ref)).status).toBe(TaskStatus.DONE)
+
+    const undone = await matt.client.updateSession(session.id, { start: tap.id })
+    expect(undone.current?.taskId).toBe(tap.id)
+    expect(undone.items.map(({ task, outcome, spentMs }) => [task.title, outcome, spentMs])).toEqual([
+      ["Fix the tap", undefined, 5 * MINUTE],
+      ["Bleed the radiators", undefined, 0]
+    ])
+    expect((await matt.client.task(tap.ref)).status).toBe(TaskStatus.IN_PROGRESS)
+    expect((await matt.client.task(radiators.ref)).status).toBe(TaskStatus.OPEN)
+  })
+
   it("are logged, once per change, with what changed", async ({ server }) => {
     const matt = await server.user("Matt")
     const tap = await matt.addTask("Fix the tap")

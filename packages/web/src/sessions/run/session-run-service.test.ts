@@ -73,6 +73,47 @@ describe("SessionRunService", () => {
     ])
   })
 
+  it("undoes the last Done or Stop here, until the next change", async () => {
+    const { api, run, telemetry } = setUp()
+    expect(run.state.undoable).toBeUndefined()
+    await run.finish(session, SessionOutcome.DONE)
+    expect(run.state.undoable).toEqual({ taskId: boilers.id, title: "Research boilers", outcome: SessionOutcome.DONE })
+    await run.undo(session)
+    expect(run.state.undoable).toBeUndefined()
+    expect(api.updated.at(-1)?.request).toEqual({ start: boilers.id })
+    expect(telemetry.tracked().at(-1)).toEqual([
+      ANALYTICS_CODES.session.finishUndone,
+      { sessionId: session.id, outcome: SessionOutcome.DONE }
+    ])
+
+    await run.finish(session, SessionOutcome.STOPPED)
+    await run.addTime(session)
+    expect(run.state.undoable).toBeUndefined()
+    await run.undo(session)
+    expect(api.updated).toHaveLength(4)
+  })
+
+  it("starts a task put ahead of the one under way, with the new plan", async () => {
+    const { api, run } = setUp()
+    await run.replan(
+      session,
+      [
+        { taskId: passport.id, minutes: 20 },
+        { taskId: boilers.id, minutes: 45 }
+      ],
+      passport.id
+    )
+    expect(api.updated.at(-1)?.request).toEqual({
+      set: {
+        items: [
+          { taskId: passport.id, minutes: 20 },
+          { taskId: boilers.id, minutes: 45 }
+        ]
+      },
+      start: passport.id
+    })
+  })
+
   it("ends the session, and keeps a note only if it's changed", async () => {
     const { api, run, telemetry } = setUp()
     await run.end(session)

@@ -8,15 +8,7 @@ import { Link, useLocation } from "wouter"
 import styles from "../Session.module.css"
 import { sessionPageTestIds } from "../SessionPageTestIds.ts"
 import { PlanEditor } from "../plan/PlanEditor.tsx"
-import {
-  addEntry,
-  DEFAULT_MINUTES,
-  moveEntry,
-  removeEntry,
-  setMinutes,
-  type Direction,
-  type PlanEntry
-} from "../plan/plan-edits.ts"
+import { addEntry, DEFAULT_MINUTES, moveEntry, removeEntry, setMinutes, type PlanEntry } from "../plan/plan-edits.ts"
 import { suggestedTasks } from "../plan/suggestions.ts"
 import { useSessionListener } from "../session-queries.ts"
 import { planRows, SLOT_STATUS, slotSpan } from "../session-rows.ts"
@@ -33,9 +25,9 @@ import { useTasks } from "../../tasks/task-queries.ts"
 
 const MINUTE = 60_000
 
-/** Finished or under way: kept in place, ahead of what's still to do, when replanning. */
+/** Finished: kept in place, ahead of what's still to do, when replanning. */
 const isSettled = (session: Session, taskId: TaskId): boolean =>
-  session.current?.taskId === taskId || session.items.some((item) => item.task.id === taskId && item.outcome)
+  session.items.some((item) => item.task.id === taskId && item.outcome)
 
 const slotNote = ({ item, state, spent }: Slot): string => {
   switch (state) {
@@ -133,7 +125,9 @@ const NextCard = ({ slot, busy, start }: { slot: Slot | undefined; busy: boolean
     {slot ? (
       <>
         <span className={styles.now}>Up next · {slot.item.task.ref}</span>
-        <h2 className={styles.currentTitle}>{slot.item.task.title}</h2>
+        <h2 className={styles.currentTitle}>
+          <Link href={`/tasks/${slot.item.task.ref}`}>{slot.item.task.title}</Link>
+        </h2>
         <div className={styles.actions}>
           <button
             type="button"
@@ -169,7 +163,7 @@ const SlotList = ({ timeline, endsAt }: { timeline: Timeline; endsAt: Instant })
         <span className={styles.slotTime}>{slotSpan(slot)}</span>
         <StatusIcon status={SLOT_STATUS[slot.state]} />
         <span className={`${styles.slotTitle} ${slot.state === SlotState.DONE ? styles.slotDone : ""}`}>
-          {slot.item.task.title}
+          <Link href={`/tasks/${slot.item.task.ref}`}>{slot.item.task.title}</Link>
         </span>
         <span className={styles.slotNote}>{slotNote(slot)}</span>
       </li>
@@ -184,6 +178,34 @@ const SlotList = ({ timeline, endsAt }: { timeline: Timeline; endsAt: Instant })
     )}
   </ol>
 )
+
+const UNDO_TEXT: Record<SessionOutcome, string> = {
+  [SessionOutcome.DONE]: "done",
+  [SessionOutcome.STOPPED]: "stopped, left open"
+}
+
+/** After Done or Stop here, until the next change: what happened, and a way to take it back. */
+const UndoBar = ({ run, session }: { run: SessionRunService; session: Session }) => {
+  const undoable = useServiceState(run, (state) => state.undoable)
+  const busy = useServiceState(run, (state) => state.busy)
+  if (!undoable) return undefined
+  return (
+    <div className={styles.undo} role="status" data-testid={sessionPageTestIds.undoBar}>
+      <span>
+        “{undoable.title}” {UNDO_TEXT[undoable.outcome]}
+      </span>
+      <button
+        type="button"
+        className={styles.linkButton}
+        onClick={() => void run.undo(session)}
+        disabled={busy}
+        data-testid={sessionPageTestIds.undo}
+      >
+        Undo
+      </button>
+    </div>
+  )
+}
 
 /** Where the session stands: its time, what's left, and whether the plan fits. */
 const statusText = (session: Session, timeline: Timeline): { text: string; spare: string } => ({
@@ -232,7 +254,12 @@ export const SessionNow = ({ session }: { session: Session }) => {
   const plan: PlanEntry[] = session.items.map(({ task, minutes }) => ({ taskId: task.id, minutes }))
   const settled = plan.filter(({ taskId }) => isSettled(session, taskId))
   const toDo = plan.filter(({ taskId }) => !isSettled(session, taskId))
-  const replan = (entries: PlanEntry[]) => void run.replan(session, [...settled, ...entries])
+  /** The top of what's still to do is the task under way: put another there, and that's started now, the other waiting next. */
+  const replan = (entries: PlanEntry[]) => {
+    const first = entries[0]?.taskId
+    const switchTo = current && first !== undefined && first !== current.item.task.id ? first : undefined
+    void run.replan(session, [...settled, ...entries], switchTo)
+  }
   const status = statusText(session, timeline)
 
   return (
@@ -266,6 +293,7 @@ export const SessionNow = ({ session }: { session: Session }) => {
           End session
         </button>
       </header>
+      <UndoBar run={run} session={session} />
       {problem && (
         <p className={styles.problem} role="alert" data-testid={sessionPageTestIds.problem}>
           {problem}
@@ -286,12 +314,12 @@ export const SessionNow = ({ session }: { session: Session }) => {
           )}
           search={search}
           onSearch={setSearch}
-          onAdd={(task) =>
-            replan(addEntry(toDo, { taskId: task.id, minutes: task.estimateMinutes ?? DEFAULT_MINUTES }))
+          onAdd={(task, at) =>
+            replan(addEntry(toDo, { taskId: task.id, minutes: task.estimateMinutes ?? DEFAULT_MINUTES }, at))
           }
           onRemove={(taskId) => replan(removeEntry(toDo, taskId))}
-          onMove={(taskId, direction: Direction) => replan(moveEntry(toDo, taskId, direction))}
-          onSetMinutes={(taskId, minutes) => replan(setMinutes(toDo, taskId, minutes))}
+          onMove={(taskId, to) => replan(moveEntry(toDo, taskId, to))}
+          onEstimated={(task) => replan(setMinutes(toDo, task.id, task.estimateMinutes ?? DEFAULT_MINUTES))}
           busy={busy}
         />
       ) : (

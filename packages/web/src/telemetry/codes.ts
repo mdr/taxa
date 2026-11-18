@@ -56,7 +56,8 @@ export const ANALYTICS_CODES = {
     timeAdded: "session.timeAdded",
     replanned: "session.replanned",
     ended: "session.ended",
-    noteSaved: "session.noteSaved"
+    noteSaved: "session.noteSaved",
+    finishUndone: "session.finishUndone"
   }
 } as const
 

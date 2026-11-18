@@ -1,22 +1,17 @@
-import { realClock } from "@taxa/shared/clock"
 import { isIsoTime } from "@taxa/shared/dates/plain-date"
 import { sessionTimeline } from "@taxa/shared/sessions/session-timeline"
-import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import styles from "../Session.module.css"
 import { sessionPageTestIds } from "../SessionPageTestIds.ts"
 import { PlanEditor } from "./PlanEditor.tsx"
-import { PlanStep, SessionPlanService } from "./session-plan-service.ts"
+import { PlanStep, SessionPlanContext, type SessionPlanService } from "./session-plan-service.ts"
 import { endsAtFor, WINDOW_PRESETS, WindowType } from "./session-window.ts"
 import { suggestedTasks } from "./suggestions.ts"
 import { totalMinutes } from "./plan-edits.ts"
-import { sessionChanged } from "../session-queries.ts"
 import { draftSession, planRows } from "../session-rows.ts"
 import { durationText, minutesText, timeSpan } from "../session-text.ts"
 import { useNow } from "../use-now.ts"
-import { taxaApi } from "../../api/taxa-api.ts"
-import { useServiceState } from "../../services/service-hooks.ts"
-import { appAnalytics } from "../../telemetry/app-telemetry.ts"
+import { useService, useServiceState } from "../../services/service-hooks.ts"
 import { useTasks } from "../../tasks/task-queries.ts"
 
 const PRESET_TEXT: Readonly<Record<number, string>> = {
@@ -185,7 +180,7 @@ const TaskChoice = ({ plan }: { plan: SessionPlanService }) => {
         onAdd={plan.add}
         onRemove={plan.remove}
         onMove={plan.move}
-        onSetMinutes={plan.setMinutes}
+        onEstimated={plan.estimated}
         busy={starting}
       />
     </section>
@@ -194,10 +189,7 @@ const TaskChoice = ({ plan }: { plan: SessionPlanService }) => {
 
 /** Planning a session, before it starts. */
 export const SessionPlanner = () => {
-  const queryClient = useQueryClient()
-  const [plan] = useState(
-    () => new SessionPlanService(taxaApi, realClock, appAnalytics, (session) => sessionChanged(queryClient, session))
-  )
+  const plan = useService(SessionPlanContext)
   const step = useServiceState(plan, (state) => state.step)
   return step === PlanStep.WINDOW ? <WindowChoice plan={plan} /> : <TaskChoice plan={plan} />
 }

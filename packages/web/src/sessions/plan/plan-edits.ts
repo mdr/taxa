@@ -7,30 +7,27 @@ export interface PlanEntry {
   minutes: Minutes
 }
 
-export enum Direction {
-  UP = "UP",
-  DOWN = "DOWN"
+/** The plan with the task put in at a place (the end, unless given), unless it's in already. */
+export const addEntry = <Entry extends PlanEntry>(
+  plan: readonly Entry[],
+  entry: Entry,
+  at: number = plan.length
+): Entry[] => {
+  if (plan.some(({ taskId }) => taskId === entry.taskId)) return [...plan]
+  const place = Math.max(0, Math.min(at, plan.length))
+  return [...plan.slice(0, place), entry, ...plan.slice(place)]
 }
-
-/** The plan with the task added at the end, unless it's in already. */
-export const addEntry = <Entry extends PlanEntry>(plan: readonly Entry[], entry: Entry): Entry[] =>
-  plan.some(({ taskId }) => taskId === entry.taskId) ? [...plan] : [...plan, entry]
 
 export const removeEntry = <Entry extends PlanEntry>(plan: readonly Entry[], taskId: TaskId): Entry[] =>
   plan.filter((entry) => entry.taskId !== taskId)
 
-/** The task swapped with its neighbour, if it has one that way. */
-export const moveEntry = <Entry extends PlanEntry>(
-  plan: readonly Entry[],
-  taskId: TaskId,
-  direction: Direction
-): Entry[] => {
+/** The task taken out and put back at a place, as dragging it there does. */
+export const moveEntry = <Entry extends PlanEntry>(plan: readonly Entry[], taskId: TaskId, to: number): Entry[] => {
   const from = plan.findIndex((entry) => entry.taskId === taskId)
-  const to = direction === Direction.UP ? from - 1 : from + 1
-  if (from < 0 || to < 0 || to >= plan.length) return [...plan]
-  const moved = [...plan]
-  ;[moved[from], moved[to]] = [moved[to]!, moved[from]!]
-  return moved
+  if (from < 0) return [...plan]
+  const moved = plan.filter((_, index) => index !== from)
+  const place = Math.max(0, Math.min(to, moved.length))
+  return [...moved.slice(0, place), plan[from]!, ...moved.slice(place)]
 }
 
 export const setMinutes = <Entry extends PlanEntry>(
@@ -41,10 +38,6 @@ export const setMinutes = <Entry extends PlanEntry>(
 
 export const totalMinutes = (plan: readonly PlanEntry[]): Minutes =>
   plan.reduce((total, { minutes }) => total + minutes, 0)
-
-/** The times offered for a task: common lengths, and whatever it has now. */
-export const minuteChoices = (current: Minutes): Minutes[] =>
-  [...new Set([5, 10, 15, 20, 25, 30, 45, 60, 75, 90, 120, 150, 180, 240, current])].sort((a, b) => a - b)
 
 /** What a task added to a plan gets: its estimate, or half an hour. */
 export const DEFAULT_MINUTES: Minutes = 30

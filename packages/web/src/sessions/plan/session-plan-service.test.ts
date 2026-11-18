@@ -5,7 +5,6 @@ import { describe, expect, it } from "vite-plus/test"
 import { testTelemetry, type TestTelemetry } from "../../test-support/test-telemetry.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { FakeSessionApi } from "../../test-support/fake-session-api.ts"
-import { Direction } from "./plan-edits.ts"
 import { PlanStep, SessionPlanService } from "./session-plan-service.ts"
 import { WindowType } from "./session-window.ts"
 
@@ -39,14 +38,16 @@ describe("SessionPlanService", () => {
     plan.add(tap)
     plan.add(radiators)
     plan.add(tap)
-    plan.move(radiators.id, Direction.UP)
-    plan.setMinutes(radiators.id, 45)
+    plan.move(radiators.id, 0)
+    plan.estimated({ ...radiators, estimateMinutes: 45 })
     expect(plan.state.entries.map(({ task, minutes }) => [task.title, minutes])).toEqual([
       ["Bleed the radiators", 45],
       ["Fix the tap", 15]
     ])
     plan.remove(tap.id)
-    expect(plan.state.entries.map(({ task }) => task)).toEqual([radiators])
+    expect(plan.state.entries.map(({ task }) => task.title)).toEqual(["Bleed the radiators"])
+    plan.add(tap, 0)
+    expect(plan.state.entries.map(({ task }) => task.title)).toEqual(["Fix the tap", "Bleed the radiators"])
   })
 
   it("starts the session now, on the first task, and tracks it", async () => {

@@ -8,8 +8,8 @@ export const planEditorTestIds = {
   time: "PlanEditor.time",
   title: "PlanEditor.title",
   minutes: "PlanEditor.minutes",
-  moveUp: "PlanEditor.moveUp",
-  moveDown: "PlanEditor.moveDown",
+  grip: "PlanEditor.grip",
+  estimate: "PlanEditor.estimate",
   remove: "PlanEditor.remove",
   empty: "PlanEditor.empty"
 }

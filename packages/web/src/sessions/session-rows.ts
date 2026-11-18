@@ -34,12 +34,10 @@ const detailOf = ({ item, state, spent }: Slot): string | undefined => {
       return `Stopped after ${durationText(spent)}`
     case SlotState.CURRENT:
       return "Under way"
-    case SlotState.NEXT: {
-      const estimate = item.task.estimateMinutes
-      return estimate && estimate > item.minutes
-        ? `${minutesText(item.minutes)} of its ${minutesText(estimate)} estimate`
+    case SlotState.NEXT:
+      return item.task.estimateMinutes === undefined
+        ? `No estimate: counted as ${minutesText(item.minutes)}`
         : undefined
-    }
   }
 }
 
@@ -51,7 +49,8 @@ export const planRows = (timeline: Timeline, underWay: boolean): PlanRow[] =>
     task: slot.item.task,
     minutes: slot.item.minutes,
     span: slotSpan(slot),
-    locked: slot.state !== SlotState.NEXT,
+    locked: slot.state === SlotState.DONE || slot.state === SlotState.STOPPED,
+    underWay: slot.state === SlotState.CURRENT,
     ...(underWay ? { status: SLOT_STATUS[slot.state] } : {}),
     detail: detailOf(slot)
   }))

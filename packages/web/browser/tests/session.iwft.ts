@@ -8,29 +8,64 @@ const MINUTE = 60_000
 test("planning a session, working through it, running over, and how it went", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Bleed the radiators", { domain: "H", estimateMinutes: 30 })
-  await taxa.matt.addTask("Research boilers", { domain: "H", estimateMinutes: 120 })
-  await taxa.matt.addTask("Renew passport", { estimateMinutes: 20 })
+  const boilers = await taxa.matt.addTask("Research boilers", { domain: "H", estimateMinutes: 120 })
+  const passport = await taxa.matt.addTask("Renew passport")
+  await taxa.matt.addTask("Fix the tap")
   const tab = await taxa.openTab("Matt")
   const inbox = await tab.openInbox()
 
-  const session = await inbox.sidebar.openSession()
+  let session = await inbox.sidebar.openSession()
   await session.expectHeading("Plan a session")
   await session.chooseLength("2 hours")
   await session.expectWindow("9:00 – 11:00 am")
   await session.expectAccessible()
   await session.chooseTasks()
-  await session.expectSuggestions(["Bleed the radiators", "Research boilers", "Renew passport"])
-  await session.add("Bleed the radiators")
-  await session.add("Research boilers")
-  await session.add("Renew passport")
-  await session.setTime("Research boilers", "45 min")
+  await session.expectSuggestions(["Bleed the radiators", "Research boilers", "Renew passport", "Fix the tap"])
+
+  // An estimate given to a suggestion is the task's own.
+  await session.estimateSuggestion("Renew passport", "20m")
+  await session.expectSuggestionEstimate("Renew passport", "20m")
+  await expect.poll(async () => (await taxa.matt.client.task(passport.ref)).estimateMinutes).toBe(20)
+
+  // Dragged in: onto the plan, last; onto a task, before or after it by where it's let go.
+  await session.dragInLast("Renew passport")
+  await session.expectPlan(["9:00 – 9:20 Renew passport"])
+  await session.dragIn("Bleed the radiators", "Renew passport", "before")
+  await session.dragIn("Research boilers", "Bleed the radiators", "after")
+  await session.expectPlan([
+    "9:00 – 9:30 Bleed the radiators",
+    "9:30 – 11:30 Research boilers",
+    "11:30 – 11:50 Renew passport"
+  ])
+  // Let go back over the suggestions: nothing changes.
+  await session.dragAndLetGo("Fix the tap")
+  await session.expectSuggestions(["Fix the tap"])
+  await session.expectPlan([
+    "9:00 – 9:30 Bleed the radiators",
+    "9:30 – 11:30 Research boilers",
+    "11:30 – 11:50 Renew passport"
+  ])
+
+  // A planned task's estimate is the task's own too, and the plan follows it.
+  await session.estimatePlanned("Research boilers", "45m")
+  await session.expectPlan([
+    "9:00 – 9:30 Bleed the radiators",
+    "9:30 – 10:15 Research boilers",
+    "10:15 – 10:35 Renew passport"
+  ])
+  await expect.poll(async () => (await taxa.matt.client.task(boilers.ref)).estimateMinutes).toBe(45)
+
+  // A look at a task, and back: the plan's as it was.
+  const detail = await session.openPlanned("Research boilers")
+  await detail.expectTitle("Research boilers")
+  await detail.expectEstimate("45m")
+  session = await detail.sidebar.openSession()
   await session.expectPlan([
     "9:00 – 9:30 Bleed the radiators",
     "9:30 – 10:15 Research boilers",
     "10:15 – 10:35 Renew passport"
   ])
   await session.expectCapacity("1 h 35 min planned of 2 h", "25 min spare")
-  await session.expectSuggestions([])
   await session.expectAccessible()
 
   await session.start()
@@ -91,9 +126,12 @@ test("planning a session, working through it, running over, and how it went", as
   ])
 })
 
-test("a session's end has to be still to come, and its plan can change as it goes", async ({ taxa }) => {
-  await taxa.matt.addTask("Fix the tap", { estimateMinutes: 15 })
-  await taxa.matt.addTask("Bleed the radiators")
+test("a session's end has to be still to come, its plan can change as it goes, and finishing can be undone", async ({
+  taxa
+}) => {
+  const tap = await taxa.matt.addTask("Fix the tap", { estimateMinutes: 15 })
+  const radiators = await taxa.matt.addTask("Bleed the radiators")
+  const passport = await taxa.matt.addTask("Renew passport")
   await taxa.matt.addDomain("Home", "H")
   const inbox = await (await taxa.openTab("Matt")).openInbox()
   const session = await inbox.sidebar.openSession()
@@ -104,19 +142,51 @@ test("a session's end has to be still to come, and its plan can change as it goe
   await session.chooseUntil("10:00")
   await session.expectWindow("9:00 – 10:00 am")
   await session.chooseTasks()
+
+  // Moved with the keyboard, and dragged back out.
   await session.add("Fix the tap")
+  await session.add("Bleed the radiators")
+  await session.expectPlan(["9:00 – 9:15 Fix the tap", "9:15 – 9:45 Bleed the radiators"])
+  await session.moveByKeyboard("Bleed the radiators", -1)
+  await session.expectPlan(["9:00 – 9:30 Bleed the radiators", "9:30 – 9:45 Fix the tap"])
+  await session.dragOut("Bleed the radiators")
+  await session.expectPlan(["9:00 – 9:15 Fix the tap"])
   await session.start()
+  await session.expectCurrent("Fix the tap", "15:00")
 
   await session.replan()
   await session.add("Bleed the radiators")
   await session.expectPlan(["9:00 – 9:15 Fix the tap", "9:15 – 9:45 Bleed the radiators"])
-  await session.setTime("Bleed the radiators", "45 min")
+  await session.estimatePlanned("Bleed the radiators", "45m")
   await session.expectPlan(["9:00 – 9:15 Fix the tap", "9:15 – 10:00 Bleed the radiators"])
+  await expect.poll(async () => (await taxa.matt.client.task(radiators.ref)).estimateMinutes).toBe(45)
+
+  // Put ahead of the task under way, a task's started now, the other waiting next.
+  await session.dragIn("Renew passport", "Fix the tap", "before")
+  await session.expectCurrent("Renew passport", "30:00")
+  await session.expectPlan([
+    "9:00 – 9:30 Renew passport",
+    "9:30 – 9:45 Fix the tap",
+    "9:45 – 10:30 Bleed the radiators"
+  ])
+  await expect.poll(async () => (await taxa.matt.client.task(tap.ref)).status).toBe(TaskStatus.OPEN)
   await session.expectAccessible()
   await session.remove("Bleed the radiators")
-  await session.expectPlan(["9:00 – 9:15 Fix the tap"])
   await session.replan()
+
+  // Done by mistake: undone, the task's under way again and back in progress.
+  await session.keyboard.press("x")
+  await session.expectCurrent("Fix the tap", "15:00")
+  await session.expectUndoBar("“Renew passport” done")
+  await expect.poll(async () => (await taxa.matt.client.task(passport.ref)).status).toBe(TaskStatus.DONE)
+  await session.expectAccessible()
+  await session.undo()
+  await session.expectCurrent("Renew passport", "30:00")
+  await session.expectUndoBar(undefined)
+  await expect.poll(async () => (await taxa.matt.client.task(passport.ref)).status).toBe(TaskStatus.IN_PROGRESS)
+  await session.keyboard.press("x")
+  await session.expectCurrent("Fix the tap", "15:00")
   await session.keyboard.press("x")
   await session.expectStatus("9:00 – 10:00 am · 1 h left · 1 h spare")
-  await session.expectSlots(["9:00 – 9:00Fix the tap0 min of 15 min"])
+  await session.expectSlots(["9:00 – 9:00Renew passport0 min of 30 min", "9:00 – 9:00Fix the tap0 min of 15 min"])
 })

@@ -127,7 +127,7 @@ describe("sessions", () => {
 describe("statusMoves", () => {
   it("puts a started task in progress", () => {
     expect(statusMoves(undefined, planned())).toEqual([
-      { taskId: radiators, to: TaskStatus.IN_PROGRESS, from: [TaskStatus.OPEN, TaskStatus.WAITING] }
+      { taskId: radiators, to: TaskStatus.IN_PROGRESS, from: [TaskStatus.OPEN, TaskStatus.WAITING, TaskStatus.DONE] }
     ])
   })
 
@@ -135,7 +135,7 @@ describe("statusMoves", () => {
     const before = planned()
     expect(statusMoves(before, updateSession(before, { finish: SessionOutcome.DONE, start: boilers }, at(5)))).toEqual([
       { taskId: radiators, to: TaskStatus.DONE, from: [TaskStatus.OPEN, TaskStatus.IN_PROGRESS, TaskStatus.WAITING] },
-      { taskId: boilers, to: TaskStatus.IN_PROGRESS, from: [TaskStatus.OPEN, TaskStatus.WAITING] }
+      { taskId: boilers, to: TaskStatus.IN_PROGRESS, from: [TaskStatus.OPEN, TaskStatus.WAITING, TaskStatus.DONE] }
     ])
     expect(statusMoves(before, updateSession(before, { end: true }, at(5)))).toEqual([
       { taskId: radiators, to: TaskStatus.OPEN, from: [TaskStatus.IN_PROGRESS] }

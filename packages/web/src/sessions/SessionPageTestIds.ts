@@ -24,5 +24,7 @@ export const sessionPageTestIds = {
   summaryRow: "SessionPage.summaryRow",
   note: "SessionPage.note",
   planAnother: "SessionPage.planAnother",
-  finish: "SessionPage.finish"
+  finish: "SessionPage.finish",
+  undoBar: "SessionPage.undoBar",
+  undo: "SessionPage.undo"
 }

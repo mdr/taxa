@@ -147,15 +147,20 @@ There is no hidden priority score: the fields stay understandable, and any
 cleverness lives in views and suggestions.
 
 **Sessions** plan a one-off block of time: say how long you have (a length,
-or until a time), then choose tasks from suggestions (in progress, due soon,
-high priority) and give each the time you mean to spend on it. That time is
-yours to read as a target or a timebox; it's separate from the task's
-estimate. While the session runs, the task under way counts down, then
-counts up as "over" with the rest of the plan sliding later; nothing moves on
-by itself. Done ticks the task off, Stop here leaves it open, and either goes
-on to the next; the plan can be changed at any point. Ending shows what got
-done, what was worked on and what wasn't reached, with planned against spent
-time and a note. Sessions are kept on the server, one under way per person,
+or until a time), then drag tasks in from suggestions (in progress, due soon,
+high priority), in the order you'll do them. A task's time in the plan is its
+estimate, the same one as on its page: set or changed in the plan, it's saved
+to the task, and a task with none counts as half an hour until it has one.
+It's yours to read as a target or a timebox. Every task links to its page,
+and a plan being made survives a look there (not a reload). While the
+session runs, the task under way counts down, then counts up as "over" with
+the rest of the plan sliding later; nothing moves on by itself. Done ticks
+the task off, Stop here leaves it open, and either goes on to the next; Undo
+takes that back until the next change. The plan can be changed at any point:
+the top of what's still to do is the task under way, so putting another
+above it starts that one, the other waiting next. Ending shows what got done,
+what was worked on and what wasn't reached, with planned against spent time
+and a note. Sessions are kept on the server, one under way per person,
 so agents can see when you're in one, and the time spent on each task in
 them is there for checking estimates later.
 

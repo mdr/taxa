@@ -5,18 +5,11 @@ import type { Task } from "@taxa/shared/tasks/task"
 import type { Minutes } from "@taxa/shared/units"
 import { problemMessage } from "../../api/problem-message.ts"
 import { AbstractService } from "../../services/abstract-service.ts"
+import { createServiceContext } from "../../services/service-hooks.ts"
 import type { Analytics } from "../../telemetry/analytics.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import type { SessionApi } from "../session-api.ts"
-import {
-  addEntry,
-  DEFAULT_MINUTES,
-  moveEntry,
-  removeEntry,
-  setMinutes,
-  totalMinutes,
-  type Direction
-} from "./plan-edits.ts"
+import { addEntry, DEFAULT_MINUTES, moveEntry, removeEntry, totalMinutes } from "./plan-edits.ts"
 import { DEFAULT_WINDOW, endsAtFor, type SessionWindow } from "./session-window.ts"
 
 export enum PlanStep {
@@ -41,6 +34,15 @@ export interface SessionPlanState {
   problem: string | undefined
 }
 
+const NEW_PLAN: SessionPlanState = {
+  step: PlanStep.WINDOW,
+  window: DEFAULT_WINDOW,
+  entries: [],
+  search: "",
+  starting: false,
+  problem: undefined
+}
+
 /** A session being planned, before it starts: how long, and what to do in it. */
 export class SessionPlanService extends AbstractService<SessionPlanState> {
   readonly #api: SessionApi
@@ -49,14 +51,7 @@ export class SessionPlanService extends AbstractService<SessionPlanState> {
   readonly #started: (session: Session) => void
 
   constructor(api: SessionApi, clock: Clock, analytics: Analytics, started: (session: Session) => void) {
-    super({
-      step: PlanStep.WINDOW,
-      window: DEFAULT_WINDOW,
-      entries: [],
-      search: "",
-      starting: false,
-      problem: undefined
-    })
+    super(NEW_PLAN)
     this.#api = api
     this.#clock = clock
     this.#analytics = analytics
@@ -74,18 +69,28 @@ export class SessionPlanService extends AbstractService<SessionPlanState> {
 
   readonly toWindow = (): void => this.setState({ step: PlanStep.WINDOW, problem: undefined })
 
-  readonly add = (task: Task): void =>
+  /** Adds a task to the plan, at the end or at a place; for its estimate, or half an hour. */
+  readonly add = (task: Task, at?: number): void =>
     this.setState({
-      entries: addEntry(this.state.entries, { taskId: task.id, task, minutes: task.estimateMinutes ?? DEFAULT_MINUTES })
+      entries: addEntry(
+        this.state.entries,
+        { taskId: task.id, task, minutes: task.estimateMinutes ?? DEFAULT_MINUTES },
+        at
+      )
     })
 
   readonly remove = (taskId: TaskId): void => this.setState({ entries: removeEntry(this.state.entries, taskId) })
 
-  readonly move = (taskId: TaskId, direction: Direction): void =>
-    this.setState({ entries: moveEntry(this.state.entries, taskId, direction) })
+  readonly move = (taskId: TaskId, to: number): void =>
+    this.setState({ entries: moveEntry(this.state.entries, taskId, to) })
 
-  readonly setMinutes = (taskId: TaskId, minutes: Minutes): void =>
-    this.setState({ entries: setMinutes(this.state.entries, taskId, minutes) })
+  /** A planned task's estimate has changed: it takes that long in the plan, or half an hour while it has none. */
+  readonly estimated = (task: Task): void =>
+    this.setState({
+      entries: this.state.entries.map((entry) =>
+        entry.taskId === task.id ? { ...entry, task, minutes: task.estimateMinutes ?? DEFAULT_MINUTES } : entry
+      )
+    })
 
   readonly search = (search: string): void => this.setState({ search })
 
@@ -115,10 +120,12 @@ export class SessionPlanService extends AbstractService<SessionPlanState> {
         plannedMinutes: totalMinutes(entries),
         windowMinutes: Math.round((endsAt - now) / 60_000)
       })
-      this.setState({ starting: false })
+      // Started: the next plan begins afresh.
+      this.setState(NEW_PLAN)
       this.#started(session)
     } catch (error) {
       this.setState({ starting: false, problem: problemMessage(error) })
     }
   }
 }
+export const SessionPlanContext = createServiceContext<SessionPlanService>()
