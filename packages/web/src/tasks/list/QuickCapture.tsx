@@ -13,6 +13,7 @@ import { useDomains } from "../../domains/domain-queries.ts"
 import { OptionList } from "../../ui/OptionList.tsx"
 import { Popover, PopoverLook } from "../../ui/Popover.tsx"
 import { INBOX_CHOICE } from "../filing/filing.ts"
+import { loadCaptureFiling, saveCaptureFiling } from "./capture-filing.ts"
 import { FocusTarget, useFocusRequested, useShortcutActions } from "../../shortcuts/shortcut-service.ts"
 
 /** In the Inbox, where a new task goes: the Inbox, or straight into a domain. */
@@ -59,13 +60,22 @@ const FilingPicker = ({ filing, onChoose }: { filing: string; onChoose: (choice:
   )
 }
 
-/** A title, and Enter: into this domain if given; else the Inbox, or a domain chosen for it there. */
+/**
+ * A title, and Enter: into this domain if given; else the Inbox, or a domain
+ * chosen for it there, which stays chosen for the next, here and next time.
+ */
 export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefined }) => {
   const [title, setTitle] = useState("")
-  const [filing, setFiling] = useState(INBOX_CHOICE)
+  const [chosen, setChosen] = useState(loadCaptureFiling)
   /** The last task added straight into a domain from the Inbox, so it's not lost from sight. */
   const [filed, setFiled] = useState<Task | undefined>(undefined)
   const domains = useDomains().data ?? []
+  /** The last place chosen, while it's still a domain; else the Inbox. */
+  const filing = domains.some(({ prefix }) => prefix === chosen) ? chosen : INBOX_CHOICE
+  const choose = (choice: string): void => {
+    setChosen(choice)
+    saveCaptureFiling(choice)
+  }
   const create = useCreateTask()
   const field = useRef<HTMLInputElement>(null)
   const { focusTaken } = useShortcutActions()
@@ -84,8 +94,6 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
         onSuccess: (task) => {
           setTitle("")
           setFiled(domainPrefix === undefined && !task.inbox ? task : undefined)
-          // Each new task starts out bound for the Inbox again: a choice left over is easy to miss.
-          setFiling(INBOX_CHOICE)
           appAnalytics.track(ANALYTICS_CODES.task.captured, `captured ${task.ref}`, {
             taskId: task.id,
             taskRef: task.ref,
@@ -112,7 +120,7 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
         data-testid={quickCaptureTestIds.title}
       />
       {title.trim() !== "" && <kbd className={styles.hint}>Enter</kbd>}
-      {domainPrefix === undefined && <FilingPicker filing={filing} onChoose={setFiling} />}
+      {domainPrefix === undefined && <FilingPicker filing={filing} onChoose={choose} />}
       <button type="submit" className={styles.submit} disabled={create.isPending} data-testid={quickCaptureTestIds.add}>
         Add
       </button>
