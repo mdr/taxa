@@ -7,7 +7,7 @@ import { oneArgument, print, stringOption, UsageError, type Command, type Comman
 import { activityLines } from "../format/activity-format.ts"
 import { taskDetail, taskLines } from "../format/task-format.ts"
 import { readStdinJson, STDIN } from "../input/stdin-json.ts"
-import { clearedFrom, fieldsFrom, TASK_FIELD_HELP, TASK_FIELD_OPTIONS } from "../input/task-input.ts"
+import { clearedFrom, fieldsFrom, repeatedOption, TASK_FIELD_HELP, TASK_FIELD_OPTIONS } from "../input/task-input.ts"
 import { ifVersion, VERSION_HELP, VERSION_OPTION } from "../input/version-option.ts"
 
 const NewTasksSchema = z.union([CreateTaskRequestSchema, z.array(CreateTaskRequestSchema).min(1)])
@@ -49,7 +49,10 @@ With -, stdin holds one task or an array of them, as the API's CreateTaskRequest
     }
     const title = positionals.join(" ").trim()
     if (title === "") throw new UsageError("Give the task a title.")
-    const task = await context.client.createTask({ title, ...fieldsFrom(values, context.today()) }, key)
+    const task = await context.client.createTask(
+      { title, ...fieldsFrom(values, context.today()), tags: repeatedOption(values, "tag") },
+      key
+    )
     print(context, task, () => `Added ${task.ref}  ${task.title}`)
     return ExitCode.OK
   }
@@ -61,6 +64,7 @@ const list: Command = {
   usage: `[options]
   --domain PREFIX       Only this domain's
   --inbox               Only your Inbox
+  --tag NAME            Only those with this tag, in any case
   --status LIST         Only these statuses, e.g. done or open,waiting (default: open, in progress, waiting)
   --when LIST           Only these, e.g. today or soon,someday (today, on a day, soon, any time, someday;
                         default: all but someday)
@@ -68,6 +72,7 @@ const list: Command = {
   options: {
     domain: { type: "string" },
     inbox: { type: "boolean" },
+    tag: { type: "string" },
     status: { type: "string" },
     when: { type: "string" },
     all: { type: "boolean" }
@@ -78,6 +83,7 @@ const list: Command = {
       domain: stringOption(values, "domain"),
       status: stringOption(values, "status")?.toUpperCase().replaceAll(" ", "_"),
       inbox: values["inbox"] === true ? "true" : undefined,
+      tag: stringOption(values, "tag"),
       includeNotStarted: values["all"] === true ? "true" : undefined,
       when:
         values["all"] === true
@@ -106,10 +112,17 @@ const edit: Command = {
   usage: `<ref> [options]   or   taxa edit <ref> - < changes.json
   --title TEXT          A new title
 ${TASK_FIELD_HELP}
+  --untag NAME          Take a tag off; again for more
   --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, energy, horizon, follows-on)
 ${VERSION_HELP}
-With -, stdin holds {"set": {...}, "clear": [...]}, as the API's UpdateTaskRequest.`,
-  options: { ...TASK_FIELD_OPTIONS, title: { type: "string" }, clear: { type: "string" }, ...VERSION_OPTION },
+With -, stdin holds {"set": {...}, "clear": [...], "addTags": [...], "removeTags": [...]}, as the API's UpdateTaskRequest.`,
+  options: {
+    ...TASK_FIELD_OPTIONS,
+    title: { type: "string" },
+    untag: { type: "string", multiple: true },
+    clear: { type: "string" },
+    ...VERSION_OPTION
+  },
   run: async (context, values, positionals) => {
     const [ref, source, ...rest] = positionals
     if (ref === undefined) throw new UsageError("Say which task.")
@@ -124,9 +137,17 @@ With -, stdin holds {"set": {...}, "clear": [...]}, as the API's UpdateTaskReque
               ...fieldsFrom(values, context.today()),
               ...(stringOption(values, "title") !== undefined && { title: stringOption(values, "title") })
             },
-            clear: clearedFrom(values)
+            clear: clearedFrom(values),
+            addTags: repeatedOption(values, "tag"),
+            removeTags: repeatedOption(values, "untag")
           }
-    if (Object.keys(request.set).length === 0 && request.clear.length === 0) {
+    const nothing = (list: readonly unknown[] | undefined): boolean => (list ?? []).length === 0
+    if (
+      Object.keys(request.set).length === 0 &&
+      nothing(request.clear) &&
+      nothing(request.addTags) &&
+      nothing(request.removeTags)
+    ) {
       throw new UsageError("Say what to change, e.g. --due friday or --clear due.")
     }
     await showTask(context, await context.client.updateTask(ref, request, ifVersion(values)))

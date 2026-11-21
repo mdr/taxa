@@ -1,7 +1,7 @@
 import type { Domain } from "@taxa/shared/domains/domain"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { When } from "@taxa/shared/tasks/when"
-import { Inbox } from "lucide-react"
+import { Inbox, Tag } from "lucide-react"
 import { Link } from "wouter"
 import { taskListPageTestIds } from "./TaskListPageTestIds.ts"
 import { PLAN_TODAY_PATH } from "../when/when-paths.ts"
@@ -17,12 +17,15 @@ const HEADINGS: Record<ListType, string | undefined> = {
   [ListType.IN_PROGRESS]: "In progress",
   [ListType.TODAY]: "Today",
   [ListType.SOON]: "Soon",
-  [ListType.SOMEDAY]: "Someday"
+  [ListType.SOMEDAY]: "Someday",
+  [ListType.TAG]: undefined
 }
 
 /** What a list is called: a domain by its name, once known. */
 export const listHeading = (list: TaskList, domain: Domain | undefined): string | undefined =>
-  HEADINGS[list.type] ?? domain?.name ?? (list.type === ListType.DOMAIN ? list.prefix : undefined)
+  HEADINGS[list.type] ??
+  domain?.name ??
+  (list.type === ListType.DOMAIN ? list.prefix : list.type === ListType.TAG ? list.name : undefined)
 
 const LIST_WHENS: Partial<Record<ListType, When>> = {
   [ListType.TODAY]: When.TODAY,
@@ -39,6 +42,8 @@ export const ListIcon = ({ list, domain }: { list: TaskList; domain: Domain | un
       return domain && <DomainBadge prefix={domain.prefix} />
     case ListType.INBOX:
       return <Inbox size={22} className={styles.icon} aria-hidden />
+    case ListType.TAG:
+      return <Tag size={22} className={styles.icon} aria-hidden />
     case ListType.IN_PROGRESS:
       return <StatusIcon status={TaskStatus.IN_PROGRESS} size={22} />
     case ListType.TODAY:
@@ -67,6 +72,10 @@ const EMPTY: Record<ListType, { title?: string; text: string }> = {
   [ListType.SOON]: {
     title: "Nothing lined up",
     text: "Put what you mean to get to next in Soon, from a task's ⋯ menu."
+  },
+  [ListType.TAG]: {
+    title: "Nothing to do with this tag",
+    text: "Add it to a task from the task's page, or with # as you capture one."
   },
   [ListType.SOMEDAY]: {
     title: "No somedays",

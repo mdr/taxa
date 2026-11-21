@@ -121,6 +121,11 @@ export const tasks = pgTable(
     horizon: text("horizon").$type<Horizon>(),
     /** When it was put in its horizon. */
     horizonSetAt: instant("horizon_set_at"),
+    /** Labels, in the order they were added. */
+    tags: text("tags")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     /** The task it follows on from. */
     followsOnId: uuid("follows_on_id")
       .$type<TaskId>()

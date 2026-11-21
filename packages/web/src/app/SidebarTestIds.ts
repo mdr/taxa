@@ -12,5 +12,7 @@ export const sidebarTestIds = {
   session: "Sidebar.session",
   sessionLeft: "Sidebar.sessionLeft",
   domain: "Sidebar.domain",
+  tag: "Sidebar.tag",
+  tagCount: "Sidebar.tagCount",
   shortcuts: "Sidebar.shortcuts"
 }

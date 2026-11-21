@@ -23,6 +23,7 @@ import {
   type UpdateTaskRequest
 } from "../tasks/task-requests.ts"
 import { TASKS_PATH, TaskSchema, type Task } from "../tasks/task.ts"
+import { TAGS_PATH, TagSummarySchema, type RenameTagRequest, type TagSummary } from "../tasks/tags.ts"
 import {
   CURRENT_SESSION_PATH,
   CurrentSessionSchema,
@@ -132,6 +133,16 @@ export class TaxaClient {
 
   async activity(ref: string): Promise<Activity[]> {
     return (await this.#request(ListSchema(ActivitySchema), `${taskPath(ref)}/activity`)).items
+  }
+
+  /** The tags on tasks you can see, by name. */
+  async tags(): Promise<TagSummary[]> {
+    return (await this.#request(ListSchema(TagSummarySchema), TAGS_PATH)).items
+  }
+
+  /** Renames a tag on every task you can see that has it. */
+  renameTag(request: RenameTagRequest): Promise<{ renamed: number }> {
+    return this.#request(z.object({ renamed: z.number() }), `${TAGS_PATH}/rename`, { method: "POST", body: request })
   }
 
   /** Your session under way, if there is one. */

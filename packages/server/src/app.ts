@@ -12,6 +12,7 @@ import { healthRoute } from "./health.ts"
 import { ProblemError } from "./http/problem-error.ts"
 import { taxaHono, type TaxaApp } from "./http/taxa-hono.ts"
 import { taskRoutes } from "./tasks/task-routes.ts"
+import { tagRoutes } from "./tags/tag-routes.ts"
 import { sessionRoutes } from "./sessions/session-routes.ts"
 import { dayPlanRoutes } from "./days/day-plan-routes.ts"
 import { LOG_CODES, type ServerLogger } from "./telemetry/log.ts"
@@ -69,6 +70,7 @@ export const createApp = async ({
   agentRoutes(app, db, logger, clock)
   domainRoutes(app, db, logger, clock)
   taskRoutes(app, db, logger, clock)
+  tagRoutes(app, db, logger, clock)
   sessionRoutes(app, db, logger, clock)
   dayPlanRoutes(app, db, clock)
 

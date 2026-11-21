@@ -18,8 +18,15 @@ export const TASK_FIELD_OPTIONS = {
   energy: { type: "string" },
   horizon: { type: "string" },
   "follows-on": { type: "string" },
+  tag: { type: "string", multiple: true },
   inbox: { type: "boolean" }
 } as const
+
+/** Every value given for an option that can be given more than once. */
+export const repeatedOption = (values: OptionValues, name: string): string[] => {
+  const value = values[name]
+  return Array.isArray(value) ? value.filter((each): each is string => typeof each === "string") : []
+}
 
 export const TASK_FIELD_HELP = `  --domain PREFIX       File it in this domain, out of the Inbox
   --notes TEXT          Notes, in Markdown
@@ -32,6 +39,7 @@ export const TASK_FIELD_HELP = `  --domain PREFIX       File it in this domain, 
   --energy LEVEL        low, medium or high
   --horizon WHEN        soon or someday, for a task without a date
   --follows-on TASK     The task it follows on from, by ref or id
+  --tag NAME            Tag it; again for more, e.g. --tag "Life Admin" --tag errand
   --inbox               Put it back in the Inbox, out of its domain
 DATE is ${DATE_INPUT_HELP}.`
 

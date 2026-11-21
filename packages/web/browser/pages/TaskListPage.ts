@@ -13,6 +13,9 @@ import { taskListPageTestIds } from "../../src/tasks/list/TaskListPageTestIds.ts
 import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
 import { undoToastTestIds } from "../../src/tasks/list/UndoToastTestIds.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
+import { tagChipTestIds } from "../../src/tags/TagChipTestIds.ts"
+import { tagRenameTestIds } from "../../src/tags/TagRenameTestIds.ts"
+import { tagSuggestionListTestIds } from "../../src/tags/TagSuggestionListTestIds.ts"
 
 /** The Inbox, or a domain's tasks. */
 export class TaskListPage extends PageObject {
@@ -106,6 +109,40 @@ export class TaskListPage extends PageObject {
 
   async expectHighlights(title: string, highlights: string): Promise<void> {
     await expect(this.#row(title).getByTestId(taskRowTestIds.highlights)).toHaveText(highlights)
+  }
+
+  /** Types in the capture box without adding it yet, as a # brings up tags to pick. */
+  async typeCapture(text: string): Promise<void> {
+    await this.#page.getByTestId(quickCaptureTestIds.title).fill(text)
+  }
+
+  /** What capture offers for the tag after the #, each as its text, the one Enter picks marked `>`. */
+  async expectTagsOffered(suggestions: string[]): Promise<void> {
+    const offered = this.#page.getByTestId(tagSuggestionListTestIds.suggestion)
+    if (suggestions.length === 0) return expect(offered).toHaveCount(0)
+    await expect(offered).toHaveText(suggestions.map((text) => text.replace(/^> /, "")))
+    const picked = suggestions.findIndex((text) => text.startsWith("> "))
+    await expect(offered.nth(picked)).toHaveAttribute("aria-selected", "true")
+  }
+
+  /** Presses a key in the capture box. */
+  async pressInCapture(key: string): Promise<void> {
+    await this.#page.getByTestId(quickCaptureTestIds.title).press(key)
+  }
+
+  /** What's in the capture box: its text, and the tags picked for it. */
+  async expectCapture(title: string, tags: string[]): Promise<void> {
+    await expect(this.#page.getByTestId(quickCaptureTestIds.title)).toHaveValue(title)
+    await expect(this.#page.getByTestId(quickCaptureTestIds.form).getByTestId(tagChipTestIds.chip)).toHaveText(tags)
+  }
+
+  /** On a tag's list: renames it everywhere. */
+  async renameTag(to: string): Promise<void> {
+    await this.#page.getByTestId(tagRenameTestIds.open).click()
+    const input = this.#page.getByTestId(tagRenameTestIds.input)
+    await input.fill(to)
+    await input.press("Enter")
+    await this.expectHeading(to)
   }
 
   /** Tries to capture, and is told why not; what was typed stays to fix. */

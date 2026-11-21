@@ -1,4 +1,6 @@
 import { formatDay } from "@taxa/shared/dates/date-format"
+import { TagChip } from "../../../tags/TagChip.tsx"
+import { sameTag } from "@taxa/shared/tasks/tags"
 import type { Domain } from "@taxa/shared/domains/domain"
 import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
@@ -35,6 +37,7 @@ export const TaskRow = ({
   domains,
   filing,
   listedBy,
+  listedTag,
   onDelete
 }: {
   task: Task
@@ -44,6 +47,8 @@ export const TaskRow = ({
   filing?: Filing
   /** The When the list is made of, which its rows needn't say. */
   listedBy?: When
+  /** The tag the list is made of, which its rows needn't show. */
+  listedTag?: string
   /** Deletes it from its menu, with a chance to undo it. */
   onDelete: (task: Task) => void
 }) => {
@@ -112,6 +117,11 @@ export const TaskRow = ({
             Due {formatDay(task.due, today)}
           </span>
         )}
+        {task.tags
+          .filter((name) => listedTag === undefined || !sameTag(name, listedTag))
+          .map((name) => (
+            <TagChip key={name} name={name} />
+          ))}
       </span>
       {filing && task.inbox && (
         <DomainChoice

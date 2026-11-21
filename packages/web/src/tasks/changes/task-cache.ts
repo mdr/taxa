@@ -24,7 +24,8 @@ export const queryTaskCache = (queryClient: QueryClient): TaskCache => ({
     queryClient.setQueriesData<Task>({ queryKey: queryKeys.allTask }, (shown) => (shown?.id === task.id ? task : shown))
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.allTasks }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.allActivity })
+      queryClient.invalidateQueries({ queryKey: queryKeys.allActivity }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags })
     ])
   }
 })

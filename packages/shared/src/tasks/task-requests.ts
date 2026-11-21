@@ -3,6 +3,7 @@ import { IsoDateSchema, IsoTimeSchema } from "../dates/plain-date.ts"
 import { Energy, Horizon, Priority, TaskStatus } from "./task.ts"
 import { TaskIdSchema } from "../ids.ts"
 import { flavoured, type Minutes } from "../units.ts"
+import { MAX_TAGS, TagSchema } from "./tags.ts"
 
 const TitleSchema = z.string().trim().min(1).max(500)
 
@@ -39,18 +40,25 @@ export enum ClearableField {
 }
 
 /** Without a domain, it goes in your Inbox. */
-export const CreateTaskRequestSchema = EditableFieldsSchema.omit({ inbox: true }).partial().extend({
-  /** Chosen by the client (a UUIDv7), so a task made offline is real at once. */
-  id: TaskIdSchema.optional(),
-  title: TitleSchema
-})
+export const CreateTaskRequestSchema = EditableFieldsSchema.omit({ inbox: true })
+  .partial()
+  .extend({
+    /** Chosen by the client (a UUIDv7), so a task made offline is real at once. */
+    id: TaskIdSchema.optional(),
+    title: TitleSchema,
+    tags: z.array(TagSchema).max(MAX_TAGS).optional()
+  })
 
 export type CreateTaskRequest = z.input<typeof CreateTaskRequestSchema>
 
 /** Sets some fields and empties others; fields it doesn't mention stay as they are. */
 export const UpdateTaskRequestSchema = z.object({
   set: EditableFieldsSchema.partial().default({}),
-  clear: z.array(z.enum(ClearableField)).default([])
+  clear: z.array(z.enum(ClearableField)).default([]),
+  /** Tags to add, after those it has; any it has already, in any case, stay as they are. */
+  addTags: z.array(TagSchema).max(MAX_TAGS).default([]),
+  /** Tags to take off, in any case. */
+  removeTags: z.array(TagSchema).max(MAX_TAGS).default([])
 })
 
 export type UpdateTaskRequest = z.input<typeof UpdateTaskRequestSchema>
@@ -78,6 +86,8 @@ export const ListTasksQuerySchema = z.object({
   includeNotStarted: z.enum(["true", "false"]).optional(),
   /** Comma-separated: TODAY, ON_A_DAY, SOON, ANY_TIME, SOMEDAY. All but SOMEDAY by default. */
   when: z.string().optional(),
+  /** Only the tasks with this tag, in any case. */
+  tag: z.string().optional(),
   /** Only the tasks that follow on from this one, by ref or id. */
   followsOn: z.string().optional(),
   /** Words to find in a task's title or notes: each must be in one or the other. Best matches first. */

@@ -14,6 +14,7 @@ import { listShortcuts } from "./list-shortcuts.ts"
 import { Link, useLocation } from "wouter"
 import { PLAN_TODAY_PATH } from "../when/when-paths.ts"
 import { TodayAttention } from "../../days/TodayAttention.tsx"
+import { TagRename } from "../../tags/TagRename.tsx"
 import { realScheduler } from "../../services/scheduler.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
@@ -130,6 +131,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
           </h1>
           {openCount > 0 && <span className={styles.count}>{openCount}</span>}
           <ListSearch value={search} onSearch={session.search} input={searchBox} />
+          {list.type === ListType.TAG && <TagRename name={list.name} />}
           {/* Empty, Today offers planning as its main action instead. */}
           {list.type === ListType.TODAY && shown?.length !== 0 && (
             <Link href={PLAN_TODAY_PATH} className={styles.planToday} data-testid={taskListPageTestIds.planToday}>
@@ -160,6 +162,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
                 domains={domains.data ?? []}
                 filing={filing}
                 listedBy={listWhen(list)}
+                listedTag={list.type === ListType.TAG ? list.name : undefined}
                 onDelete={remove}
               />
             ))}

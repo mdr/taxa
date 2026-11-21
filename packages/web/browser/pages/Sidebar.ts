@@ -84,6 +84,18 @@ export class Sidebar extends PageObject {
     return new TaskListPage(this.#page)
   }
 
+  /** The tags with tasks to do, each as `name count`: `Life Admin2`. */
+  async expectTags(tags: string[]): Promise<void> {
+    await expect(this.#page.getByTestId(sidebarTestIds.tag)).toHaveText(tags)
+  }
+
+  async openTag(name: string): Promise<TaskListPage> {
+    await this.#page.getByTestId(sidebarTestIds.tag).filter({ hasText: name }).click()
+    const page = new TaskListPage(this.#page)
+    await page.expectHeading(name)
+    return page
+  }
+
   async openDomain(name: string): Promise<TaskListPage> {
     await this.#page.getByTestId(sidebarTestIds.domain).filter({ hasText: name }).click()
     return new TaskListPage(this.#page)

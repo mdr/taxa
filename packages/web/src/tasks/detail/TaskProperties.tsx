@@ -28,6 +28,7 @@ import { PriorityIcon } from "../PriorityIcon.tsx"
 import { StatusIcon } from "../StatusIcon.tsx"
 import { capitalised } from "../../ui/capitalised.ts"
 import { TaskChangeType, type TaskChange } from "../changes/task-changes-service.ts"
+import { TagsProperty } from "../../tags/TagsProperty.tsx"
 
 const ENERGY_ICONS: Record<Energy, LucideIcon> = {
   [Energy.LOW]: BatteryLow,
@@ -113,6 +114,7 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
         shortcut={{ key: "m", description: task.inbox ? "File in a domain" : "Move to a domain" }}
         onChoose={(request) => change({ type: TaskChangeType.UPDATE, request })}
       />
+      <TagsProperty task={task} change={change} />
       <DateProperty
         label="Due"
         icon={<CalendarClock size={15} aria-hidden />}

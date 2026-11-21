@@ -1,7 +1,13 @@
 import type { Task } from "@taxa/shared/tasks/task"
 import { Inbox, Plus } from "lucide-react"
 import { Link } from "wouter"
-import { useEffect, useRef, useState, type SubmitEvent } from "react"
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type SubmitEvent } from "react"
+import { withTags, withoutTags } from "@taxa/shared/tasks/tags"
+import { hashTagIn } from "../../tags/hash-tag.ts"
+import { useTags } from "../../tags/tag-queries.ts"
+import { tagSuggestions } from "../../tags/tag-suggestions.ts"
+import { TagChip } from "../../tags/TagChip.tsx"
+import { movedHighlight, TagSuggestionList } from "../../tags/TagSuggestionList.tsx"
 import styles from "./QuickCapture.module.css"
 import { quickCaptureTestIds } from "./QuickCaptureTestIds.ts"
 import { problemMessage } from "../../api/problem-message.ts"
@@ -66,6 +72,16 @@ const FilingPicker = ({ filing, onChoose }: { filing: string; onChoose: (choice:
  */
 export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefined }) => {
   const [title, setTitle] = useState("")
+  /** Tags picked with #, for the task about to be added. */
+  const [tags, setTags] = useState<string[]>([])
+  /** Where a # was typed whose suggestions Escape put away, so it's kept as text. */
+  const [dismissed, setDismissed] = useState<number | undefined>(undefined)
+  const [highlighted, setHighlighted] = useState(0)
+  const allTags = useTags().data ?? []
+  const hashTag = hashTagIn(title)
+  const typingTag = hashTag !== undefined && hashTag.start !== dismissed
+  const suggestions = typingTag ? tagSuggestions(allTags, hashTag.typed, tags) : []
+  const suggestionsId = useId()
   const [chosen, setChosen] = useState(loadCaptureFiling)
   /** The last task added straight into a domain from the Inbox, so it's not lost from sight. */
   const [filed, setFiled] = useState<Task | undefined>(undefined)
@@ -85,14 +101,35 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
     field.current?.focus()
     focusTaken()
   }, [focusWanted, focusTaken])
+  /** Takes the # and what follows out of the title, and the tag into those for the task. */
+  const pickTag = (name: string, start: number): void => {
+    setTitle(title.slice(0, start))
+    setTags(withTags(tags, [name]))
+    setHighlighted(0)
+  }
+  const pickWithKeys = (event: KeyboardEvent<HTMLInputElement>, start: number): void => {
+    const moved = movedHighlight(event.key, highlighted, suggestions.length)
+    if (moved !== undefined) {
+      event.preventDefault()
+      setHighlighted(moved)
+    } else if (event.key === "Enter" || event.key === "Tab") {
+      event.preventDefault()
+      const chosen = suggestions[highlighted]
+      if (chosen) pickTag(chosen.name, start)
+    } else if (event.key === "Escape") {
+      event.preventDefault()
+      setDismissed(start)
+    }
+  }
   const submit = (event: SubmitEvent) => {
     event.preventDefault()
     if (title.trim() === "") return
     create.mutate(
-      { title: title.trim(), domain: domainPrefix ?? (filing === INBOX_CHOICE ? undefined : filing) },
+      { title: title.trim(), tags, domain: domainPrefix ?? (filing === INBOX_CHOICE ? undefined : filing) },
       {
         onSuccess: (task) => {
           setTitle("")
+          setTags([])
           setFiled(domainPrefix === undefined && !task.inbox ? task : undefined)
           appAnalytics.track(ANALYTICS_CODES.task.captured, `captured ${task.ref}`, {
             taskId: task.id,
@@ -104,26 +141,47 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
     )
   }
   return (
-    <form className={styles.form} onSubmit={submit}>
+    <form className={styles.form} onSubmit={submit} data-testid={quickCaptureTestIds.form}>
       <Plus size={18} className={styles.plus} aria-hidden />
       <input
         ref={field}
         className={styles.title}
         value={title}
-        onChange={(event) => setTitle(event.target.value)}
+        onChange={(event) => {
+          setTitle(event.target.value)
+          setHighlighted(0)
+        }}
         onKeyDown={(event) => {
+          if (suggestions.length > 0 && hashTag) return pickWithKeys(event, hashTag.start)
           if (event.key === "Escape") event.currentTarget.blur()
         }}
+        role="combobox"
+        aria-expanded={suggestions.length > 0}
+        aria-controls={suggestionsId}
+        aria-activedescendant={suggestions.length > 0 ? `${suggestionsId}-${highlighted}` : undefined}
         aria-label="New task"
         aria-keyshortcuts="C"
         placeholder="Add a task"
         data-testid={quickCaptureTestIds.title}
       />
+      {tags.map((name) => (
+        <TagChip key={name} name={name} onRemove={() => setTags(withoutTags(tags, [name]))} />
+      ))}
       {title.trim() !== "" && <kbd className={styles.hint}>Enter</kbd>}
       {domainPrefix === undefined && <FilingPicker filing={filing} onChoose={choose} />}
       <button type="submit" className={styles.submit} disabled={create.isPending} data-testid={quickCaptureTestIds.add}>
         Add
       </button>
+      {suggestions.length > 0 && hashTag && (
+        <div className={styles.tagSuggestions}>
+          <TagSuggestionList
+            id={suggestionsId}
+            suggestions={suggestions}
+            highlighted={highlighted}
+            onPick={(name) => pickTag(name, hashTag.start)}
+          />
+        </div>
+      )}
       {filed && (
         <p className={styles.filed} role="status" data-testid={quickCaptureTestIds.filed}>
           Added <Link href={`/tasks/${filed.ref}`}>{filed.ref}</Link> to{" "}

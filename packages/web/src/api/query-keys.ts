@@ -9,6 +9,7 @@ export const queryKeys = {
   /** Every task shown on its own, whatever it was asked for by. */
   allTask: ["task"],
   task: (ref: string): unknown[] => ["task", ref],
+  tags: ["tags"],
   allActivity: ["activity"],
   activity: (ref: string): unknown[] => ["activity", ref],
   currentSession: ["session", "current"],

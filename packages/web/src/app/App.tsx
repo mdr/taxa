@@ -1,4 +1,5 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { tagFromPath } from "../tags/tag-paths.ts"
 import { TaxaApiError } from "@taxa/shared/api/taxa-client"
 import { useEffect, useState } from "react"
 import { Route, Switch, useLocation } from "wouter"
@@ -90,6 +91,9 @@ const Pages = () => (
     </Route>
     <Route path="/domains/:prefix">
       {({ prefix }) => <TaskListPage key={prefix} list={{ type: ListType.DOMAIN, prefix }} />}
+    </Route>
+    <Route path="/tags/:name">
+      {({ name }) => <TaskListPage key={`TAG:${name}`} list={{ type: ListType.TAG, name: tagFromPath(name) }} />}
     </Route>
     <Route path="/tasks/:ref">{({ ref }) => <TaskDetailPage key={ref} taskRef={ref} />}</Route>
     <Route path={SESSION_PATH}>

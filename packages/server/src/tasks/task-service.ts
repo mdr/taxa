@@ -8,6 +8,7 @@ import { ProblemType } from "@taxa/shared/api/problem"
 import { dateIn } from "@taxa/shared/dates/plain-date"
 import { taskId as newTaskId, uuidv7, type DomainId, type TaskId, type UserId } from "@taxa/shared/ids"
 import { compareTasks } from "@taxa/shared/tasks/task-order"
+import { hasTag, withoutTags, withTags } from "@taxa/shared/tasks/tags"
 import { matchesSearch, searchResults } from "@taxa/shared/tasks/task-search"
 import { parseTaskLookup, type TaskLookup } from "@taxa/shared/tasks/task-ref"
 import type {
@@ -109,6 +110,7 @@ export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, n
   const started = found.filter(
     ({ row }) =>
       (query.includeNotStarted === "true" || !row.start || row.start <= today) &&
+      (query.tag === undefined || hasTag(row.tags, query.tag)) &&
       whens.has(whenOf({ scheduled: row.scheduled ?? undefined, horizon: row.horizon ?? undefined }, today))
   )
   const { search } = query
@@ -150,7 +152,7 @@ export const createTask = async (
   db: Db,
   log: ServerLogger,
   caller: Caller,
-  { id, domain, title, followsOn, ...fields }: z.infer<typeof CreateTaskRequestSchema>,
+  { id, domain, title, followsOn, tags, ...fields }: z.infer<typeof CreateTaskRequestSchema>,
   now: Instant
 ): Promise<Task> => {
   const { task, changes } = await db.transaction(async (tx) => {
@@ -161,7 +163,7 @@ export const createTask = async (
     const inboxUserId = domainId === undefined ? caller.user.id : undefined
     const followsOnId = followsOn === undefined ? undefined : await followsOnIdFor(tx, caller, followsOn, taskId)
     const state = editTask(blankState(domainId, inboxUserId, title), {
-      set: { ...fields, ...(followsOnId && { followsOnId }) },
+      set: { ...fields, tags: withTags([], tags ?? []), ...(followsOnId && { followsOnId }) },
       clear: []
     }).state
     const at = new Date(now)
@@ -203,6 +205,7 @@ const blankState = (domainId: DomainId | undefined, inboxUserId: UserId | undefi
   estimateMinutes: undefined,
   energy: undefined,
   horizon: undefined,
+  tags: [],
   followsOnId: undefined,
   inProgressBy: undefined,
   waitingOn: undefined,
@@ -214,7 +217,7 @@ const blankState = (domainId: DomainId | undefined, inboxUserId: UserId | undefi
 
 const NO_CHANGES: Record<string, FieldChange> = {}
 
-interface Change {
+export interface Change {
   type: ActivityType
   code: ServerLogCode
   /** What the change does to the task's state, and whether it deletes or restores it. */
@@ -226,7 +229,7 @@ interface Change {
  * its version, and when anything changed, saves it with its version one up
  * and logs what changed.
  */
-const changeTask = async (
+export const changeTask = async (
   db: Db,
   log: ServerLogger,
   caller: Caller,
@@ -271,7 +274,7 @@ export const updateTask = (
   log: ServerLogger,
   caller: Caller,
   ref: string,
-  { set: { domain, inbox, followsOn, ...set }, clear }: z.infer<typeof UpdateTaskRequestSchema>,
+  { set: { domain, inbox, followsOn, ...set }, clear, addTags, removeTags }: z.infer<typeof UpdateTaskRequestSchema>,
   ifMatch: number | undefined,
   now: Instant
 ): Promise<Task> =>
@@ -289,7 +292,8 @@ export const updateTask = (
           ...set,
           ...(domainId && { domainId }),
           ...(inboxUserId && { inboxUserId }),
-          ...(followsOnId && { followsOnId })
+          ...(followsOnId && { followsOnId }),
+          tags: withTags(withoutTags(state.tags, removeTags), addTags)
         },
         clear
       })

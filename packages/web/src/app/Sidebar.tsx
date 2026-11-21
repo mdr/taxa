@@ -1,4 +1,6 @@
-import { Inbox, Keyboard, Sprout, Timer } from "lucide-react"
+import { Inbox, Keyboard, Sprout, Tag, Timer } from "lucide-react"
+import { tagPath } from "../tags/tag-paths.ts"
+import { useTags } from "../tags/tag-queries.ts"
 import { Link, useLocation } from "wouter"
 import styles from "./Sidebar.module.css"
 import { sidebarTestIds } from "./SidebarTestIds.ts"
@@ -100,6 +102,31 @@ const WhenLink = ({
   )
 }
 
+/** The tags with tasks still to do, each a list. */
+const SidebarTags = () => {
+  const tags = (useTags().data ?? []).filter(({ openCount }) => openCount > 0)
+  if (tags.length === 0) return undefined
+  return (
+    <>
+      <p className={styles.section}>Tags</p>
+      <ul className={styles.links}>
+        {tags.map(({ name, openCount }) => (
+          <li key={name}>
+            <ListLink
+              href={tagPath(name)}
+              icon={<Tag size={16} aria-hidden />}
+              name={name}
+              count={openCount}
+              testId={sidebarTestIds.tag}
+              countTestId={sidebarTestIds.tagCount}
+            />
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
 export const Sidebar = () => {
   const [location] = useLocation()
   const domains = useDomains()
@@ -192,6 +219,7 @@ export const Sidebar = () => {
         testId={sidebarTestIds.someday}
         countTestId={sidebarTestIds.somedayCount}
       />
+      <SidebarTags />
       <button
         type="button"
         className={styles.shortcuts}

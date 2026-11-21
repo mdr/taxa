@@ -14,6 +14,7 @@ import {
   Ellipsis,
   FolderInput,
   Inbox,
+  Tag,
   Timer,
   Trash2
 } from "lucide-react"
@@ -36,6 +37,7 @@ import { StatusIcon } from "../../StatusIcon.tsx"
 import { WHEN_ICONS, whenLabel, whenOptions } from "../../when/when-choices.tsx"
 import { useFollowOn } from "../../follow-ons/follow-on-service.ts"
 import { useListSession } from "../list-session-service.ts"
+import { TagPicker } from "../../../tags/TagPicker.tsx"
 
 /** What the menu shows: its list of things to change, or the choices for one of them. */
 enum Section {
@@ -46,7 +48,8 @@ enum Section {
   ON_A_DAY = "ON_A_DAY",
   DUE = "DUE",
   ESTIMATE = "ESTIMATE",
-  MOVE = "MOVE"
+  MOVE = "MOVE",
+  TAGS = "TAGS"
 }
 
 const SECTION_TEXT: Record<Section, string> = {
@@ -57,7 +60,8 @@ const SECTION_TEXT: Record<Section, string> = {
   [Section.ON_A_DAY]: "On a day",
   [Section.DUE]: "Due date",
   [Section.ESTIMATE]: "Estimate",
-  [Section.MOVE]: "Move to"
+  [Section.MOVE]: "Move to",
+  [Section.TAGS]: "Add a tag"
 }
 
 enum Action {
@@ -128,6 +132,12 @@ const MainOptions = ({
           label: "Move to",
           icon: <FolderInput size={15} aria-hidden />,
           detail: domain?.name ?? "Inbox"
+        },
+        {
+          value: Section.TAGS,
+          label: "Tags",
+          icon: <Tag size={15} aria-hidden />,
+          detail: task.tags.length > 0 ? task.tags.join(", ") : "None"
         },
         {
           value: Action.FOLLOW_ON,
@@ -243,6 +253,13 @@ const SectionChoices = ({
           ]}
           selected={filingChoice(task, domains)}
           onChoose={(choice) => apply({ type: TaskChangeType.UPDATE, request: filingRequest(choice) })}
+        />
+      )
+    case Section.TAGS:
+      return (
+        <TagPicker
+          has={task.tags}
+          onPick={(name) => apply({ type: TaskChangeType.UPDATE, request: { addTags: [name] } })}
         />
       )
     case Section.MAIN:

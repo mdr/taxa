@@ -19,6 +19,7 @@ export const makeTask = (fields: Partial<Task> = {}): Task => {
     status: TaskStatus.OPEN,
     priority: Priority.NORMAL,
     inbox: false,
+    tags: [],
     createdAt: "2026-01-05T09:00:00.000Z",
     updatedAt: "2026-01-05T09:00:00.000Z",
     version: 1,

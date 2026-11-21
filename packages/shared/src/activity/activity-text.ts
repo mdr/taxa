@@ -38,6 +38,21 @@ const notesPhrase: Phrase = ({ from, to }) => {
   return from === undefined || from === "" ? "added notes" : "edited the notes"
 }
 
+const tagList = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((tag): tag is string => typeof tag === "string") : []
+
+const tagsPhrase: Phrase = ({ from, to }) => {
+  const before = tagList(from).map((tag) => tag.toLowerCase())
+  const after = tagList(to).map((tag) => tag.toLowerCase())
+  const added = tagList(to).filter((tag) => !before.includes(tag.toLowerCase()))
+  const removed = tagList(from).filter((tag) => !after.includes(tag.toLowerCase()))
+  const parts = [
+    ...(added.length ? [`tagged it ${added.join(", ")}`] : []),
+    ...(removed.length ? [`took off ${removed.length === 1 ? "the tag" : "the tags"} ${removed.join(", ")}`] : [])
+  ]
+  return parts.length ? parts.join(" and ") : "renamed a tag"
+}
+
 /** What each field's change says. Fields not here are bookkeeping that goes without saying. */
 const PHRASES: Record<string, Phrase> = {
   due: datePhrase("due"),
@@ -57,6 +72,7 @@ const PHRASES: Record<string, Phrase> = {
     typeof to === "number" ? `estimated it at ${formatEstimate(to)}` : "cleared the estimate",
   followsOnId: ({ to }) =>
     typeof to === "string" ? "linked it as a follow-on" : "unlinked it from the task it followed on from",
+  tags: tagsPhrase,
   scheduledTime: ({ to }) => (typeof to === "string" ? `set the time to ${to}` : "cleared the time"),
   domainId: ({ from, to }, { domainName }) => {
     if (typeof to !== "string") return "put it back in the Inbox"

@@ -37,8 +37,16 @@ Domain (Personal / Work / Home)   who can see it
   adds one in the same domain. It's the one kind of link between tasks;
   dependencies stay in the backlog. Once projects exist, a trail could
   become one.
-- **Tags** are free-form labels (`errand`, `@phone`, `car`). A task can have
-  any number. They're how we capture context and type.
+- **Tags** are free-form labels (`Life Admin`, `errand`, `@phone`). A task
+  can have any number. They're how we capture context and type, across
+  domains: a tag's list gathers its tasks from the Inbox and every domain you
+  can see. A tag is any words, kept as typed, spaces and capitals included;
+  they match in any case, so `life admin` is `Life Admin`, but `life-admin`
+  is a tag of its own. Tags are added from a task's page or ⋯ menu, or with
+  `#` as a task is captured, where what follows the `#` is the tag until one
+  is picked. Renaming a tag renames it on every task you can see. Tags are
+  text on each task, not things of their own, so there's nothing to set up
+  and nothing to share: someone sees a tag on the tasks they can see.
 - **Assignees** come from a domain's members. In a shared domain, a task's
   assignee says whose job it is.
 

@@ -77,6 +77,15 @@ describe("activityText", () => {
     ).toBe("Matt cancelled it because “Kept it”")
   })
 
+  it("says which tags were added and taken off", () => {
+    expect(said(ActivityType.TASK_UPDATED, { tags: { from: [], to: ["Life Admin"] } })).toBe(
+      "Matt tagged it Life Admin"
+    )
+    expect(said(ActivityType.TASK_UPDATED, { tags: { from: ["car", "errand"], to: ["errand", "phone"] } })).toBe(
+      "Matt tagged it phone and took off the tag car"
+    )
+  })
+
   it("names an agent and its context", () => {
     const activity = {
       ...makeActivity(ActivityType.TASK_DELETED),

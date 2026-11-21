@@ -8,6 +8,7 @@ import { Keyboard } from "./Keyboard.ts"
 import { Sidebar } from "./Sidebar.ts"
 import { FollowOnLinks } from "./FollowOnLinks.ts"
 import { UndoToast } from "./UndoToast.ts"
+import { TaskTags } from "./TaskTags.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
 import { activityListTestIds } from "../../src/tasks/detail/ActivityListTestIds.ts"
 import { notesEditorTestIds } from "../../src/notes/NotesEditorTestIds.ts"
@@ -29,6 +30,7 @@ export class TaskDetailPage extends PageObject {
   readonly sidebar: Sidebar
   readonly keyboard: Keyboard
   readonly followOns: FollowOnLinks
+  readonly tags: TaskTags
   /** Shown once it's marked done here. */
   readonly toast: UndoToast
 
@@ -38,6 +40,7 @@ export class TaskDetailPage extends PageObject {
     this.sidebar = new Sidebar(page)
     this.keyboard = new Keyboard(page)
     this.followOns = new FollowOnLinks(page)
+    this.tags = new TaskTags(page)
     this.toast = new UndoToast(page)
   }
 

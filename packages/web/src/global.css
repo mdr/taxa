@@ -17,6 +17,8 @@
   --danger-soft: #fbe9e5;
   --warning: #b86a0b;
   --notice: #fff6dc;
+  --tag-bg: #eceff4;
+  --tag-text: #3b4757;
   --shadow-popover: 0 0 0 1px rgb(0 0 0 / 6%), 0 8px 24px rgb(0 0 0 / 12%), 0 2px 6px rgb(0 0 0 / 6%);
   --radius: 8px;
 
@@ -57,6 +59,8 @@
     --danger-soft: #3d221d;
     --warning: #e9a94a;
     --notice: #3a3218;
+    --tag-bg: #2b3038;
+    --tag-text: #c5cdd9;
     --shadow-popover: 0 0 0 1px rgb(255 255 255 / 8%), 0 12px 32px rgb(0 0 0 / 50%);
 
     --status-open: #8f8c84;

@@ -33,7 +33,11 @@ const changeFields = (change: TaskChange): LogFields => {
   switch (change.type) {
     case TaskChangeType.UPDATE:
       return {
-        fields: [...Object.keys(change.request.set ?? {}), ...(change.request.clear ?? [])].join(",")
+        fields: [
+          ...Object.keys(change.request.set ?? {}),
+          ...(change.request.clear ?? []),
+          ...(change.request.addTags?.length || change.request.removeTags?.length ? ["tags"] : [])
+        ].join(",")
       }
     case TaskChangeType.STATUS:
       return { status: change.request.status }

@@ -8,12 +8,15 @@ const wordsOf = (search: string): string[] =>
     .filter((word) => word !== "")
 
 /**
- * Whether a task is found by what's typed: every word in its title or its
- * notes, in any order, in any case, each word's in either. Nothing typed
+ * Whether a task is found by what's typed: every word in its title, its
+ * notes or its tags, in any order, in any case, each word's in either. Nothing typed
  * finds everything.
  */
-export const matchesSearch = (task: Pick<Task, "title" | "notes">, search: string): boolean => {
-  const text = `${task.title}\n${task.notes}`.toLowerCase()
+export const matchesSearch = (
+  task: Pick<Task, "title" | "notes"> & { tags?: readonly string[] },
+  search: string
+): boolean => {
+  const text = `${task.title}\n${task.notes}\n${(task.tags ?? []).join("\n")}`.toLowerCase()
   return wordsOf(search).every((word) => text.includes(word))
 }
 

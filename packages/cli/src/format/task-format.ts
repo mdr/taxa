@@ -13,7 +13,7 @@ export const taskLines = (tasks: Task[], today: IsoDate): string => {
   const width = Math.max(...tasks.map(({ ref }) => ref.length))
   return tasks
     .map((task) => {
-      const extra = taskHighlights(task, today)
+      const extra = [...taskHighlights(task, today), ...task.tags.map((tag) => `#${tag}`)]
       return `${task.ref.padEnd(width)}  ${task.title}${extra.length > 0 ? `  (${extra.join(", ")})` : ""}`
     })
     .join("\n")
@@ -41,6 +41,7 @@ export const taskDetail = (task: Task, domain: Domain | undefined, today: IsoDat
     ...row("Estimate", task.estimateMinutes === undefined ? undefined : formatEstimate(task.estimateMinutes)),
     ...row("Energy", task.energy && ENERGY_TEXT[task.energy]),
     ...row("Horizon", task.horizon && HORIZON_TEXT[task.horizon]),
+    ...row("Tags", task.tags.length > 0 ? task.tags.join(", ") : undefined),
     ...row("Working", task.inProgressBy && actorText(task.inProgressBy)),
     ...row("Waiting", task.waitingOn),
     ...row("Follow up", day(task.followUp, today)),

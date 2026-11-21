@@ -24,6 +24,7 @@ export interface TaskState {
   estimateMinutes: Minutes | undefined
   energy: Energy | undefined
   horizon: Horizon | undefined
+  tags: readonly string[]
   followsOnId: TaskId | undefined
   inProgressBy: ActorIds | undefined
   waitingOn: string | undefined
@@ -129,6 +130,6 @@ export const changeStatus = (
 export const changesFromNothing = (state: TaskState): Record<string, FieldChange> =>
   Object.fromEntries(
     Object.entries(state)
-      .filter(([, value]) => value !== undefined)
+      .filter(([, value]) => value !== undefined && !(Array.isArray(value) && value.length === 0))
       .map(([key, value]) => [key, { to: logged(key as keyof TaskState, value) }])
   )

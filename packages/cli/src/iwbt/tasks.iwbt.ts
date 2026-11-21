@@ -156,6 +156,21 @@ describe("taxa edit and status commands", () => {
     expect((await matt.client.task("1")).due).toBeUndefined()
   })
 
+  it("tags tasks, lists them by tag, and renames a tag", async ({ server }) => {
+    const matt = await mattAtHome(server)
+    expect((await taxa(server, matt, "add", "Renew passport", "--tag", "Life Admin", "--tag", "errand")).stdout).toBe(
+      "Added IN-1  Renew passport\n"
+    )
+    await matt.addTask("Fix the tap", { domain: "H" })
+    expect((await taxa(server, matt, "edit", "H-2", "--tag", "life admin")).exitCode).toBe(ExitCode.OK)
+    expect((await taxa(server, matt, "edit", "IN-1", "--untag", "ERRAND")).exitCode).toBe(ExitCode.OK)
+    expect((await taxa(server, matt, "list", "--tag", "LIFE ADMIN")).stdout).toBe(
+      "IN-1  Renew passport  (inbox, #Life Admin)\nH-2   Fix the tap  (#life admin)\n"
+    )
+    expect((await taxa(server, matt, "rename-tag", "life admin", "Admin")).stdout).toBe("Renamed it on 2 tasks.\n")
+    expect((await taxa(server, matt, "tags")).stdout).toBe("Admin  (2 to do)\n")
+  })
+
   it("takes changes as JSON on stdin", async ({ server }) => {
     const matt = await mattAtHome(server)
     await matt.addTask("Fix the tap")

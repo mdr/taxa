@@ -8,7 +8,8 @@ export enum ListType {
   IN_PROGRESS = "IN_PROGRESS",
   TODAY = "TODAY",
   SOON = "SOON",
-  SOMEDAY = "SOMEDAY"
+  SOMEDAY = "SOMEDAY",
+  TAG = "TAG"
 }
 
 interface InboxList {
@@ -31,7 +32,14 @@ interface WhenList {
   type: ListType.TODAY | ListType.SOON | ListType.SOMEDAY
 }
 
-export type TaskList = InboxList | DomainList | InProgressList | WhenList
+/** Everything you can see with a tag, across the Inbox and every domain. */
+interface TagList {
+  type: ListType.TAG
+  /** As named in the address, in any case. */
+  name: string
+}
+
+export type TaskList = InboxList | DomainList | InProgressList | WhenList | TagList
 
 export const listQuery = (list: TaskList): ListTasksQuery => {
   switch (list.type) {
@@ -47,6 +55,8 @@ export const listQuery = (list: TaskList): ListTasksQuery => {
       return { when: When.SOON }
     case ListType.SOMEDAY:
       return { when: When.SOMEDAY }
+    case ListType.TAG:
+      return { tag: list.name }
   }
 }
 

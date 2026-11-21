@@ -33,6 +33,9 @@ export const ANALYTICS_CODES = {
     refCopied: "task.refCopied",
     followOnAdded: "task.followOnAdded"
   },
+  tag: {
+    renamed: "tag.renamed"
+  },
   list: {
     completedShown: "list.completedShown",
     searched: "list.searched"

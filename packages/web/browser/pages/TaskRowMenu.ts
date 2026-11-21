@@ -10,9 +10,10 @@ import { INBOX_CHOICE } from "../../src/tasks/filing/filing.ts"
 import { estimatePropertyTestIds } from "../../src/tasks/detail/properties/EstimatePropertyTestIds.ts"
 import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
+import { tagPickerTestIds } from "../../src/tags/TagPickerTestIds.ts"
 
 /** The things the menu lists to change, as it names them. */
-type Thing = "Status" | "Priority" | "When" | "Due date" | "Estimate" | "Move to"
+type Thing = "Status" | "Priority" | "When" | "Due date" | "Estimate" | "Move to" | "Tags"
 
 const THING_CHOICE: Record<Thing, string> = {
   Status: "STATUS",
@@ -20,7 +21,8 @@ const THING_CHOICE: Record<Thing, string> = {
   When: "WHEN",
   "Due date": "DUE",
   Estimate: "ESTIMATE",
-  "Move to": "MOVE"
+  "Move to": "MOVE",
+  Tags: "TAGS"
 }
 
 /** The ⋯ menu on a task's row in a list, open. */
@@ -100,6 +102,15 @@ export class TaskRowMenu extends PageObject {
     const typed = this.#row.getByTestId(estimatePropertyTestIds.typed)
     await typed.fill(estimate)
     await typed.press("Enter")
+    await this.#closed()
+  }
+
+  /** Finds a tag by what's typed, or makes a new one of it, and picks it with Enter. */
+  async addTag(typed: string): Promise<void> {
+    await this.#option(THING_CHOICE.Tags).click()
+    const input = this.#row.getByTestId(tagPickerTestIds.input)
+    await input.fill(typed)
+    await input.press("Enter")
     await this.#closed()
   }
 
