@@ -85,9 +85,14 @@
   cursor: pointer;
 }
 
-.suggestion:hover,
-.suggestion[aria-selected="true"] {
+.suggestion:hover {
   background: var(--hover);
+}
+
+/* The one Enter picks: clearly more than a hover. */
+.suggestion[aria-selected="true"] {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .none {

@@ -106,6 +106,14 @@ export class Keyboard extends PageObject {
     await this.#page.keyboard.press("Enter")
   }
 
+  /** A tag picker's key, then Down to the first tag it offers before anything's typed, and Enter. */
+  async pickFirstTag(key: string): Promise<void> {
+    await this.press(key)
+    await expect(this.#page.getByTestId(tagPickerTestIds.input)).toBeFocused()
+    await this.#page.keyboard.press("ArrowDown")
+    await this.#page.keyboard.press("Enter")
+  }
+
   /** `R`: the title, selected, replaced by typing, and Enter. */
   async rename(title: string): Promise<void> {
     await this.press("r")

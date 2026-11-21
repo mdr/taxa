@@ -7,7 +7,12 @@ import { hashTagIn } from "../../tags/hash-tag.ts"
 import { useTags } from "../../tags/tag-queries.ts"
 import { tagSuggestions } from "../../tags/tag-suggestions.ts"
 import { TagChip } from "../../tags/TagChip.tsx"
-import { movedHighlight, TagSuggestionList } from "../../tags/TagSuggestionList.tsx"
+import {
+  movedHighlight,
+  NONE_HIGHLIGHTED,
+  startingHighlight,
+  TagSuggestionList
+} from "../../tags/TagSuggestionList.tsx"
 import styles from "./QuickCapture.module.css"
 import { quickCaptureTestIds } from "./QuickCaptureTestIds.ts"
 import { problemMessage } from "../../api/problem-message.ts"
@@ -76,7 +81,7 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
   const [tags, setTags] = useState<string[]>([])
   /** Where a # was typed whose suggestions Escape put away, so it's kept as text. */
   const [dismissed, setDismissed] = useState<number | undefined>(undefined)
-  const [highlighted, setHighlighted] = useState(0)
+  const [highlighted, setHighlighted] = useState(NONE_HIGHLIGHTED)
   const allTags = useTags().data ?? []
   const hashTag = hashTagIn(title)
   const typingTag = hashTag !== undefined && hashTag.start !== dismissed
@@ -105,17 +110,17 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
   const pickTag = (name: string, start: number): void => {
     setTitle(title.slice(0, start))
     setTags(withTags(tags, [name]))
-    setHighlighted(0)
+    setHighlighted(NONE_HIGHLIGHTED)
   }
   const pickWithKeys = (event: KeyboardEvent<HTMLInputElement>, start: number): void => {
     const moved = movedHighlight(event.key, highlighted, suggestions.length)
     if (moved !== undefined) {
       event.preventDefault()
       setHighlighted(moved)
-    } else if (event.key === "Enter" || event.key === "Tab") {
+    } else if ((event.key === "Enter" || event.key === "Tab") && suggestions[highlighted]) {
+      // With none highlighted, Enter adds the task as it is.
       event.preventDefault()
-      const chosen = suggestions[highlighted]
-      if (chosen) pickTag(chosen.name, start)
+      pickTag(suggestions[highlighted].name, start)
     } else if (event.key === "Escape") {
       event.preventDefault()
       setDismissed(start)
@@ -149,7 +154,7 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
         value={title}
         onChange={(event) => {
           setTitle(event.target.value)
-          setHighlighted(0)
+          setHighlighted(startingHighlight(hashTagIn(event.target.value)?.typed ?? ""))
         }}
         onKeyDown={(event) => {
           if (suggestions.length > 0 && hashTag) return pickWithKeys(event, hashTag.start)
@@ -158,7 +163,7 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
         role="combobox"
         aria-expanded={suggestions.length > 0}
         aria-controls={suggestionsId}
-        aria-activedescendant={suggestions.length > 0 ? `${suggestionsId}-${highlighted}` : undefined}
+        aria-activedescendant={suggestions[highlighted] ? `${suggestionsId}-${highlighted}` : undefined}
         aria-label="New task"
         aria-keyshortcuts="C"
         placeholder="Add a task"

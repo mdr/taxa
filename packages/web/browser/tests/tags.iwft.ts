@@ -53,6 +53,14 @@ test("tagging a task from its menu in a list", async ({ taxa }) => {
   await menu.expectShows("Tags", "DIY")
   await menu.addTag("Winter jobs")
   await taxa.expectTask("H-2", { tags: ["DIY", "Winter jobs"] })
+
+  // From the keyboard: L, then Down to the first tag offered, and Enter.
+  await taxa.matt.addTask("Clear the gutters", { domain: "H" })
+  await home.expectTasks(["H-1 Fix the tap", "H-2 Bleed the radiators", "H-3 Clear the gutters"])
+  await home.keyboard.press("j j j")
+  await home.expectHighlighted("Clear the gutters")
+  await home.keyboard.pickFirstTag("l")
+  await taxa.expectTask("H-3", { tags: ["DIY"] })
 })
 
 test("tagging a task as you capture it, with #", async ({ taxa }) => {

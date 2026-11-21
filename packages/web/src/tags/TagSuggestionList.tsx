@@ -52,9 +52,16 @@ export const TagSuggestionList = ({
   </div>
 )
 
+/** No suggestion highlighted: Down goes to the first, Up to the last. */
+export const NONE_HIGHLIGHTED = -1
+
+/** Where the highlight starts for what's typed: on the best match, or, with nothing typed yet, nowhere. */
+export const startingHighlight = (typed: string): number => (typed.trim() === "" ? NONE_HIGHLIGHTED : 0)
+
 /** Which suggestion arrow keys move to, round from the ends; or undefined, for a key that doesn't move. */
 export const movedHighlight = (key: string, highlighted: number, count: number): number | undefined => {
   if (count === 0) return undefined
+  if (highlighted === NONE_HIGHLIGHTED) return key === "ArrowDown" ? 0 : key === "ArrowUp" ? count - 1 : undefined
   if (key === "ArrowDown") return (highlighted + 1) % count
   if (key === "ArrowUp") return (highlighted - 1 + count) % count
   return undefined
