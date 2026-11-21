@@ -15,6 +15,7 @@ import { Link, useLocation } from "wouter"
 import { PLAN_TODAY_PATH } from "../when/when-paths.ts"
 import { TodayAttention } from "../../days/TodayAttention.tsx"
 import { TagRename } from "../../tags/TagRename.tsx"
+import { useFollowOn } from "../follow-ons/follow-on-service.ts"
 import { realScheduler } from "../../services/scheduler.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
@@ -91,18 +92,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
     lastShown.current = (shown ?? []).map(({ id }) => id)
   })
   const [, navigate] = useLocation()
-  useShortcuts(
-    ShortcutScope.PAGE,
-    listShortcuts(
-      [...(shown ?? []), ...(completedOpen ? earlierFound : [])],
-      session,
-      (task) => navigate(`/tasks/${task.ref}`),
-      () => {
-        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-      },
-      () => searchBox.current?.focus()
-    )
-  )
+  const { start: startFollowOn } = useFollowOn()
   const openCount = tasks.data?.length ?? 0
   const remove = (task: Task): void =>
     void session.delete(
@@ -121,6 +111,23 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
               (shown ?? []).map(({ id }) => id)
             )
         }
+  useShortcuts(
+    ShortcutScope.PAGE,
+    listShortcuts(
+      [...(shown ?? []), ...(completedOpen ? earlierFound : [])],
+      session,
+      {
+        open: (task) => navigate(`/tasks/${task.ref}`),
+        followOn: startFollowOn,
+        remove,
+        filedFromRow: (task) => filing !== undefined && task.inbox
+      },
+      () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+      },
+      () => searchBox.current?.focus()
+    )
+  )
   return (
     <ListSessionContext.Provider value={session}>
       <section className={styles.page} aria-labelledby="list-heading">

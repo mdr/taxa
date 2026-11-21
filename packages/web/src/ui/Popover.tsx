@@ -29,8 +29,10 @@ interface PopoverProps {
   alignEnd?: boolean
   /** A key that opens it, on the page that shows it. */
   shortcut?: KeyShortcut
-  /** The panel's content, given a way to close it. */
-  children: (close: () => void) => ReactNode
+  /** Opens it from elsewhere, at one part of its content if `into` says, which `children` is told; again with each new `seq`. */
+  opening?: { into: string | undefined; seq: number }
+  /** The panel's content, given a way to close it, and the part a key opened it at, if one did. */
+  children: (close: () => void, into: string | undefined) => ReactNode
 }
 
 const FOCUSABLE = "input, button:not(:disabled), [tabindex]:not([tabindex='-1'])"
@@ -44,9 +46,13 @@ export const Popover = ({
   value,
   alignEnd = false,
   shortcut,
+  opening,
   children
 }: PopoverProps) => {
   const [open, setOpen] = useState(false)
+  const [into, setInto] = useState<string | undefined>(undefined)
+  /** Where the keyboard was when it was opened from elsewhere, to go back to when it closes. */
+  const returnTo = useRef<HTMLElement | undefined>(undefined)
   const wrapper = useRef<HTMLDivElement>(null)
   const button = useRef<HTMLButtonElement>(null)
   const panel = useRef<HTMLDivElement>(null)
@@ -59,18 +65,35 @@ export const Popover = ({
             keys: [shortcut.key],
             description: shortcut.description,
             group: ShortcutGroup.TASKS,
-            run: () => setOpen(true)
+            run: () => {
+              setInto(undefined)
+              setOpen(true)
+            }
           }
         ]
       : []
   )
+  const openingSeq = opening?.seq
+  const openingInto = opening?.into
+  useEffect(() => {
+    if (openingSeq === undefined) return
+    returnTo.current = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
+    setInto(openingInto)
+    setOpen(true)
+  }, [openingSeq, openingInto])
+  const giveBackFocus = (): void => {
+    const back = returnTo.current?.isConnected ? returnTo.current : button.current
+    returnTo.current = undefined
+    back?.focus()
+  }
   const close = () => {
     setOpen(false)
-    button.current?.focus()
+    giveBackFocus()
   }
   useEffect(() => {
     if (!open) return undefined
-    panel.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus()
+    // Unless what's in it has put the keyboard somewhere already, the keyboard goes to the first thing in it.
+    if (!panel.current?.contains(document.activeElement)) panel.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus()
     const outside = (event: PointerEvent) => {
       if (!wrapper.current?.contains(event.target as Node)) setOpen(false)
     }
@@ -79,7 +102,7 @@ export const Popover = ({
       event.stopPropagation()
       event.preventDefault()
       setOpen(false)
-      button.current?.focus()
+      giveBackFocus()
     }
     document.addEventListener("pointerdown", outside)
     document.addEventListener("keydown", escape)
@@ -99,7 +122,11 @@ export const Popover = ({
         aria-expanded={open}
         aria-keyshortcuts={shortcut?.key.toUpperCase()}
         aria-controls={open ? panelId : undefined}
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          setInto(undefined)
+          returnTo.current = undefined
+          setOpen(!open)
+        }}
         data-testid={testId}
         data-value={value}
       >
@@ -113,7 +140,7 @@ export const Popover = ({
           role="dialog"
           aria-label={label}
         >
-          {children(close)}
+          {children(close, into)}
         </div>
       )}
     </div>

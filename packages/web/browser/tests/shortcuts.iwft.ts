@@ -58,6 +58,16 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Open the task Enter",
     "Tick off, or untick X",
     "Start, or stop working on it I",
+    "Change status S",
+    "Set priority P",
+    "Choose when W",
+    "Set a due date D",
+    "Estimate E",
+    "Move to a domain M",
+    "Add a tag L",
+    "Open the task's menu .",
+    "Add a follow-on task F",
+    "Delete the task Delete or Backspace",
     "Leave the list Esc",
     "Undo ticking off or deleting a task ⌘Z"
   ])
@@ -68,6 +78,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Next task ↓",
     "Previous task ↑",
     "Open the task Enter",
+    "Delete the task Delete or Backspace",
     "Leave the list Esc",
     "Undo ticking off or deleting a task ⌘Z"
   ])

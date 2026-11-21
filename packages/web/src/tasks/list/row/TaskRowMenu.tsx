@@ -36,8 +36,9 @@ import { PriorityIcon } from "../../PriorityIcon.tsx"
 import { StatusIcon } from "../../StatusIcon.tsx"
 import { WHEN_ICONS, whenLabel, whenOptions } from "../../when/when-choices.tsx"
 import { useFollowOn } from "../../follow-ons/follow-on-service.ts"
-import { useListSession } from "../list-session-service.ts"
+import { useListSession, useRowMenuOpening } from "../list-session-service.ts"
 import { TagPicker } from "../../../tags/TagPicker.tsx"
+import { RowMenuEntry } from "./row-menu-entry.ts"
 
 /** What the menu shows: its list of things to change, or the choices for one of them. */
 enum Section {
@@ -267,10 +268,10 @@ const SectionChoices = ({
   }
 }
 
-const MenuPanel = (props: PanelProps) => {
-  const [section, setSection] = useState(Section.MAIN)
+const MenuPanel = ({ into, ...props }: PanelProps & { into: Section | undefined }) => {
+  const [section, setSection] = useState(into ?? Section.MAIN)
   /** The section last gone into, to come back out onto. */
-  const [cameFrom, setCameFrom] = useState<Section | undefined>(undefined)
+  const [cameFrom, setCameFrom] = useState<Section | undefined>(into)
   const panel = useRef<HTMLDivElement>(null)
   const openSection = (into: Section): void => {
     // A section within a section comes back out onto the one it's in.
@@ -305,7 +306,7 @@ const MenuPanel = (props: PanelProps) => {
   )
 }
 
-/** ⋯ on a task's row: change it without opening it. */
+/** ⋯ on a task's row: change it without opening it; keys on the list open it too, at what they change. */
 export const TaskRowMenu = ({
   task,
   today,
@@ -319,16 +320,23 @@ export const TaskRowMenu = ({
 }) => {
   const { change } = useTaskChanges()
   const { complete } = useListSession()
+  const opening = useRowMenuOpening(task)
   return (
     <Popover
       label={`Change ${task.title}`}
       look={PopoverLook.ICON}
       testId={taskRowTestIds.menu}
       trigger={<Ellipsis size={16} aria-hidden />}
+      opening={
+        opening && opening.entry !== RowMenuEntry.FILE
+          ? { into: opening.entry === RowMenuEntry.MENU ? undefined : opening.entry, seq: opening.seq }
+          : undefined
+      }
       alignEnd
     >
-      {(close) => (
+      {(close, into) => (
         <MenuPanel
+          into={into as Section | undefined}
           task={task}
           today={today}
           domains={domains}

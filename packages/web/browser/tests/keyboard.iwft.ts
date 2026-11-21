@@ -32,3 +32,30 @@ test("a task can be ticked off from the keyboard", async ({ taxa }) => {
   await list.expectTasks(["✓ H-1 Fix the tap"])
   await taxa.expectTask("H-1", { status: TaskStatus.DONE })
 })
+
+test("a highlighted task in a list changes from the keyboard, with the task page's keys", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addDomain("Work", "W")
+  await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  await taxa.matt.addTask("Bleed the radiators", { domain: "H" })
+  const home = await (await (await taxa.openTab("Matt")).openInbox()).sidebar.openDomain("Home")
+  await home.keyboard.press("j")
+  await home.expectHighlighted("Fix the tap")
+
+  await home.keyboard.choose("p", Priority.HIGH)
+  await home.keyboard.typeDate("d", "2026-01-09")
+  await home.keyboard.typeTag("l", "Plumbing")
+  await taxa.expectTask("H-1", { priority: Priority.HIGH, due: "2026-01-09", tags: ["Plumbing"] })
+  await home.expectHighlighted("Fix the tap")
+
+  await home.keyboard.choose("m", "W")
+  await home.expectTasks(["H-2 Bleed the radiators"])
+  await taxa.expectTask("W-1", { title: "Fix the tap" })
+
+  await home.keyboard.press("j")
+  await home.expectHighlighted("Bleed the radiators")
+  await home.keyboard.press("Backspace")
+  await home.expectTasks([])
+  await home.undo()
+  await home.expectTasks(["H-2 Bleed the radiators"])
+})

@@ -1,4 +1,5 @@
 import { formatDay } from "@taxa/shared/dates/date-format"
+import { RowMenuEntry } from "./row-menu-entry.ts"
 import { TagChip } from "../../../tags/TagChip.tsx"
 import { sameTag } from "@taxa/shared/tasks/tags"
 import type { Domain } from "@taxa/shared/domains/domain"
@@ -15,7 +16,13 @@ import { TickBox } from "./TickBox.tsx"
 import { PriorityIcon } from "../../PriorityIcon.tsx"
 import { StatusIcon } from "../../StatusIcon.tsx"
 import { capitalised } from "../../../ui/capitalised.ts"
-import { useCelebrated, useHighlighted, useListSession, useShownDone } from "../list-session-service.ts"
+import {
+  useCelebrated,
+  useHighlighted,
+  useListSession,
+  useRowMenuOpening,
+  useShownDone
+} from "../list-session-service.ts"
 import { useTaskProblem } from "../../changes/task-changes-service.ts"
 import { DomainChoice } from "../../filing/DomainChoice.tsx"
 import { TaskRowMenu } from "./TaskRowMenu.tsx"
@@ -75,6 +82,7 @@ export const TaskRow = ({
     }
   }, [highlight, task.id])
   const problem = useTaskProblem(task.id)
+  const opening = useRowMenuOpening(task)
   const done = useShownDone(task)
   const celebrate = useCelebrated(task.id)
   return (
@@ -128,7 +136,7 @@ export const TaskRow = ({
           task={task}
           domains={filing.domains}
           testId={taskRowTestIds.domain}
-          shortcut={highlighted ? { key: "m", description: "File in a domain" } : undefined}
+          opening={opening?.entry === RowMenuEntry.FILE ? opening.seq : undefined}
           onChoose={(request) => filing.file(task, request)}
         />
       )}

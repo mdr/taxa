@@ -2,6 +2,7 @@ import { makeTask } from "@taxa/shared/test-support/make-task"
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { describe, expect, it } from "vite-plus/test"
 import { listShortcuts } from "./list-shortcuts.ts"
+import { RowMenuEntry } from "./row/row-menu-entry.ts"
 import { ListSessionService } from "./list-session-service.ts"
 import { ShortcutScope, ShortcutService } from "../../shortcuts/shortcut-service.ts"
 import { TaskChangeType, type TaskChange, type TaskChangesActions } from "../changes/task-changes-service.ts"
@@ -22,7 +23,11 @@ const setUp = (
   made: TaskChange[]
   left: number[]
   found: number[]
+  followedOn: Task[]
+  removed: Task[]
 } => {
+  const followedOn: Task[] = []
+  const removed: Task[] = []
   const toggled: Task[] = []
   const made: TaskChange[] = []
   const changes: TaskChangesActions = {
@@ -46,12 +51,17 @@ const setUp = (
     listShortcuts(
       listed,
       session,
-      (task) => opened.push(task),
+      {
+        open: (task) => opened.push(task),
+        followOn: (task) => followedOn.push(task),
+        remove: (task) => removed.push(task),
+        filedFromRow: (task) => task.inbox
+      },
       () => left.push(1),
       () => found.push(1)
     )
   )
-  return { press: shortcuts.press, session, opened, toggled, made, left, found }
+  return { press: shortcuts.press, session, opened, toggled, made, left, found, followedOn, removed }
 }
 
 describe("listShortcuts", () => {
@@ -118,5 +128,38 @@ describe("listShortcuts", () => {
   it("leaves ⌘Z to the browser when there's no tick to undo", () => {
     const { press } = setUp()
     expect(press("mod+z")).toBe(false)
+  })
+
+  it("opens the highlighted task's menu at what the task page's keys change, or whole with .", () => {
+    const { press, session } = setUp()
+    expect(press("s")).toBe(false)
+    press("j")
+    press("s")
+    expect(session.state.opening).toEqual({ taskId: first.id, entry: RowMenuEntry.STATUS, seq: 1 })
+    press("l")
+    expect(session.state.opening).toEqual({ taskId: first.id, entry: RowMenuEntry.TAGS, seq: 2 })
+    press(".")
+    expect(session.state.opening?.entry).toBe(RowMenuEntry.MENU)
+  })
+
+  it("files an Inbox task with M from its own chip, and moves any other from its menu", () => {
+    const inbox = makeTask({ number: 3, title: "Renew passport", inbox: true })
+    const { press, session } = setUp([inbox, first])
+    press("j")
+    press("m")
+    expect(session.state.opening?.entry).toBe(RowMenuEntry.FILE)
+    press("j")
+    press("m")
+    expect(session.state.opening?.entry).toBe(RowMenuEntry.MOVE)
+  })
+
+  it("adds a follow-on to the highlighted task, and deletes it", () => {
+    const { press, followedOn, removed } = setUp()
+    press("j")
+    press("f")
+    press("Backspace")
+    press("Delete")
+    expect(followedOn).toEqual([first])
+    expect(removed).toEqual([first, first])
   })
 })

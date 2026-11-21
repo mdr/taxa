@@ -10,6 +10,7 @@ import { notesEditorTestIds } from "../../src/notes/NotesEditorTestIds.ts"
 import { titleFieldTestIds } from "../../src/tasks/detail/TitleFieldTestIds.ts"
 import { sidebarTestIds } from "../../src/app/SidebarTestIds.ts"
 import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
+import { tagPickerTestIds } from "../../src/tags/TagPickerTestIds.ts"
 
 /** The app's keyboard shortcuts, on any page. Keys are written as the app names them: `c`, `g h`, `mod+z`. */
 export class Keyboard extends PageObject {
@@ -95,6 +96,14 @@ export class Keyboard extends PageObject {
     await this.#page.keyboard.type(date)
     await this.#page.keyboard.press("Enter")
     await expect(this.#page.getByTestId(datePickerTestIds.typed)).toHaveCount(0)
+  }
+
+  /** A tag picker's key, then a tag typed, and Enter: the one it finds, or a new one. */
+  async typeTag(key: string, tag: string): Promise<void> {
+    await this.press(key)
+    await expect(this.#page.getByTestId(tagPickerTestIds.input)).toBeFocused()
+    await this.#page.keyboard.type(tag)
+    await this.#page.keyboard.press("Enter")
   }
 
   /** `R`: the title, selected, replaced by typing, and Enter. */

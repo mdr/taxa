@@ -1,4 +1,5 @@
 import type { TaskId } from "@taxa/shared/ids"
+import type { RowMenuEntry, RowMenuOpening } from "./row/row-menu-entry.ts"
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import type { Ms } from "@taxa/shared/units"
@@ -39,6 +40,8 @@ export interface ListSessionState {
   highlighted: TaskId | undefined
   /** What's typed to find tasks in the list: only those it finds show. */
   search: string
+  /** The row menu a key asked to open last. */
+  opening: RowMenuOpening | undefined
 }
 
 /** Which way to move the highlight through the list. */
@@ -66,6 +69,8 @@ export interface ListSessionActions {
   search: (text: string) => void
   /** Files a task out of the list; if it's highlighted, the highlight goes on to the task after it. */
   file: (task: Task, request: UpdateTaskRequest, shown: readonly TaskId[]) => Promise<void>
+  /** Opens a task's row menu, whole or at one thing to change. */
+  openRowMenu: (task: Task, entry: RowMenuEntry) => void
   dispose: () => void
 }
 
@@ -94,7 +99,8 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
       undoes: Undo.TICK,
       before: undefined,
       highlighted: undefined,
-      search: ""
+      search: "",
+      opening: undefined
     })
     this.#changes = changes
     this.#scheduler = scheduler
@@ -149,6 +155,9 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
     this.#cancelUndoOffer = undefined
     if (this.state.undoable) this.setState({ undoable: undefined })
   }
+
+  readonly openRowMenu = (task: Task, entry: RowMenuEntry): void =>
+    this.setState({ opening: { taskId: task.id, entry, seq: (this.state.opening?.seq ?? 0) + 1 } })
 
   readonly highlight = (id: TaskId | undefined): void => {
     if (this.state.highlighted !== id) this.setState({ highlighted: id })
@@ -215,6 +224,12 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
 export const ListSessionContext = createServiceContext<ListSessionService>()
 
 export const useListSession = (): ListSessionActions => useService(ListSessionContext)
+
+/** What a key last asked of this task's row menu, if it was this task's. */
+export const useRowMenuOpening = (task: Task): RowMenuOpening | undefined =>
+  useServiceState(useService(ListSessionContext), (state) =>
+    state.opening?.taskId === task.id ? state.opening : undefined
+  )
 
 export const useShownDone = (task: Task): boolean =>
   useServiceState(useService(ListSessionContext), (state) => isShownDone(state, task))

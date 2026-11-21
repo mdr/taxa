@@ -13,6 +13,8 @@ interface ChoicePropertyProps {
   /** Not set yet, so the chip is quieter. */
   empty?: boolean
   shortcut?: KeyShortcut
+  /** Opens it from elsewhere, again with each new number. */
+  opening?: number
   onChoose: (value: string) => void
 }
 
@@ -25,6 +27,7 @@ export const ChoiceProperty = ({
   trigger,
   empty = false,
   shortcut,
+  opening,
   onChoose
 }: ChoicePropertyProps) => (
   <Popover
@@ -34,6 +37,7 @@ export const ChoiceProperty = ({
     testId={testId}
     value={value}
     shortcut={shortcut}
+    opening={opening === undefined ? undefined : { into: undefined, seq: opening }}
   >
     {(close) => (
       <OptionList
