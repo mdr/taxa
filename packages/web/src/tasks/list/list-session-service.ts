@@ -1,4 +1,5 @@
 import type { TaskId } from "@taxa/shared/ids"
+import type { OpenedMemory } from "./opened-memory.ts"
 import type { RowMenuEntry, RowMenuOpening } from "./row/row-menu-entry.ts"
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
@@ -69,6 +70,8 @@ export interface ListSessionActions {
   search: (text: string) => void
   /** Files a task out of the list; if it's highlighted, the highlight goes on to the task after it. */
   file: (task: Task, request: UpdateTaskRequest, shown: readonly TaskId[]) => Promise<void>
+  /** Notes that a task is being opened from the list, to highlight it again on coming back. */
+  rememberOpened: (task: Task) => void
   /** Opens a task's row menu, whole or at one thing to change. */
   openRowMenu: (task: Task, entry: RowMenuEntry) => void
   dispose: () => void
@@ -91,20 +94,29 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   /** Whether this visit's search has been tracked: once is enough. */
   #searched = false
 
-  constructor(changes: TaskChangesActions, scheduler: Scheduler, analytics: Analytics) {
+  readonly #opened: OpenedMemory | undefined
+
+  /** With `opened`, the task last opened from the list starts highlighted, as you left it. */
+  constructor(changes: TaskChangesActions, scheduler: Scheduler, analytics: Analytics, opened?: OpenedMemory) {
     super({
       ticked: {},
       pending: {},
       undoable: undefined,
       undoes: Undo.TICK,
       before: undefined,
-      highlighted: undefined,
+      highlighted: opened?.recall(),
       search: "",
       opening: undefined
     })
     this.#changes = changes
     this.#scheduler = scheduler
     this.#analytics = analytics
+    this.#opened = opened
+  }
+
+  /** Notes that a task is being opened from the list, to highlight it again on coming back. */
+  readonly rememberOpened = (task: Task): void => {
+    this.#opened?.remember(task.id)
   }
 
   readonly search = (text: string): void => {

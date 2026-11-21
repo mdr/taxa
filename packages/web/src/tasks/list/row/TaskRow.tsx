@@ -59,7 +59,7 @@ export const TaskRow = ({
   /** Deletes it from its menu, with a chance to undo it. */
   onDelete: (task: Task) => void
 }) => {
-  const { toggle, highlight } = useListSession()
+  const { toggle, highlight, rememberOpened } = useListSession()
   const highlighted = useHighlighted(task.id)
   const row = useRef<HTMLLIElement>(null)
   // The highlight is the keyboard's focus, so Enter opens the task and screen readers follow it.
@@ -102,7 +102,12 @@ export const TaskRow = ({
         onChange={() => void toggle(task)}
         testId={taskRowTestIds.done}
       />
-      <Link href={`/tasks/${task.ref}`} className={styles.title} data-testid={taskRowTestIds.title}>
+      <Link
+        href={`/tasks/${task.ref}`}
+        className={styles.title}
+        onClick={() => rememberOpened(task)}
+        data-testid={taskRowTestIds.title}
+      >
         {task.title}
       </Link>
       <span className={styles.details} data-testid={taskRowTestIds.highlights}>

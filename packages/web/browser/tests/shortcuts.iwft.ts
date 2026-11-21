@@ -111,12 +111,20 @@ test("moving through a list, and ticking off and opening tasks, from the keyboar
   await home.keyboard.press("mod+z")
   await home.expectTasks(["H-1 Fix the tap", "H-2 Bleed the radiators", "H-3 Clear the gutters"])
 
-  await home.keyboard.press("k")
-  await home.expectHighlighted("Fix the tap")
+  // Back from a task, the list is where you left it, on the same task.
+  await home.keyboard.press("j")
+  await home.expectHighlighted("Clear the gutters")
   const detail = await home.keyboard.openHighlighted()
-  await detail.expectRef("H-1")
+  await detail.expectRef("H-3")
   const back = await detail.keyboard.backToList()
   await back.expectHeading("Home")
+  await back.expectHighlighted("Clear the gutters")
+  await back.keyboard.press("k")
+  await back.expectHighlighted("Bleed the radiators")
+
+  // So too for a task opened with a click.
+  const clicked = await back.openTask("Fix the tap")
+  await (await clicked.keyboard.backToList()).expectHighlighted("Fix the tap")
 })
 
 test("changing a task from the keyboard on its page", async ({ taxa }) => {

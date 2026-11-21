@@ -28,6 +28,7 @@ import { useDomains } from "../../domains/domain-queries.ts"
 import { useTasks } from "../task-queries.ts"
 import { EmptyList, ListIcon, listHeading, listWhen } from "./ListLooks.tsx"
 import { isHome, listQuery, ListType, type TaskList } from "./task-list.ts"
+import { openedMemoryFor } from "./opened-memory.ts"
 
 /** Finds tasks in the list as you type; Escape clears it and leaves. */
 const ListSearch = ({
@@ -65,7 +66,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
   const home = isHome(list)
   // A session for each visit: the routes give each list its own page.
   const changes = useTaskChanges()
-  const [session] = useState(() => new ListSessionService(changes, realScheduler, appAnalytics))
+  const [session] = useState(() => new ListSessionService(changes, realScheduler, appAnalytics, openedMemoryFor(list)))
   useEffect(() => session.dispose, [session])
   const ticked = useServiceState(session, (state) => state.ticked)
   const undoable = useServiceState(session, (state) => state.undoable)
@@ -117,7 +118,10 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
       [...(shown ?? []), ...(completedOpen ? earlierFound : [])],
       session,
       {
-        open: (task) => navigate(`/tasks/${task.ref}`),
+        open: (task) => {
+          session.rememberOpened(task)
+          navigate(`/tasks/${task.ref}`)
+        },
         followOn: startFollowOn,
         remove,
         filedFromRow: (task) => filing !== undefined && task.inbox

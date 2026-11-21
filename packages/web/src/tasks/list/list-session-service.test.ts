@@ -1,3 +1,4 @@
+import type { TaskId } from "@taxa/shared/ids"
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { makeTask } from "@taxa/shared/test-support/make-task"
 import { describe, expect, it } from "vite-plus/test"
@@ -83,6 +84,18 @@ describe("ListSessionService", () => {
     await changes.answer(false)
     await deleting
     expect(session.state.undoable).toBeUndefined()
+  })
+
+  it("starts on the task last opened from the list, coming back to it", () => {
+    const { changes, scheduler, telemetry } = makeListSessionService()
+    const memory = new Map<string, TaskId>()
+    const opened = { recall: () => memory.get("list"), remember: (id: TaskId) => void memory.set("list", id) }
+    const first = new ListSessionService(changes, scheduler, telemetry.analytics, opened)
+    expect(first.state.highlighted).toBeUndefined()
+    first.rememberOpened(makeTask({ number: 2 }))
+    expect(new ListSessionService(changes, scheduler, telemetry.analytics, opened).state.highlighted).toBe(
+      makeTask({ number: 2 }).id
+    )
   })
 
   it("keeps what's typed to search the list, tracked once a visit", () => {
