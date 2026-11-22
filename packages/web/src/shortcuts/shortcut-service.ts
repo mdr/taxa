@@ -128,21 +128,24 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
       shortcuts: shortcuts().filter((shortcut) => this.state.singleKeys || !isSingleKey(shortcut))
     }))
     // For the same keys, a page's beat the app's, and the latest set beat earlier ones.
-    const winners = new Set<Shortcut>()
-    const taken = new Set<string>()
+    const winners = new Map<string, Shortcut>()
     for (const layer of [...layers].reverse().sort((a, b) => SCOPE_RANK[a.scope] - SCOPE_RANK[b.scope])) {
       for (const shortcut of layer.shortcuts) {
         const sequence = shortcut.keys.join(" ")
-        if (taken.has(sequence)) continue
-        taken.add(sequence)
-        winners.add(shortcut)
+        if (!winners.has(sequence)) winners.set(sequence, shortcut)
       }
     }
-    // Listed the app's first, each in the order they were set.
+    // Listed the app's first, each in the order they were set, one that beats another in that one's place.
+    const listed = new Set<Shortcut>()
     return [...layers]
       .sort((a, b) => SCOPE_RANK[b.scope] - SCOPE_RANK[a.scope])
       .flatMap((layer) => layer.shortcuts)
-      .filter((shortcut) => winners.has(shortcut))
+      .flatMap((shortcut) => {
+        const winner = winners.get(shortcut.keys.join(" "))
+        if (!winner || listed.has(winner)) return []
+        listed.add(winner)
+        return [winner]
+      })
   }
 
   readonly press = (key: string): boolean => {

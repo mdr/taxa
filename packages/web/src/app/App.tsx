@@ -40,6 +40,8 @@ import { ShortcutsHelp } from "../shortcuts/ShortcutsHelp.tsx"
 import { CommandMenu } from "../shortcuts/CommandMenu.tsx"
 import { localShortcutSettings } from "../shortcuts/shortcut-settings.ts"
 import { FollowOnDialog } from "../tasks/follow-ons/FollowOnDialog.tsx"
+import { UndoNotice } from "../undo/UndoNotice.tsx"
+import { UndoContext, UndoService, useUndo, useUndoNotice } from "../undo/undo-service.ts"
 import { FollowOnContext, FollowOnService, useFollowingOn } from "../tasks/follow-ons/follow-on-service.ts"
 import {
   ShortcutContext,
@@ -122,7 +124,9 @@ const Layout = () => {
   const helpOpen = useHelpOpen()
   const menuOpen = useMenuOpen()
   const followingOn = useFollowingOn()
-  useShortcuts(ShortcutScope.APP, appShortcuts(location, navigate, domains.data ?? [], shortcuts))
+  const history = useUndo()
+  const undoNotice = useUndoNotice()
+  useShortcuts(ShortcutScope.APP, appShortcuts(location, navigate, domains.data ?? [], shortcuts, history))
   if (domains.data?.length === 0) {
     return (
       <main className={styles.onboarding}>
@@ -140,13 +144,15 @@ const Layout = () => {
       {helpOpen && <ShortcutsHelp />}
       {menuOpen && <CommandMenu />}
       {followingOn && <FollowOnDialog key={followingOn.id} from={followingOn} />}
+      {undoNotice && <UndoNotice notice={undoNotice} />}
     </div>
   )
 }
 
 export const App = () => {
+  const [undo] = useState(() => new UndoService(taxaApi, queryTaskCache(queryClient), appAnalytics, realScheduler))
   const [taskChanges] = useState(
-    () => new TaskChangesService(taxaApi, queryTaskCache(queryClient), appAnalytics, appLogger)
+    () => new TaskChangesService(taxaApi, queryTaskCache(queryClient), appAnalytics, appLogger, undo)
   )
   const [shortcuts] = useState(() => new ShortcutService(realScheduler, localShortcutSettings, appAnalytics))
   // Here, not on the planner's page, so a plan being made survives a look at one of its tasks.
@@ -156,18 +162,21 @@ export const App = () => {
   const [followOn] = useState(() => new FollowOnService(appAnalytics))
   useUiTracking(appAnalytics)
   useEffect(() => shortcuts.dispose, [shortcuts])
+  useEffect(() => undo.dispose, [undo])
   useKeyboardShortcuts(shortcuts)
   return (
     <QueryClientProvider client={queryClient}>
-      <TaskChangesContext.Provider value={taskChanges}>
-        <SessionPlanContext.Provider value={sessionPlan}>
-          <ShortcutContext.Provider value={shortcuts}>
-            <FollowOnContext.Provider value={followOn}>
-              <Layout />
-            </FollowOnContext.Provider>
-          </ShortcutContext.Provider>
-        </SessionPlanContext.Provider>
-      </TaskChangesContext.Provider>
+      <UndoContext.Provider value={undo}>
+        <TaskChangesContext.Provider value={taskChanges}>
+          <SessionPlanContext.Provider value={sessionPlan}>
+            <ShortcutContext.Provider value={shortcuts}>
+              <FollowOnContext.Provider value={followOn}>
+                <Layout />
+              </FollowOnContext.Provider>
+            </ShortcutContext.Provider>
+          </SessionPlanContext.Provider>
+        </TaskChangesContext.Provider>
+      </UndoContext.Provider>
     </QueryClientProvider>
   )
 }

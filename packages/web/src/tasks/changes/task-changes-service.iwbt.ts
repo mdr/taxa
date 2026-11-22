@@ -6,6 +6,7 @@ import type { InProcessServer } from "../../../../server/src/test-support/in-pro
 import { useInProcessServer } from "../../../../server/src/test-support/use-in-process-server.ts"
 import type { TestUser } from "../../../../server/src/test-support/test-user.ts"
 import type { TaskCache } from "./task-cache.ts"
+import type { Version } from "@taxa/shared/units"
 import { CONFLICT_NOTICE, TaskChangesService, TaskChangeType, type TaskChange } from "./task-changes-service.ts"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { ClearableField } from "@taxa/shared/tasks/task-requests"
@@ -34,6 +35,8 @@ interface Setup {
   cache: FakeTaskCache
   service: TaskChangesService
   telemetry: TestTelemetry
+  /** The changes noted for undoing, by the version each brought its task to. */
+  recorded: [Version, TaskChangeType][]
 }
 
 /** Matt with a task, and a service making his changes through a cache of its own. */
@@ -43,12 +46,17 @@ const makeTaskChangesService = async (server: InProcessServer): Promise<Setup> =
   const task = await matt.addTask("Fix the tap", { domain: "H" })
   const cache = new FakeTaskCache()
   const telemetry = testTelemetry()
+  const recorded: [Version, TaskChangeType][] = []
+  const history = {
+    recordChange: (changed: Task, change: TaskChange) => void recorded.push([changed.version, change.type])
+  }
   return {
     matt,
     task,
     cache,
     telemetry,
-    service: new TaskChangesService(matt.client, cache, telemetry.analytics, telemetry.logger)
+    recorded,
+    service: new TaskChangesService(matt.client, cache, telemetry.analytics, telemetry.logger, history)
   }
 }
 
@@ -61,6 +69,18 @@ describe("TaskChangesService", () => {
     expect(changed).toMatchObject({ priority: Priority.HIGH, version: task.version + 1 })
     expect(cache.latest(task.id)).toEqual(changed)
     expect(service.state.problems).toEqual({ [task.id]: undefined })
+  })
+
+  it("notes each change made for undoing, but not one that changed nothing or was refused", async ({ server }) => {
+    const { task, service, recorded } = await makeTaskChangesService(server)
+    await service.change(task, prioritise(Priority.HIGH))
+    await service.change(task, prioritise(Priority.HIGH))
+    await service.change(task, rename("x".repeat(501)))
+    await service.change(task, { type: TaskChangeType.DELETE })
+    expect(recorded).toEqual([
+      [task.version + 1, TaskChangeType.UPDATE],
+      [task.version + 2, TaskChangeType.DELETE]
+    ])
   })
 
   it("tracks each change made, with the fields it touched, and logs those refused", async ({ server }) => {

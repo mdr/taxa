@@ -30,6 +30,7 @@ export const ANALYTICS_CODES = {
     captured: "task.captured",
     changed: "task.changed",
     undone: "task.undone",
+    redone: "task.redone",
     refCopied: "task.refCopied",
     followOnStarted: "task.followOnStarted",
     followOnAdded: "task.followOnAdded"

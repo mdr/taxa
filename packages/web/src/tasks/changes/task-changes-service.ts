@@ -55,6 +55,11 @@ export interface TaskChangesApi {
   restoreTask: (ref: string) => Promise<Task>
 }
 
+/** Where each change made is noted, so it can be undone. */
+export interface ChangeHistory {
+  recordChange: (task: Task, change: TaskChange) => void
+}
+
 export interface TaskChangesState {
   /** Why a task's last change didn't happen, by task, until its next change or the next page. */
   problems: Readonly<Partial<Record<TaskId, string>>>
@@ -76,11 +81,19 @@ export class TaskChangesService extends AbstractService<TaskChangesState> implem
   readonly #cache: TaskCache
   readonly #analytics: Analytics
   readonly #logger: Logger<WebLogCode>
+  readonly #history: ChangeHistory
   /** Each task's latest change, which its next one waits for. */
   readonly #queues = new Map<TaskId, Promise<unknown>>()
 
-  constructor(api: TaskChangesApi, cache: TaskCache, analytics: Analytics, logger: Logger<WebLogCode>) {
+  constructor(
+    api: TaskChangesApi,
+    cache: TaskCache,
+    analytics: Analytics,
+    logger: Logger<WebLogCode>,
+    history: ChangeHistory
+  ) {
     super({ problems: {} })
+    this.#history = history
     this.#api = api
     this.#cache = cache
     this.#analytics = analytics
@@ -112,6 +125,7 @@ export class TaskChangesService extends AbstractService<TaskChangesState> implem
         change: change.type,
         ...changeFields(change)
       })
+      if (latest.version !== base.version) this.#history.recordChange(latest, change)
       await this.#cache.show(latest)
       return latest
     } catch (error) {

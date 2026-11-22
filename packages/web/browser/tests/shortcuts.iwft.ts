@@ -50,6 +50,8 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Add a task C",
     "Show keyboard shortcuts ?",
     "Find a command or task ⌘K",
+    "Undo the last change ⌘Z",
+    "Redo what was undone ⌘⇧Z",
     "Inbox G then I",
     "Home G then H",
     "Search the list /",
@@ -69,19 +71,19 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Rename the task R",
     "Add a follow-on task F",
     "Delete the task Delete or Backspace",
-    "Leave the list Esc",
-    "Undo ticking off or deleting a task ⌘Z"
+    "Leave the list Esc"
   ])
   await help.expectAccessible()
   await help.setSingleKeys(false)
   await help.expectShortcuts([
     "Find a command or task ⌘K",
+    "Undo the last change ⌘Z",
+    "Redo what was undone ⌘⇧Z",
     "Next task ↓",
     "Previous task ↑",
     "Open the task Enter",
     "Delete the task Delete or Backspace",
-    "Leave the list Esc",
-    "Undo ticking off or deleting a task ⌘Z"
+    "Leave the list Esc"
   ])
   await help.closeWithEscape()
 

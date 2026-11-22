@@ -11,7 +11,7 @@ import { TaskChangeType, type TaskChangesActions } from "../changes/task-changes
 import { startedOrStopped } from "../in-progress.ts"
 import type { Analytics } from "../../telemetry/analytics.ts"
 import type { ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
-import { restoringStatus } from "./restore-status.ts"
+import type { UndoActions } from "../../undo/undo-service.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 
 /** How long the offer to undo a tick stays. */
@@ -35,8 +35,6 @@ export interface ListSessionState {
   undoable: Task | undefined
   /** Which of those it was. */
   undoes: Undo
-  /** A task ticked off, as it was before: what undoing the tick puts back. */
-  before: Task | undefined
   /** The task the keyboard is on, if any. */
   highlighted: TaskId | undefined
   /** What's typed to find tasks in the list: only those it finds show. */
@@ -58,6 +56,7 @@ export interface ListSessionActions {
   toggle: (task: Task) => Promise<void>
   /** Starts working on a task, or stops if it's in progress. */
   startOrStop: (task: Task) => Promise<void>
+  /** Undoes the tick or delete on offer, or else the tab's last change. */
   undo: () => Promise<void>
   /** Marks a task done, with a chance to undo it, as a tick does. */
   complete: (task: Task) => Promise<void>
@@ -92,6 +91,7 @@ export const isCelebrated = (state: ListSessionState, id: TaskId): boolean =>
 /** One visit to a list: what's been ticked off on it, and the chance to take a tick back. */
 export class ListSessionService extends AbstractService<ListSessionState> implements ListSessionActions {
   readonly #changes: TaskChangesActions
+  readonly #history: Pick<UndoActions, "undo" | "undoChange">
   readonly #scheduler: Scheduler
   readonly #analytics: Analytics
   #cancelUndoOffer: (() => void) | undefined
@@ -101,19 +101,25 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   readonly #opened: OpenedMemory | undefined
 
   /** With `opened`, the task last opened from the list starts highlighted, as you left it. */
-  constructor(changes: TaskChangesActions, scheduler: Scheduler, analytics: Analytics, opened?: OpenedMemory) {
+  constructor(
+    changes: TaskChangesActions,
+    history: Pick<UndoActions, "undo" | "undoChange">,
+    scheduler: Scheduler,
+    analytics: Analytics,
+    opened?: OpenedMemory
+  ) {
     super({
       ticked: {},
       pending: {},
       undoable: undefined,
       undoes: Undo.TICK,
-      before: undefined,
       highlighted: opened?.recall(),
       search: "",
       opening: undefined,
       renaming: undefined
     })
     this.#changes = changes
+    this.#history = history
     this.#scheduler = scheduler
     this.#analytics = analytics
     this.#opened = opened
@@ -147,16 +153,20 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   }
 
   readonly undo = async (): Promise<void> => {
-    const { undoable: task, undoes, before } = this.state
-    if (!task) return
+    const { undoable: task, undoes } = this.state
+    if (!task) return this.#history.undo()
     this.dismissUndo()
     if (undoes === Undo.DELETE) {
-      this.#analytics.track(ANALYTICS_CODES.task.undone, `undid deleting ${task.ref}`, { taskId: task.id, undoes })
-      await this.#changes.change(task, { type: TaskChangeType.RESTORE })
+      await this.#history.undoChange(task)
       return
     }
-    this.#analytics.track(ANALYTICS_CODES.task.undone, `undid ticking off ${task.ref}`, { taskId: task.id, undoes })
-    await this.#setStatus(task, before ? restoringStatus(before) : { status: TaskStatus.OPEN })
+    this.updateState((state) => ({ ...state, pending: { ...state.pending, [task.id]: false } }))
+    const undone = await this.#history.undoChange(task)
+    this.updateState((state) => ({
+      ...state,
+      pending: { ...state.pending, [task.id]: undefined },
+      ticked: undone ? { ...state.ticked, [task.id]: undefined } : state.ticked
+    }))
   }
 
   readonly delete = async (task: Task, shown: readonly TaskId[]): Promise<void> => {
@@ -230,8 +240,7 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
       ...state,
       ticked: { ...state.ticked, [task.id]: done ? changed : undefined },
       undoable: done ? changed : state.undoable?.id === task.id ? undefined : state.undoable,
-      undoes: done ? Undo.TICK : state.undoes,
-      before: done ? task : state.before
+      undoes: done ? Undo.TICK : state.undoes
     }))
     if (done) this.#offerUndo()
   }

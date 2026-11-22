@@ -25,6 +25,7 @@ const setUp = (
   found: number[]
   followedOn: Task[]
   removed: Task[]
+  undone: number[]
 } => {
   const followedOn: Task[] = []
   const removed: Task[] = []
@@ -38,7 +39,12 @@ const setUp = (
     },
     clearProblems: () => undefined
   }
-  const session = new ListSessionService(changes, new FakeScheduler(), testTelemetry().analytics)
+  const undone: number[] = []
+  const history = {
+    undo: () => Promise.resolve(void undone.push(1)),
+    undoChange: () => Promise.resolve(undefined)
+  }
+  const session = new ListSessionService(changes, history, new FakeScheduler(), testTelemetry().analytics)
   const opened: Task[] = []
   const left: number[] = []
   const found: number[] = []
@@ -61,7 +67,7 @@ const setUp = (
       () => found.push(1)
     )
   )
-  return { press: shortcuts.press, session, opened, toggled, made, left, found, followedOn, removed }
+  return { press: shortcuts.press, session, opened, toggled, made, left, found, followedOn, removed, undone }
 }
 
 describe("listShortcuts", () => {
@@ -125,9 +131,10 @@ describe("listShortcuts", () => {
     expect(found).toEqual([1])
   })
 
-  it("leaves ⌘Z to the browser when there's no tick to undo", () => {
-    const { press } = setUp()
-    expect(press("mod+z")).toBe(false)
+  it("undoes the tab's last change with ⌘Z when there's no tick to undo", () => {
+    const { press, undone } = setUp()
+    expect(press("mod+z")).toBe(true)
+    expect(undone).toEqual([1])
   })
 
   it("opens the highlighted task's menu at what the task page's keys change, or whole with .", () => {

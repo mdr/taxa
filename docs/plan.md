@@ -34,7 +34,7 @@ with its Markdown toggle. The web app saves notes in the canonical style;
 normalising what the API receives from others is still to come.
 
 Also added after first use: keyboard shortcuts. `C` adds a task, `G` then `I` or
-a domain's prefix goes to a list, `⌘Z` undoes a tick, and `?` lists them, with
+a domain's prefix goes to a list, `⌘Z` undoes the tab's last change of any kind and `⇧⌘Z` redoes it, and `?` lists them, with
 single-key ones able to be turned off. In a list, `J`/`K` or the arrows move
 through the tasks, `Enter` opens one and `X` ticks it off; on a task's page, a
 key opens each picker (`S`, `P`, `M`, `D`, `T`, `H`, `E`), `R` renames, `N`
@@ -68,7 +68,7 @@ with `X` and `I`, replanning, and a summary at the end. Not yet in the CLI.
 - Key scopes enforced everywhere. Delegating to agents, claims, stale claims
 - Threads, and the timeline
 - The change feed and live updates over SSE
-- Undo and trash
+- Undo and trash: undo in the API, `taxa undo`, and `⌘Z`/`⇧⌘Z` done; undo from the activity log and a trash page next
 - The attention list in the API and CLI
 
 ## Stage 4: Sharing and going online

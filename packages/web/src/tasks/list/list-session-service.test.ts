@@ -5,8 +5,9 @@ import { describe, expect, it } from "vite-plus/test"
 import { isCelebrated, isShownDone, ListSessionService, Step, Undo, UNDO_OFFERED_MS } from "./list-session-service.ts"
 import { FakeScheduler } from "../../test-support/fake-scheduler.ts"
 import { testTelemetry, type TestTelemetry } from "../../test-support/test-telemetry.ts"
-import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { TaskChangeType, type TaskChange, type TaskChangesActions } from "../changes/task-changes-service.ts"
+import type { UndoActions } from "../../undo/undo-service.ts"
+import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 
 /** Task changes the test answers itself, one at a time, as the server would. */
 class FakeTaskChanges implements TaskChangesActions {
@@ -32,21 +33,46 @@ class FakeTaskChanges implements TaskChangesActions {
   }
 }
 
+/** The tab's history, undoing what it's asked to as the server would, or refusing. */
+class FakeHistory implements Pick<UndoActions, "undo" | "undoChange"> {
+  readonly undone: Task[] = []
+  undoneLast = 0
+  refuse = false
+
+  readonly undo = (): Promise<void> => {
+    this.undoneLast += 1
+    return Promise.resolve()
+  }
+
+  readonly undoChange = (task: Task): Promise<Task | undefined> => {
+    this.undone.push(task)
+    return Promise.resolve(this.refuse ? undefined : { ...task, status: TaskStatus.OPEN, version: task.version + 1 })
+  }
+}
+
 const makeListSessionService = (): {
+  history: FakeHistory
   changes: FakeTaskChanges
   scheduler: FakeScheduler
   session: ListSessionService
   telemetry: TestTelemetry
 } => {
   const changes = new FakeTaskChanges()
+  const history = new FakeHistory()
   const scheduler = new FakeScheduler()
   const telemetry = testTelemetry()
-  return { changes, scheduler, telemetry, session: new ListSessionService(changes, scheduler, telemetry.analytics) }
+  return {
+    changes,
+    history,
+    scheduler,
+    telemetry,
+    session: new ListSessionService(changes, history, scheduler, telemetry.analytics)
+  }
 }
 
 describe("ListSessionService", () => {
-  it("deletes a task, offering to undo it, which restores it", async () => {
-    const { changes, session, telemetry } = makeListSessionService()
+  it("deletes a task, offering to undo it", async () => {
+    const { changes, history, session } = makeListSessionService()
     const task = makeTask({ title: "Fix the tap" })
     const deleting = session.delete(task, [task.id])
     await changes.answer()
@@ -54,27 +80,9 @@ describe("ListSessionService", () => {
     expect(changes.made.map(({ change }) => change.type)).toEqual([TaskChangeType.DELETE])
     expect(session.state.undoable?.id).toBe(task.id)
     expect(session.state.undoes).toBe(Undo.DELETE)
-    const undoing = session.undo()
-    await changes.answer()
-    await undoing
-    expect(changes.made.map(({ change }) => change.type)).toEqual([TaskChangeType.DELETE, TaskChangeType.RESTORE])
+    await session.undo()
+    expect(history.undone.map(({ id, version }) => [id, version])).toEqual([[task.id, task.version + 1]])
     expect(session.state.undoable).toBeUndefined()
-    expect(telemetry.tracked().at(-1)).toEqual([ANALYTICS_CODES.task.undone, { taskId: task.id, undoes: Undo.DELETE }])
-  })
-
-  it("undoes ticking off a task by putting back the status it had, with what it was waiting on", async () => {
-    const { changes, session } = makeListSessionService()
-    const task = makeTask({ status: TaskStatus.WAITING, waitingOn: "the plumber", followUp: "2026-01-12" })
-    const ticking = session.toggle(task)
-    await changes.answer()
-    await ticking
-    const undoing = session.undo()
-    await changes.answer()
-    await undoing
-    expect(changes.made.at(-1)?.change).toEqual({
-      type: TaskChangeType.STATUS,
-      request: { status: TaskStatus.WAITING, waitingOn: "the plumber", followUp: "2026-01-12" }
-    })
   })
 
   it("offers nothing to undo when the server refuses a delete", async () => {
@@ -90,12 +98,12 @@ describe("ListSessionService", () => {
     const { changes, scheduler, telemetry } = makeListSessionService()
     const memory = new Map<string, TaskId>()
     const opened = { recall: () => memory.get("list"), remember: (id: TaskId) => void memory.set("list", id) }
-    const first = new ListSessionService(changes, scheduler, telemetry.analytics, opened)
+    const first = new ListSessionService(changes, new FakeHistory(), scheduler, telemetry.analytics, opened)
     expect(first.state.highlighted).toBeUndefined()
     first.rememberOpened(makeTask({ number: 2 }))
-    expect(new ListSessionService(changes, scheduler, telemetry.analytics, opened).state.highlighted).toBe(
-      makeTask({ number: 2 }).id
-    )
+    expect(
+      new ListSessionService(changes, new FakeHistory(), scheduler, telemetry.analytics, opened).state.highlighted
+    ).toBe(makeTask({ number: 2 }).id)
   })
 
   it("keeps what's typed to search the list, tracked once a visit", () => {
@@ -134,22 +142,31 @@ describe("ListSessionService", () => {
     expect(session.state.undoable).toBeUndefined()
   })
 
-  it("undoes a tick, which reopens the task", async () => {
-    const { changes, session, telemetry } = makeListSessionService()
+  it("undoes a tick through the tab's history, unticking it at once", async () => {
+    const { changes, history, session } = makeListSessionService()
     const task = makeTask()
     const ticking = session.toggle(task)
     await changes.answer()
     await ticking
 
     const undoing = session.undo()
-    expect(telemetry.tracked()).toEqual([[ANALYTICS_CODES.task.undone, { taskId: task.id, undoes: Undo.TICK }]])
     expect(session.state.undoable).toBeUndefined()
     expect(isShownDone(session.state, task)).toBe(false)
-    expect(changes.asked[0]?.change).toEqual({ type: TaskChangeType.STATUS, request: { status: TaskStatus.OPEN } })
-    await changes.answer()
     await undoing
+    expect(history.undone.map(({ status }) => status)).toEqual([TaskStatus.DONE])
     expect(session.state.ticked[task.id]).toBeUndefined()
     expect(isShownDone(session.state, task)).toBe(false)
+  })
+
+  it("keeps the tick when undoing it is refused", async () => {
+    const { changes, history, session } = makeListSessionService()
+    const task = makeTask()
+    const ticking = session.toggle(task)
+    await changes.answer()
+    await ticking
+    history.refuse = true
+    await session.undo()
+    expect(isShownDone(session.state, task)).toBe(true)
   })
 
   it("withdraws the offer to undo after a few seconds, leaving the task done", async () => {
@@ -251,10 +268,11 @@ describe("ListSessionService", () => {
     expect(session.state.undoable).toBeUndefined()
   })
 
-  it("does nothing on Undo when there's nothing to undo", async () => {
-    const { changes, session } = makeListSessionService()
+  it("undoes the tab's last change when there's no tick or delete on offer", async () => {
+    const { history, session } = makeListSessionService()
     await session.undo()
-    expect(changes.asked).toEqual([])
+    expect(history.undoneLast).toBe(1)
+    expect(history.undone).toEqual([])
   })
 
   it("stops its timer when the list goes", async () => {

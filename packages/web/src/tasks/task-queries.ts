@@ -10,6 +10,7 @@ import type { CreateTaskRequest, ListTasksQuery } from "@taxa/shared/tasks/task-
 import type { Task } from "@taxa/shared/tasks/task"
 import { queryKeys } from "../api/query-keys.ts"
 import { taxaApi } from "../api/taxa-api.ts"
+import { useUndo } from "../undo/undo-service.ts"
 
 /** The tasks a query finds; not asked for while `enabled` is false. */
 export const useTasks = (query: ListTasksQuery, enabled = true): UseQueryResult<Task[]> =>
@@ -24,13 +25,16 @@ export const useActivity = (ref: string): UseQueryResult<Activity[]> =>
 
 export const useCreateTask = (): UseMutationResult<Task, Error, CreateTaskRequest> => {
   const queryClient = useQueryClient()
+  const { recordAdded } = useUndo()
   return useMutation({
     // A fresh key per capture, so a retried request can't add it twice.
     mutationFn: (request) => taxaApi.createTask(request, crypto.randomUUID()),
-    onSuccess: () =>
-      Promise.all([
+    onSuccess: (task) => {
+      recordAdded(task)
+      return Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.allTasks }),
         queryClient.invalidateQueries({ queryKey: queryKeys.tags })
       ])
+    }
   })
 }

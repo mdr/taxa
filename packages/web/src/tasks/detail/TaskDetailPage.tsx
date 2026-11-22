@@ -29,6 +29,7 @@ import { UndoToast } from "../list/UndoToast.tsx"
 import { useServiceState } from "../../services/service-hooks.ts"
 import { realScheduler } from "../../services/scheduler.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
+import { useUndo } from "../../undo/undo-service.ts"
 
 export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
   const query = useTask(taskRef)
@@ -36,7 +37,8 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
   const changes = useTaskChanges()
   const { change: changeTask } = changes
   // Marking it done here offers to undo it, or add what follows on, as ticking it off in a list does.
-  const [session] = useState(() => new ListSessionService(changes, realScheduler, appAnalytics))
+  const history = useUndo()
+  const [session] = useState(() => new ListSessionService(changes, history, realScheduler, appAnalytics))
   useEffect(() => session.dispose, [session])
   const undoable = useServiceState(session, (state) => state.undoable)
   const undoes = useServiceState(session, (state) => state.undoes)
@@ -57,9 +59,8 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
     { keys: ["Escape"], description: "Back to the list", group: ShortcutGroup.GO, run: () => navigate(listPath) },
     {
       keys: ["mod+z"],
-      description: "Undo marking it done",
-      group: ShortcutGroup.TASKS,
-      available: () => session.state.undoable !== undefined,
+      description: "Undo the last change",
+      group: ShortcutGroup.GENERAL,
       run: () => void session.undo()
     },
     { keys: ["r"], description: "Rename", group: ShortcutGroup.TASKS, run: () => requestFocus(FocusTarget.TITLE) },

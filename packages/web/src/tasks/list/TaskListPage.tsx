@@ -18,6 +18,7 @@ import { TagRename } from "../../tags/TagRename.tsx"
 import { useFollowOn } from "../follow-ons/follow-on-service.ts"
 import { realScheduler } from "../../services/scheduler.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
+import { useUndo } from "../../undo/undo-service.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { useServiceState } from "../../services/service-hooks.ts"
 import { useTaskChanges } from "../changes/task-changes-service.ts"
@@ -67,7 +68,10 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
   const home = isHome(list)
   // A session for each visit: the routes give each list its own page.
   const changes = useTaskChanges()
-  const [session] = useState(() => new ListSessionService(changes, realScheduler, appAnalytics, openedMemoryFor(list)))
+  const history = useUndo()
+  const [session] = useState(
+    () => new ListSessionService(changes, history, realScheduler, appAnalytics, openedMemoryFor(list))
+  )
   useEffect(() => session.dispose, [session])
   const ticked = useServiceState(session, (state) => state.ticked)
   const undoable = useServiceState(session, (state) => state.undoable)

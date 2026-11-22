@@ -11,6 +11,7 @@ import { FollowOnDialog } from "./FollowOnDialog.ts"
 import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
 import { taskListPageTestIds } from "../../src/tasks/list/TaskListPageTestIds.ts"
 import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
+import { UndoNotice } from "./UndoNotice.ts"
 import { undoToastTestIds } from "../../src/tasks/list/UndoToastTestIds.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
 import { tagChipTestIds } from "../../src/tags/TagChipTestIds.ts"
@@ -22,6 +23,7 @@ export class TaskListPage extends PageObject {
   readonly #page: Page
   readonly sidebar: Sidebar
   readonly keyboard: Keyboard
+  readonly undoNotice: UndoNotice
   /** On Today: what might want planning for it. */
   readonly attention: TodayAttention
 
@@ -31,6 +33,7 @@ export class TaskListPage extends PageObject {
     this.sidebar = new Sidebar(page)
     this.attention = new TodayAttention(page)
     this.keyboard = new Keyboard(page)
+    this.undoNotice = new UndoNotice(page)
   }
 
   #row(title: string): Locator {

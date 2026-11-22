@@ -10,16 +10,29 @@ const domains = [
 
 const setUp = (
   location: string
-): { went: string[]; focused: FocusTarget[]; helped: number[]; shortcuts: readonly Shortcut[] } => {
+): {
+  went: string[]
+  focused: FocusTarget[]
+  helped: number[]
+  history: string[]
+  shortcuts: readonly Shortcut[]
+} => {
   const went: string[] = []
   const focused: FocusTarget[] = []
   const helped: number[] = []
-  const shortcuts = appShortcuts(location, (to) => went.push(to), domains, {
-    openHelp: () => helped.push(1),
-    openMenu: () => helped.push(2),
-    requestFocus: (target) => focused.push(target)
-  })
-  return { went, focused, helped, shortcuts }
+  const history: string[] = []
+  const shortcuts = appShortcuts(
+    location,
+    (to) => went.push(to),
+    domains,
+    {
+      openHelp: () => helped.push(1),
+      openMenu: () => helped.push(2),
+      requestFocus: (target) => focused.push(target)
+    },
+    { undo: () => Promise.resolve(void history.push("undo")), redo: () => Promise.resolve(void history.push("redo")) }
+  )
+  return { went, focused, helped, history, shortcuts }
 }
 
 const run = (shortcuts: readonly Shortcut[], keys: string): void => {
@@ -54,5 +67,12 @@ describe("appShortcuts", () => {
     run(shortcuts, "?")
     run(shortcuts, "mod+k")
     expect(helped).toEqual([1, 2])
+  })
+
+  it("undoes and redoes the last change, anywhere", () => {
+    const { history, shortcuts } = setUp("/somewhere")
+    run(shortcuts, "mod+z")
+    run(shortcuts, "mod+shift+z")
+    expect(history).toEqual(["undo", "redo"])
   })
 })
