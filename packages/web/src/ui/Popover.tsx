@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react"
 import styles from "./Popover.module.css"
+import { appAnalytics } from "../telemetry/app-telemetry.ts"
+import { trackUi, UiEvent } from "../telemetry/ui-tracking.ts"
 import { ShortcutGroup, ShortcutScope, useShortcuts, type KeyShortcut } from "../shortcuts/shortcut-service.ts"
 
 export enum PopoverLook {
@@ -23,6 +25,8 @@ interface PopoverProps {
   trigger: ReactNode
   look: PopoverLook
   testId: string
+  /** What it's for, for analytics, which track it opening and closing: `TaskRow.menu`. */
+  track: string
   /** On the trigger, for tests and styling: what it shows. */
   value?: string
   /** Line the panel up with the trigger's right edge instead of its left. */
@@ -43,6 +47,7 @@ export const Popover = ({
   trigger,
   look,
   testId,
+  track,
   value,
   alignEnd = false,
   shortcut,
@@ -50,6 +55,12 @@ export const Popover = ({
   children
 }: PopoverProps) => {
   const [open, setOpen] = useState(false)
+  const wasOpen = useRef(false)
+  useEffect(() => {
+    if (open === wasOpen.current) return
+    wasOpen.current = open
+    trackUi(appAnalytics, open ? UiEvent.OPENED : UiEvent.CLOSED, track)
+  }, [open, track])
   const [into, setInto] = useState<string | undefined>(undefined)
   /** Where the keyboard was when it was opened from elsewhere, to go back to when it closes. */
   const returnTo = useRef<HTMLElement | undefined>(undefined)
@@ -128,6 +139,7 @@ export const Popover = ({
           setOpen(!open)
         }}
         data-testid={testId}
+        data-track=""
         data-value={value}
       >
         {trigger}

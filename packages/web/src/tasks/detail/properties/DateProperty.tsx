@@ -45,6 +45,7 @@ export const DateProperty = ({
     label={label}
     look={value ? PopoverLook.CHIP : PopoverLook.EMPTY_CHIP}
     testId={testId}
+    track={testId}
     value={value ?? ""}
     shortcut={shortcut}
     trigger={
@@ -63,6 +64,7 @@ export const DateProperty = ({
   >
     {(close) => (
       <DatePicker
+        track={testId}
         value={value}
         today={today}
         time={time}

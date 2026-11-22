@@ -100,6 +100,7 @@ const MainOptions = ({
   const WhenIcon = WHEN_ICONS[whenOf(task, today)]
   return (
     <OptionList
+      track="TaskRowMenu.main"
       options={[
         { value: Action.RENAME, label: "Rename", icon: <Pencil size={15} aria-hidden /> },
         {
@@ -187,6 +188,7 @@ const SectionChoices = ({
     case Section.STATUS:
       return (
         <OptionList
+          track="TaskRowMenu.status"
           options={Object.values(TaskStatus).map((status) => ({
             value: status,
             label: capitalised(STATUS_TEXT[status]),
@@ -199,6 +201,7 @@ const SectionChoices = ({
     case Section.PRIORITY:
       return (
         <OptionList
+          track="TaskRowMenu.priority"
           options={Object.values(Priority).map((priority) => ({
             value: priority,
             label: capitalised(PRIORITY_TEXT[priority]),
@@ -213,6 +216,7 @@ const SectionChoices = ({
     case Section.WHEN:
       return (
         <OptionList
+          track="TaskRowMenu.when"
           options={whenOptions(task, today)}
           selected={whenOf(task, today)}
           onChoose={(choice) => {
@@ -225,6 +229,7 @@ const SectionChoices = ({
     case Section.ON_A_DAY:
       return (
         <DatePicker
+          track="TaskRowMenu.onADay"
           value={task.scheduled}
           today={today}
           onChoose={(date) =>
@@ -237,7 +242,12 @@ const SectionChoices = ({
       )
     case Section.DUE:
       return (
-        <DatePicker value={task.due} today={today} onChoose={(date) => apply(setOrClear(ClearableField.DUE, date))} />
+        <DatePicker
+          track="TaskRowMenu.due"
+          value={task.due}
+          today={today}
+          onChoose={(date) => apply(setOrClear(ClearableField.DUE, date))}
+        />
       )
     case Section.ESTIMATE:
       return (
@@ -251,6 +261,7 @@ const SectionChoices = ({
     case Section.MOVE:
       return (
         <OptionList
+          track="TaskRowMenu.move"
           options={[
             ...domains.map(({ name, prefix }) => ({
               value: prefix,
@@ -302,6 +313,7 @@ const MenuPanel = ({ into, ...props }: PanelProps & { into: Section | undefined 
             className={styles.back}
             onClick={() => setSection(Section.MAIN)}
             data-testid={taskRowTestIds.menuBack}
+            data-track="TaskRow.menuBack"
           >
             <ChevronLeft size={15} aria-hidden />
             {SECTION_TEXT[section]}
@@ -333,6 +345,7 @@ export const TaskRowMenu = ({
       label={`Change ${task.title}`}
       look={PopoverLook.ICON}
       testId={taskRowTestIds.menu}
+      track="TaskRow.menu"
       trigger={<Ellipsis size={16} aria-hidden />}
       opening={
         opening && opening.entry !== RowMenuEntry.FILE

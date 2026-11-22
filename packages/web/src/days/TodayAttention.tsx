@@ -48,6 +48,7 @@ export const TodayAttention = () => {
               }
               aria-label={`Plan ${task.title} for today`}
               data-testid={todayAttentionTestIds.add}
+              data-track="TodayAttention.add"
             >
               <Plus size={13} aria-hidden />
               Today

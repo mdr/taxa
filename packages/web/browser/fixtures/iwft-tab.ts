@@ -45,9 +45,10 @@ export const newTab = async (
   const logged: string[] = []
   page.on("console", (message) => {
     if (message.type() === "error") console.log(`[${label} console.error]`, message.text().slice(0, 200))
-    // The app's log lines start with their code.
-    const code = /^([a-z][A-Za-z]*\.[a-z][A-Za-z]*): /.exec(message.text())?.[1]
-    if (code) logged.push(code)
+    // The app's log lines start with their code; a control's, `ui.opened`, then name the control: `ui.opened TaskRow.menu`.
+    const [, code, control] =
+      /^([a-z][A-Za-z]*\.[a-z][A-Za-z]*): (?:.*? ([A-Z][A-Za-z]*\.\S+))?/.exec(message.text()) ?? []
+    if (code) logged.push(code.startsWith("ui.") && control ? `${code} ${control}` : code)
   })
   return new Tab(page, baseUrl, refused, logged)
 }

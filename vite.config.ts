@@ -586,6 +586,12 @@ export default defineConfig({
         }
       },
       {
+        files: ["packages/web/src/**/*.tsx"],
+        rules: {
+          "tracking/tracked-controls": "error"
+        }
+      },
+      {
         files: ["**/*.config.{js,ts}"],
         rules: {
           "max-lines": "off",
@@ -602,6 +608,7 @@ export default defineConfig({
       { name: "sonarjs", specifier: "eslint-plugin-sonarjs" },
       { name: "folders", specifier: "./lint/folder-size.ts" },
       { name: "test-ids", specifier: "./lint/test-ids.ts" },
+      { name: "tracking", specifier: "./lint/tracked-controls.ts" },
       { name: "boundaries", specifier: "./lint/boundaries/plugin.ts" }
     ]
   },

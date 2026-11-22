@@ -18,6 +18,7 @@ export const TagChip = ({ name, onRemove }: { name: string; onRemove?: () => voi
         aria-label={`Take off the tag ${name}`}
         onClick={onRemove}
         data-testid={tagChipTestIds.remove}
+        data-track="TagChip.remove"
       >
         <X size={12} aria-hidden />
       </button>

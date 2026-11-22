@@ -1,3 +1,4 @@
+import { trackUi, UiEvent } from "../telemetry/ui-tracking.ts"
 import { When } from "@taxa/shared/tasks/when"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { Search } from "lucide-react"
@@ -42,7 +43,10 @@ export const CommandMenu = () => {
   const dialog = useRef<HTMLDialogElement>(null)
   const listId = useId()
   // Not closed on unmount: closing fires onClose, which in development's double effects shuts it at once.
-  useEffect(() => dialog.current?.showModal(), [])
+  useEffect(() => {
+    dialog.current?.showModal()
+    trackUi(appAnalytics, UiEvent.OPENED, "CommandMenu.dialog")
+  }, [])
   const matches = menu.matches(query)
   const run = (command: Command | undefined): void => {
     if (!command) return
@@ -57,6 +61,7 @@ export const CommandMenu = () => {
       onClose={closeMenu}
       aria-label="Commands"
       data-testid={commandMenuTestIds.dialog}
+      data-track="CommandMenu.dialog"
     >
       <div className={styles.searchRow}>
         <Search size={18} aria-hidden />
@@ -81,6 +86,7 @@ export const CommandMenu = () => {
           aria-activedescendant={matches.length > 0 ? `${listId}-${selected}` : undefined}
           aria-label="Command"
           data-testid={commandMenuTestIds.search}
+          data-track="CommandMenu.search"
         />
       </div>
       {matches.length === 0 ? (

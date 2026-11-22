@@ -25,6 +25,7 @@ export const UndoToast = ({ task, undoes }: { task: Task; undoes: Undo }) => {
           className={styles.followOn}
           onClick={() => start(task)}
           data-testid={undoToastTestIds.followOn}
+          data-track="UndoToast.followOn"
         >
           <Plus size={14} aria-hidden /> Follow-on
         </button>
@@ -35,6 +36,7 @@ export const UndoToast = ({ task, undoes }: { task: Task; undoes: Undo }) => {
         onClick={() => void undo()}
         aria-keyshortcuts="Meta+Z Control+Z"
         data-testid={undoToastTestIds.undo}
+        data-track="UndoToast.undo"
       >
         Undo
       </button>

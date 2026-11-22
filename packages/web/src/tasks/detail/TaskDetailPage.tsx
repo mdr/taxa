@@ -122,6 +122,7 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
               type="button"
               onClick={() => change({ type: TaskChangeType.RESTORE })}
               data-testid={taskDetailPageTestIds.restore}
+              data-track="TaskDetailPage.restore"
             >
               <RotateCcw size={14} aria-hidden /> Restore
             </button>

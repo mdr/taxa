@@ -2,6 +2,8 @@ import { Check } from "lucide-react"
 import type { KeyboardEvent, ReactNode } from "react"
 import styles from "./OptionList.module.css"
 import { optionListTestIds } from "./OptionListTestIds.ts"
+import { appAnalytics } from "../telemetry/app-telemetry.ts"
+import { trackUi, UiEvent } from "../telemetry/ui-tracking.ts"
 
 export interface Option {
   value: string
@@ -17,6 +19,8 @@ interface OptionListProps {
   options: Option[]
   selected?: string
   onChoose: (value: string) => void
+  /** What the choice is of, for analytics: `TaskRow.priority`. */
+  track: string
 }
 
 /** Up and down move between options. */
@@ -30,7 +34,7 @@ const moveFocus = (event: KeyboardEvent<HTMLButtonElement>): void => {
 }
 
 /** One-of-several choices in a popover. */
-export const OptionList = ({ options, selected, onChoose }: OptionListProps) => (
+export const OptionList = ({ options, selected, onChoose, track }: OptionListProps) => (
   <div className={styles.list}>
     {options.map(({ value, label, icon, detail, danger }) => (
       <button
@@ -38,9 +42,13 @@ export const OptionList = ({ options, selected, onChoose }: OptionListProps) => 
         type="button"
         className={danger ? `${styles.option} ${styles.danger}` : styles.option}
         aria-pressed={selected === undefined ? undefined : value === selected}
-        onClick={() => onChoose(value)}
+        onClick={() => {
+          trackUi(appAnalytics, UiEvent.CHOSEN, track)
+          onChoose(value)
+        }}
         onKeyDown={moveFocus}
         data-testid={optionListTestIds.option}
+        data-track=""
         data-value={value}
       >
         <span className={styles.icon}>{icon}</span>

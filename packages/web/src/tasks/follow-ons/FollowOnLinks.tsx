@@ -48,6 +48,7 @@ const FollowsOnPicker = ({
         placeholder="Find the earlier task…"
         aria-label="Find the earlier task"
         data-testid={followOnLinksTestIds.search}
+        data-track="FollowOnLinks.search"
       />
       <ul className={styles.candidates}>
         {candidates.map((candidate) => (
@@ -60,6 +61,7 @@ const FollowsOnPicker = ({
                 change({ type: TaskChangeType.UPDATE, request: { set: { followsOn: candidate.id } } })
               }}
               data-testid={followOnLinksTestIds.candidate}
+              data-track="FollowOnLinks.candidate"
             >
               <StatusIcon status={candidate.status} />
               <span className={styles.ref}>{candidate.ref}</span>{" "}
@@ -93,6 +95,7 @@ export const FollowOnLinks = ({ task, change }: { task: Task; change: (change: T
               onClick={() => change({ type: TaskChangeType.UPDATE, request: { clear: [ClearableField.FOLLOWS_ON] } })}
               aria-label={`Unlink from ${earlier.data.ref}`}
               data-testid={followOnLinksTestIds.unlink}
+              data-track="FollowOnLinks.unlink"
             >
               <X size={13} aria-hidden />
             </button>
@@ -102,6 +105,7 @@ export const FollowOnLinks = ({ task, change }: { task: Task; change: (change: T
             label="Set follows on from"
             look={PopoverLook.EMPTY_CHIP}
             testId={followOnLinksTestIds.setFollowsOn}
+            track="FollowOnLinks.setFollowsOn"
             trigger={
               <>
                 <Link2 size={13} aria-hidden /> Set…
@@ -124,6 +128,7 @@ export const FollowOnLinks = ({ task, change }: { task: Task; change: (change: T
             onClick={() => start(task)}
             aria-keyshortcuts="F"
             data-testid={followOnLinksTestIds.addFollowOn}
+            data-track="FollowOnLinks.addFollowOn"
           >
             <Plus size={13} aria-hidden /> Add follow-on
           </button>

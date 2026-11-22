@@ -1,3 +1,4 @@
+import { trackUi, UiEvent } from "../../telemetry/ui-tracking.ts"
 import { When, whenRequest } from "@taxa/shared/tasks/when"
 import type { Task } from "@taxa/shared/tasks/task"
 import { CornerDownRight, Inbox, X } from "lucide-react"
@@ -38,7 +39,10 @@ export const FollowOnDialog = ({ from }: { from: Task }) => {
   const create = useCreateTask()
   const dialog = useRef<HTMLDialogElement>(null)
   // Not closed on unmount: closing fires onClose, which in development's double effects shuts it at once.
-  useEffect(() => dialog.current?.showModal(), [])
+  useEffect(() => {
+    dialog.current?.showModal()
+    trackUi(appAnalytics, UiEvent.OPENED, "FollowOnDialog.dialog")
+  }, [])
   const submit = (event: SubmitEvent) => {
     event.preventDefault()
     if (title.trim() === "") return
@@ -63,12 +67,19 @@ export const FollowOnDialog = ({ from }: { from: Task }) => {
       onClose={end}
       aria-labelledby="follow-on-heading"
       data-testid={followOnDialogTestIds.dialog}
+      data-track="FollowOnDialog.dialog"
     >
       <div className={styles.header}>
         <h2 id="follow-on-heading" className={styles.heading}>
           Follow-on task
         </h2>
-        <button type="button" className={styles.close} onClick={() => dialog.current?.close()} aria-label="Close">
+        <button
+          type="button"
+          className={styles.close}
+          onClick={() => dialog.current?.close()}
+          aria-label="Close"
+          data-track="FollowOnDialog.close"
+        >
           <X size={16} aria-hidden />
         </button>
       </div>
@@ -86,6 +97,7 @@ export const FollowOnDialog = ({ from }: { from: Task }) => {
           placeholder="What's next?"
           autoFocus
           data-testid={followOnDialogTestIds.title}
+          data-track="FollowOnDialog.title"
         />
         <div className={styles.whens} role="radiogroup" aria-label="When">
           {WHENS.map((choice) => {
@@ -99,6 +111,7 @@ export const FollowOnDialog = ({ from }: { from: Task }) => {
                 className={styles.when}
                 onClick={() => setWhen(choice)}
                 data-testid={followOnDialogTestIds.when}
+                data-track="FollowOnDialog.when"
               >
                 <Icon size={13} aria-hidden />
                 {WHEN_TEXT[choice]}
@@ -114,6 +127,7 @@ export const FollowOnDialog = ({ from }: { from: Task }) => {
             className={styles.when}
             onClick={() => setPlace(undefined)}
             data-testid={followOnDialogTestIds.place}
+            data-track="FollowOnDialog.place"
           >
             <Inbox size={13} aria-hidden />
             Inbox
@@ -127,6 +141,7 @@ export const FollowOnDialog = ({ from }: { from: Task }) => {
               className={styles.when}
               onClick={() => setPlace(domain.id)}
               data-testid={followOnDialogTestIds.place}
+              data-track="FollowOnDialog.place"
             >
               <DomainBadge prefix={domain.prefix} />
               {domain.name}
@@ -144,6 +159,7 @@ export const FollowOnDialog = ({ from }: { from: Task }) => {
             className={styles.add}
             disabled={create.isPending || title.trim() === ""}
             data-testid={followOnDialogTestIds.add}
+            data-track="FollowOnDialog.add"
           >
             Add follow-on
           </button>

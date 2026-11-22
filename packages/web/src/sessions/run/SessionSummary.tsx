@@ -108,6 +108,7 @@ const Summary = ({ session }: { session: Session }) => {
           onChange={(event) => setNote(event.target.value)}
           onBlur={() => void run.saveNote(session, note)}
           data-testid={sessionPageTestIds.note}
+          data-track="SessionPage.note"
         />
       </div>
       {problem && (

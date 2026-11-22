@@ -35,6 +35,7 @@ export const TickBox = ({ checked, celebrate, priority, label, onChange, testId 
       onChange={onChange}
       aria-label={label}
       data-testid={testId}
+      data-track={testId}
     />
     <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden>
       <circle className={styles.ring} cx="12" cy="12" r="9.25" />

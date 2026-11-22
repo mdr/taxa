@@ -86,6 +86,7 @@ export const Onboarding = () => {
                     onChange={() => setChoices(toggled(choices, row.key))}
                     aria-label={`Start with ${row.name || `domain ${index + 1}`}`}
                     data-testid={onboardingTestIds.chosen}
+                    data-track="Onboarding.chosen"
                   />
                   <input
                     value={row.name}
@@ -96,6 +97,7 @@ export const Onboarding = () => {
                     aria-invalid={problem !== undefined}
                     aria-describedby={problem ? problemId : undefined}
                     data-testid={onboardingTestIds.name}
+                    data-track="Onboarding.name"
                   />
                   <input
                     className={styles.prefix}
@@ -107,6 +109,7 @@ export const Onboarding = () => {
                     aria-invalid={problem !== undefined}
                     aria-describedby={problem ? problemId : undefined}
                     data-testid={onboardingTestIds.prefix}
+                    data-track="Onboarding.prefix"
                   />
                   <span className={styles.example} aria-hidden="true">
                     {row.created ? "✓ added" : row.prefix ? `${row.prefix}-1` : ""}
@@ -125,6 +128,7 @@ export const Onboarding = () => {
             className={styles.another}
             onClick={() => setChoices(withAnother(choices))}
             data-testid={onboardingTestIds.another}
+            data-track="Onboarding.another"
           >
             + Another domain
           </button>
@@ -138,6 +142,7 @@ export const Onboarding = () => {
               className={styles.start}
               disabled={pending.length === 0 || create.isPending}
               data-testid={onboardingTestIds.start}
+              data-track="Onboarding.start"
             >
               {pending.length === 0
                 ? "Choose a domain to start"

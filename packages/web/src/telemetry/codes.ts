@@ -67,6 +67,14 @@ export const ANALYTICS_CODES = {
     noteSaved: "session.noteSaved",
     finishUndone: "session.finishUndone"
   },
+  ui: {
+    clicked: "ui.clicked",
+    chosen: "ui.chosen",
+    toggled: "ui.toggled",
+    edited: "ui.edited",
+    opened: "ui.opened",
+    closed: "ui.closed"
+  },
   today: {
     taskPlanned: "today.taskPlanned",
     taskUnplanned: "today.taskUnplanned",

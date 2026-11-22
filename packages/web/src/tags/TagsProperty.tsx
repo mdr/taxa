@@ -21,6 +21,7 @@ export const TagsProperty = ({ task, change }: { task: Task; change: (change: Ta
       label="Add a tag"
       look={PopoverLook.EMPTY_CHIP}
       testId={tagsPropertyTestIds.add}
+      track="TagsProperty.add"
       shortcut={{ key: "l", description: "Add a tag" }}
       trigger={
         <>

@@ -46,6 +46,7 @@ export const TitleField = ({ title, change }: { title: string; change: (change: 
       aria-label="Title"
       aria-keyshortcuts="R"
       data-testid={titleFieldTestIds.title}
+      data-track="TitleField.title"
     />
   )
 }

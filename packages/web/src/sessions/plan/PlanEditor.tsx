@@ -127,6 +127,7 @@ const SuggestionRow = ({ task, busy, onAdd }: { task: Task; busy: boolean; onAdd
         disabled={busy}
         aria-label={`Add ${task.title}`}
         data-testid={planEditorTestIds.add}
+        data-track="PlanEditor.add"
       >
         <Plus size={14} aria-hidden />
       </button>
@@ -192,6 +193,7 @@ const PlanRowItem = ({ row, busy, onRemove, onEstimated }: PlanRowItemProps) => 
         onKeyDown={keyHandler(listeners)}
         aria-label={`Move ${task.title}`}
         data-testid={planEditorTestIds.grip}
+        data-track="PlanEditor.grip"
       >
         <GripVertical size={14} aria-hidden />
       </button>
@@ -218,6 +220,7 @@ const PlanRowItem = ({ row, busy, onRemove, onEstimated }: PlanRowItemProps) => 
             disabled={busy}
             aria-label={`Take ${task.title} out`}
             data-testid={planEditorTestIds.remove}
+            data-track="PlanEditor.remove"
           >
             <X size={14} aria-hidden />
           </button>
@@ -357,6 +360,7 @@ export const PlanEditor = ({
               placeholder="Find any task…"
               aria-label="Find a task"
               data-testid={planEditorTestIds.search}
+              data-track="PlanEditor.search"
             />
           </div>
           {suggestions.length === 0 ? (

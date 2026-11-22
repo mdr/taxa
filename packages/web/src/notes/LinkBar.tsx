@@ -25,6 +25,7 @@ export const LinkBar = ({ href, onEdit, onRemove }: { href: string; onEdit: () =
       onMouseDown={keepFocus}
       onClick={onEdit}
       data-testid={linkBarTestIds.edit}
+      data-track="LinkBar.edit"
     >
       Edit
     </button>
@@ -34,6 +35,7 @@ export const LinkBar = ({ href, onEdit, onRemove }: { href: string; onEdit: () =
       onMouseDown={keepFocus}
       onClick={onRemove}
       data-testid={linkBarTestIds.remove}
+      data-track="LinkBar.remove"
     >
       Remove
     </button>

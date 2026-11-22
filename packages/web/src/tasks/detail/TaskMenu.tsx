@@ -19,11 +19,13 @@ export const TaskMenu = ({ task, change }: { task: Task; change: (change: TaskCh
     label="More actions"
     look={PopoverLook.ICON}
     testId={taskMenuTestIds.open}
+    track="TaskMenu.open"
     trigger={<Ellipsis size={18} aria-hidden />}
     alignEnd
   >
     {(close) => (
       <OptionList
+        track="TaskMenu.actions"
         options={[
           { value: MenuAction.COPY_REF, label: `Copy ${task.ref}`, icon: <Copy size={15} aria-hidden /> },
           task.deletedAt

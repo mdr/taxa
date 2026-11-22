@@ -43,6 +43,7 @@ export const TagPicker = ({ has, onPick }: { has: readonly string[]; onPick: (na
         aria-label="Find or make a tag"
         placeholder="Find or make a tag"
         data-testid={tagPickerTestIds.input}
+        data-track="TagPicker.input"
       />
       {suggestions.length > 0 ? (
         <TagSuggestionList id={listId} suggestions={suggestions} highlighted={highlighted} onPick={pick} />

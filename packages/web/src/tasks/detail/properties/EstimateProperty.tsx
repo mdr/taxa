@@ -38,8 +38,10 @@ export const EstimateEditor = ({
         aria-label={label}
         aria-invalid={typed.trim() !== "" && parsed === undefined}
         data-testid={estimatePropertyTestIds.typed}
+        data-track="EstimateProperty.typed"
       />
       <OptionList
+        track="EstimateProperty.quick"
         options={QUICK.map((quick) => ({ value: String(quick), label: formatEstimate(quick) }))}
         selected={minutes === undefined ? "" : String(minutes)}
         onChoose={(value) => onChoose(Number(value))}
@@ -50,6 +52,7 @@ export const EstimateEditor = ({
           className={styles.clear}
           onClick={() => onChoose(undefined)}
           data-testid={estimatePropertyTestIds.clear}
+          data-track="EstimateProperty.clear"
         >
           Clear
         </button>
@@ -79,6 +82,7 @@ export const EstimateProperty = ({
     label={label}
     look={minutes === undefined ? PopoverLook.EMPTY_CHIP : PopoverLook.CHIP}
     testId={testId}
+    track={testId}
     value={minutes === undefined ? "" : formatEstimate(minutes)}
     shortcut={shortcut}
     trigger={

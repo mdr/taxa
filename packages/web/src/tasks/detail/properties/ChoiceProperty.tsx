@@ -35,12 +35,14 @@ export const ChoiceProperty = ({
     trigger={trigger}
     look={empty ? PopoverLook.EMPTY_CHIP : PopoverLook.CHIP}
     testId={testId}
+    track={testId}
     value={value}
     shortcut={shortcut}
     opening={opening === undefined ? undefined : { into: undefined, seq: opening }}
   >
     {(close) => (
       <OptionList
+        track={testId}
         options={options}
         selected={value}
         onChoose={(chosen) => {

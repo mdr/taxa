@@ -54,6 +54,7 @@ export const LinkForm = ({ draft, onSave, onRemove, onCancel }: LinkFormProps) =
         onChange={(event) => setText(event.target.value)}
         placeholder="The address, if left empty"
         data-testid={linkFormTestIds.text}
+        data-track="LinkForm.text"
       />
       <label className={styles.label} htmlFor={`${id}-address`}>
         Address
@@ -73,6 +74,7 @@ export const LinkForm = ({ draft, onSave, onRemove, onCancel }: LinkFormProps) =
         aria-invalid={problem !== undefined}
         aria-describedby={problem ? `${id}-problem` : undefined}
         data-testid={linkFormTestIds.address}
+        data-track="LinkForm.address"
       />
       {problem && (
         <p id={`${id}-problem`} className={styles.problem} role="alert" data-testid={linkFormTestIds.problem}>
@@ -80,14 +82,20 @@ export const LinkForm = ({ draft, onSave, onRemove, onCancel }: LinkFormProps) =
         </p>
       )}
       <div className={styles.actions}>
-        <button type="submit" data-testid={linkFormTestIds.save}>
+        <button type="submit" data-testid={linkFormTestIds.save} data-track="LinkForm.save">
           {draft.existing ? "Save" : "Add link"}
         </button>
-        <button type="button" onClick={onCancel}>
+        <button type="button" onClick={onCancel} data-track="LinkForm.cancel">
           Cancel
         </button>
         {draft.existing && (
-          <button type="button" className={styles.remove} onClick={onRemove} data-testid={linkFormTestIds.remove}>
+          <button
+            type="button"
+            className={styles.remove}
+            onClick={onRemove}
+            data-testid={linkFormTestIds.remove}
+            data-track="LinkForm.remove"
+          >
             Remove link
           </button>
         )}

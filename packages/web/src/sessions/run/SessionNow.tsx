@@ -87,6 +87,7 @@ const NowCard = ({ slot, busy, finish, moreTime }: NowCardProps) => {
           disabled={busy}
           aria-keyshortcuts="X"
           data-testid={sessionPageTestIds.done}
+          data-track="SessionPage.done"
         >
           Done<span className={styles.key}>X</span>
         </button>
@@ -97,6 +98,7 @@ const NowCard = ({ slot, busy, finish, moreTime }: NowCardProps) => {
           disabled={busy}
           aria-keyshortcuts="I"
           data-testid={sessionPageTestIds.stop}
+          data-track="SessionPage.stop"
         >
           Stop here<span className={styles.key}>I</span>
         </button>
@@ -106,6 +108,7 @@ const NowCard = ({ slot, busy, finish, moreTime }: NowCardProps) => {
           onClick={moreTime}
           disabled={busy}
           data-testid={sessionPageTestIds.moreTime}
+          data-track="SessionPage.moreTime"
         >
           +{MORE_MINUTES} min
         </button>
@@ -130,6 +133,7 @@ const NextCard = ({ slot, busy, start }: { slot: Slot | undefined; busy: boolean
             onClick={() => start(slot)}
             disabled={busy}
             data-testid={sessionPageTestIds.startNext}
+            data-track="SessionPage.startNext"
           >
             Start it
           </button>
@@ -202,6 +206,7 @@ const UndoBar = ({ run, session }: { run: SessionRunService; session: Session })
         onClick={() => void run.undo(session)}
         disabled={busy}
         data-testid={sessionPageTestIds.undo}
+        data-track="SessionPage.undo"
       >
         Undo
       </button>
@@ -275,6 +280,7 @@ export const SessionNow = ({ session }: { session: Session }) => {
           aria-pressed={replanning}
           onClick={() => setReplanning(!replanning)}
           data-testid={sessionPageTestIds.replan}
+          data-track="SessionPage.replan"
         >
           {replanning ? "Done replanning" : "Replan"}
         </button>
@@ -284,6 +290,7 @@ export const SessionNow = ({ session }: { session: Session }) => {
           onClick={() => void end()}
           disabled={busy}
           data-testid={sessionPageTestIds.end}
+          data-track="SessionPage.end"
         >
           End session
         </button>

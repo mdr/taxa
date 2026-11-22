@@ -56,6 +56,7 @@ const ListSearch = ({
       placeholder="Search"
       aria-label="Search the list"
       data-testid={taskListPageTestIds.search}
+      data-track="TaskListPage.search"
     />
   </label>
 )
@@ -193,6 +194,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
                 setShowCompleted(!completedOpen)
               }}
               data-testid={taskListPageTestIds.showCompleted}
+              data-track="TaskListPage.showCompleted"
             >
               {completedOpen ? <ChevronDown size={15} aria-hidden /> : <ChevronRight size={15} aria-hidden />}
               {earlierFound.length} completed

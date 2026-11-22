@@ -35,6 +35,7 @@ const RenameForm = ({ name, close }: { name: string; close: () => void }) => {
         onChange={(event) => setTo(event.target.value)}
         aria-label="New name"
         data-testid={tagRenameTestIds.input}
+        data-track="TagRename.input"
       />
       <p className={styles.none}>Renames it on every task you can see.</p>
       {rename.isError && (
@@ -52,6 +53,7 @@ export const TagRename = ({ name }: { name: string }) => (
     label="Rename the tag"
     look={PopoverLook.EMPTY_CHIP}
     testId={tagRenameTestIds.open}
+    track="TagRename.open"
     trigger="Rename"
     alignEnd
   >

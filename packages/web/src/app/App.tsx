@@ -32,6 +32,7 @@ import { queryTaskCache } from "../tasks/changes/task-cache.ts"
 import { TaskChangesContext, TaskChangesService, useTaskChanges } from "../tasks/changes/task-changes-service.ts"
 import { realScheduler } from "../services/scheduler.ts"
 import { appAnalytics, appLogger } from "../telemetry/app-telemetry.ts"
+import { useUiTracking } from "../telemetry/ui-tracking.ts"
 import { ANALYTICS_CODES, LOG_CODES } from "../telemetry/codes.ts"
 import { pageOpened } from "../telemetry/page-opened.ts"
 import { appShortcuts } from "../shortcuts/app-shortcuts.ts"
@@ -153,6 +154,7 @@ export const App = () => {
     () => new SessionPlanService(taxaApi, realClock, appAnalytics, (session) => sessionChanged(queryClient, session))
   )
   const [followOn] = useState(() => new FollowOnService(appAnalytics))
+  useUiTracking(appAnalytics)
   useEffect(() => shortcuts.dispose, [shortcuts])
   useKeyboardShortcuts(shortcuts)
   return (

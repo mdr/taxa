@@ -127,6 +127,7 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
           onClick={draft.switchMode}
           title="Write the notes as Markdown"
           data-testid={notesEditorTestIds.markdownMode}
+          data-track="NotesEditor.markdownMode"
         >
           Markdown
         </button>
@@ -164,6 +165,7 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
           placeholder={PLACEHOLDER}
           aria-label="Notes, in Markdown"
           data-testid={notesEditorTestIds.markdown}
+          data-track="NotesEditor.markdown"
         />
       )}
     </section>

@@ -226,6 +226,7 @@ export const Sidebar = () => {
         onClick={openHelp}
         aria-keyshortcuts="Shift+?"
         data-testid={sidebarTestIds.shortcuts}
+        data-track="Sidebar.shortcuts"
       >
         <Keyboard size={16} aria-hidden />
         Keyboard shortcuts

@@ -21,9 +21,11 @@ interface DatePickerProps {
   onChoose: (date: IsoDate | undefined) => void
   /** For a date that can have a time too. */
   time?: TimeSetting
+  /** What the date is, for analytics, which name each of its controls after it: `TaskRow.due`. */
+  track: string
 }
 
-export const DatePicker = ({ value, today, onChoose, time }: DatePickerProps) => {
+export const DatePicker = ({ value, today, onChoose, time, track }: DatePickerProps) => {
   const [typed, setTyped] = useState("")
   const [timeTyped, setTimeTyped] = useState(time?.value ?? "")
   const [month, setMonth] = useState(firstOfMonth(value ?? today))
@@ -51,6 +53,7 @@ export const DatePicker = ({ value, today, onChoose, time }: DatePickerProps) =>
         aria-label="Date"
         aria-invalid={typed.trim() !== "" && !parsed}
         data-testid={datePickerTestIds.typed}
+        data-track={`${track}.typed`}
       />
       {typed.trim() !== "" && (
         <p className={styles.understood} aria-live="polite">
@@ -65,6 +68,7 @@ export const DatePicker = ({ value, today, onChoose, time }: DatePickerProps) =>
             className={styles.shortcut}
             onClick={() => onChoose(date)}
             data-testid={datePickerTestIds.shortcut}
+            data-track={`${track}.shortcut`}
           >
             <span>{label}</span>
             <span className={styles.detail}>{formatDay(date, today)}</span>
@@ -80,6 +84,7 @@ export const DatePicker = ({ value, today, onChoose, time }: DatePickerProps) =>
             onClick={() => setMonth(firstOfMonth(month, -1))}
             aria-label="Previous month"
             data-testid={datePickerTestIds.previousMonth}
+            data-track={`${track}.previousMonth`}
           >
             <ChevronLeft size={16} aria-hidden />
           </button>
@@ -89,6 +94,7 @@ export const DatePicker = ({ value, today, onChoose, time }: DatePickerProps) =>
             onClick={() => setMonth(firstOfMonth(month, 1))}
             aria-label="Next month"
             data-testid={datePickerTestIds.nextMonth}
+            data-track={`${track}.nextMonth`}
           >
             <ChevronRight size={16} aria-hidden />
           </button>
@@ -117,6 +123,7 @@ export const DatePicker = ({ value, today, onChoose, time }: DatePickerProps) =>
                       aria-label={formatDay(day, today)}
                       onClick={() => onChoose(day)}
                       data-testid={datePickerTestIds.day}
+                      data-track={`${track}.day`}
                       data-date={day}
                     >
                       {Number(day.slice(8))}
@@ -141,6 +148,7 @@ export const DatePicker = ({ value, today, onChoose, time }: DatePickerProps) =>
             placeholder="HH:MM"
             aria-invalid={timeTyped.trim() !== "" && !isIsoTime(timeTyped.trim())}
             data-testid={datePickerTestIds.time}
+            data-track={`${track}.time`}
           />
         </label>
       )}
@@ -150,6 +158,7 @@ export const DatePicker = ({ value, today, onChoose, time }: DatePickerProps) =>
           className={styles.clear}
           onClick={() => onChoose(undefined)}
           data-testid={datePickerTestIds.clear}
+          data-track={`${track}.clear`}
         >
           Clear
         </button>

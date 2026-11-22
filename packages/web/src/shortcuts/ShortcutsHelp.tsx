@@ -1,3 +1,5 @@
+import { trackUi, UiEvent } from "../telemetry/ui-tracking.ts"
+import { appAnalytics } from "../telemetry/app-telemetry.ts"
 import { X } from "lucide-react"
 import { Fragment, useEffect, useRef } from "react"
 import styles from "./ShortcutsHelp.module.css"
@@ -28,7 +30,10 @@ export const ShortcutsHelp = () => {
   const singleKeys = useSingleKeys()
   const dialog = useRef<HTMLDialogElement>(null)
   // Not closed on unmount: closing fires onClose, which in development's double effects shuts it at once.
-  useEffect(() => dialog.current?.showModal(), [])
+  useEffect(() => {
+    dialog.current?.showModal()
+    trackUi(appAnalytics, UiEvent.OPENED, "ShortcutsHelp.dialog")
+  }, [])
   const shortcuts = active()
   return (
     <dialog
@@ -37,6 +42,7 @@ export const ShortcutsHelp = () => {
       onClose={closeHelp}
       aria-labelledby="shortcuts-heading"
       data-testid={shortcutsHelpTestIds.dialog}
+      data-track="ShortcutsHelp.dialog"
     >
       <div className={styles.header}>
         <h2 id="shortcuts-heading" className={styles.heading}>
@@ -48,6 +54,7 @@ export const ShortcutsHelp = () => {
           onClick={() => dialog.current?.close()}
           aria-label="Close"
           data-testid={shortcutsHelpTestIds.close}
+          data-track="ShortcutsHelp.close"
         >
           <X size={16} aria-hidden />
         </button>
@@ -77,6 +84,7 @@ export const ShortcutsHelp = () => {
           checked={singleKeys}
           onChange={(event) => setSingleKeys(event.target.checked)}
           data-testid={shortcutsHelpTestIds.singleKeys}
+          data-track="ShortcutsHelp.singleKeys"
         />
         <span>
           Single-key shortcuts

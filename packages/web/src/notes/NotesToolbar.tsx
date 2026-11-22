@@ -115,6 +115,7 @@ export const NotesToolbar = ({ editor, onLink }: { editor: Editor; onLink: () =>
           onClick={() => apply(editor)}
           data-value={format}
           data-testid={notesToolbarTestIds.button}
+          data-track={`NotesToolbar.${format}`}
         >
           <Icon size={15} aria-hidden />
         </button>
@@ -128,6 +129,7 @@ export const NotesToolbar = ({ editor, onLink }: { editor: Editor; onLink: () =>
         onMouseDown={(event) => event.preventDefault()}
         onClick={onLink}
         data-testid={notesToolbarTestIds.link}
+        data-track="NotesToolbar.link"
       >
         <Link2 size={15} aria-hidden />
       </button>

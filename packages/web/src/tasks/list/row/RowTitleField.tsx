@@ -46,6 +46,7 @@ export const RowTitleField = ({
       }}
       aria-label={`Rename ${title}`}
       data-testid={rowTitleFieldTestIds.field}
+      data-track="RowTitleField.field"
     />
   )
 }

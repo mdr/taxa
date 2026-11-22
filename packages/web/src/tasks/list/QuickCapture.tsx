@@ -37,6 +37,7 @@ const FilingPicker = ({ filing, onChoose }: { filing: string; onChoose: (choice:
       label="Where it goes"
       look={PopoverLook.CHIP}
       testId={quickCaptureTestIds.filing}
+      track="QuickCapture.filing"
       value={filing}
       trigger={
         domain ? (
@@ -53,6 +54,7 @@ const FilingPicker = ({ filing, onChoose }: { filing: string; onChoose: (choice:
     >
       {(close) => (
         <OptionList
+          track="QuickCapture.filing"
           selected={filing}
           options={[
             { value: INBOX_CHOICE, label: "Inbox", icon: <Inbox size={15} aria-hidden /> },
@@ -173,13 +175,20 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
         aria-keyshortcuts="C"
         placeholder="Add a task"
         data-testid={quickCaptureTestIds.title}
+        data-track="QuickCapture.title"
       />
       {tags.map((name) => (
         <TagChip key={name} name={name} onRemove={() => setTags(withoutTags(tags, [name]))} />
       ))}
       {title.trim() !== "" && <kbd className={styles.hint}>Enter</kbd>}
       {domainPrefix === undefined && <FilingPicker filing={filing} onChoose={choose} />}
-      <button type="submit" className={styles.submit} disabled={create.isPending} data-testid={quickCaptureTestIds.add}>
+      <button
+        type="submit"
+        className={styles.submit}
+        disabled={create.isPending}
+        data-testid={quickCaptureTestIds.add}
+        data-track="QuickCapture.add"
+      >
         Add
       </button>
       {suggestions.length > 0 && hashTag && (

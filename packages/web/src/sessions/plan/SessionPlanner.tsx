@@ -55,6 +55,7 @@ const WindowChoice = ({ plan }: { plan: SessionPlanService }) => {
                 plan.chooseWindow({ type: WindowType.LENGTH, minutes })
               }}
               data-testid={sessionPageTestIds.preset}
+              data-track="SessionPage.preset"
             >
               {presetText(minutes)}
             </button>
@@ -73,6 +74,7 @@ const WindowChoice = ({ plan }: { plan: SessionPlanService }) => {
               if (isIsoTime(event.target.value)) plan.chooseWindow({ type: WindowType.UNTIL, time: event.target.value })
             }}
             data-testid={sessionPageTestIds.until}
+            data-track="SessionPage.until"
           />
         </div>
         <p className={styles.summary} data-testid={sessionPageTestIds.window}>
@@ -95,6 +97,7 @@ const WindowChoice = ({ plan }: { plan: SessionPlanService }) => {
             className={styles.primary}
             onClick={plan.toTasks}
             data-testid={sessionPageTestIds.chooseTasks}
+            data-track="SessionPage.chooseTasks"
           >
             Choose tasks
           </button>
@@ -131,6 +134,7 @@ const TaskChoice = ({ plan }: { plan: SessionPlanService }) => {
               className={styles.link}
               onClick={plan.toWindow}
               data-testid={sessionPageTestIds.changeWindow}
+              data-track="SessionPage.changeWindow"
             >
               change
             </button>
@@ -142,6 +146,7 @@ const TaskChoice = ({ plan }: { plan: SessionPlanService }) => {
           onClick={() => void plan.start()}
           disabled={starting || entries.length === 0}
           data-testid={sessionPageTestIds.start}
+          data-track="SessionPage.start"
         >
           Start session
         </button>

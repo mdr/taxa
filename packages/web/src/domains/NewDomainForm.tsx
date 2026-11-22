@@ -33,6 +33,7 @@ export const NewDomainForm = () => {
         className={styles.open}
         onClick={() => setOpen(true)}
         data-testid={newDomainFormTestIds.open}
+        data-track="NewDomainForm.open"
       >
         + New domain
       </button>
@@ -64,6 +65,7 @@ export const NewDomainForm = () => {
           // oxlint-disable-next-line jsx-a11y/no-autofocus -- it opens because you asked to type in it.
           autoFocus
           data-testid={newDomainFormTestIds.name}
+          data-track="NewDomainForm.name"
         />
       </label>
       <label className={styles.field}>
@@ -80,13 +82,20 @@ export const NewDomainForm = () => {
           title="1 to 5 letters, such as H for Home"
           className={styles.prefix}
           data-testid={newDomainFormTestIds.prefix}
+          data-track="NewDomainForm.prefix"
         />
       </label>
       <div className={styles.actions}>
-        <button type="submit" className={styles.add} disabled={create.isPending} data-testid={newDomainFormTestIds.add}>
+        <button
+          type="submit"
+          className={styles.add}
+          disabled={create.isPending}
+          data-testid={newDomainFormTestIds.add}
+          data-track="NewDomainForm.add"
+        >
           Add
         </button>
-        <button type="button" onClick={close}>
+        <button type="button" onClick={close} data-track="NewDomainForm.cancel">
           Cancel
         </button>
       </div>
