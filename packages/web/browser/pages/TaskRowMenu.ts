@@ -9,6 +9,7 @@ import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
 import { INBOX_CHOICE } from "../../src/tasks/filing/filing.ts"
 import { estimatePropertyTestIds } from "../../src/tasks/detail/properties/EstimatePropertyTestIds.ts"
 import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
+import { rowTitleFieldTestIds } from "../../src/tasks/list/row/RowTitleFieldTestIds.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
 import { tagPickerTestIds } from "../../src/tags/TagPickerTestIds.ts"
 
@@ -94,6 +95,17 @@ export class TaskRowMenu extends PageObject {
     await typed.fill(date)
     await typed.press("Enter")
     await this.#closed()
+  }
+
+  /** Renames it in its row: types over its title and presses Enter. */
+  async rename(title: string): Promise<void> {
+    await this.#option("RENAME").click()
+    // The row is found by its title, which is a field now.
+    const field = this.#row.page().getByTestId(rowTitleFieldTestIds.field)
+    await expect(field).toBeFocused()
+    await field.fill(title)
+    await field.press("Enter")
+    await expect(field).toHaveCount(0)
   }
 
   /** Types an estimate: `45m`, `1h30m`. */

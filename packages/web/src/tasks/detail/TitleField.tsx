@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import styles from "./TitleField.module.css"
+import { tidiedTitle } from "../tidied-title.ts"
 import { titleFieldTestIds } from "./TitleFieldTestIds.ts"
 import { TaskChangeType, type TaskChange } from "../changes/task-changes-service.ts"
 import { FocusTarget, useFocusRequested, useShortcutActions } from "../../shortcuts/shortcut-service.ts"
@@ -23,9 +24,9 @@ export const TitleField = ({ title, change }: { title: string; change: (change: 
     element.style.height = `${element.scrollHeight}px`
   }, [draft])
   const save = () => {
-    const trimmed = draft.replaceAll(/\s+/g, " ").trim()
-    if (trimmed === "") setDraft(title)
-    else if (trimmed !== title) change({ type: TaskChangeType.UPDATE, request: { set: { title: trimmed } } })
+    const tidied = tidiedTitle(draft)
+    if (tidied === undefined) setDraft(title)
+    else if (tidied !== title) change({ type: TaskChangeType.UPDATE, request: { set: { title: tidied } } })
   }
   return (
     <textarea

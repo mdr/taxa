@@ -43,6 +43,8 @@ export interface ListSessionState {
   search: string
   /** The row menu a key asked to open last. */
   opening: RowMenuOpening | undefined
+  /** The task whose title is being edited in its row. */
+  renaming: TaskId | undefined
 }
 
 /** Which way to move the highlight through the list. */
@@ -74,6 +76,8 @@ export interface ListSessionActions {
   rememberOpened: (task: Task) => void
   /** Opens a task's row menu, whole or at one thing to change. */
   openRowMenu: (task: Task, entry: RowMenuEntry) => void
+  /** Makes a task's title editable in its row, or none's. */
+  rename: (task: Task | undefined) => void
   dispose: () => void
 }
 
@@ -106,7 +110,8 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
       before: undefined,
       highlighted: opened?.recall(),
       search: "",
-      opening: undefined
+      opening: undefined,
+      renaming: undefined
     })
     this.#changes = changes
     this.#scheduler = scheduler
@@ -166,6 +171,10 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
     this.#cancelUndoOffer?.()
     this.#cancelUndoOffer = undefined
     if (this.state.undoable) this.setState({ undoable: undefined })
+  }
+
+  readonly rename = (task: Task | undefined): void => {
+    if (this.state.renaming !== task?.id) this.setState({ renaming: task?.id })
   }
 
   readonly openRowMenu = (task: Task, entry: RowMenuEntry): void =>
@@ -248,6 +257,9 @@ export const useShownDone = (task: Task): boolean =>
 
 export const useHighlighted = (id: TaskId): boolean =>
   useServiceState(useService(ListSessionContext), (state) => state.highlighted === id)
+
+export const useRenaming = (id: TaskId): boolean =>
+  useServiceState(useService(ListSessionContext), (state) => state.renaming === id)
 
 export const useCelebrated = (id: TaskId): boolean =>
   useServiceState(useService(ListSessionContext), (state) => isCelebrated(state, id))

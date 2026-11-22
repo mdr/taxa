@@ -8,6 +8,7 @@ import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
 import { notesEditorTestIds } from "../../src/notes/NotesEditorTestIds.ts"
 import { titleFieldTestIds } from "../../src/tasks/detail/TitleFieldTestIds.ts"
+import { rowTitleFieldTestIds } from "../../src/tasks/list/row/RowTitleFieldTestIds.ts"
 import { sidebarTestIds } from "../../src/app/SidebarTestIds.ts"
 import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
 import { tagPickerTestIds } from "../../src/tags/TagPickerTestIds.ts"
@@ -119,6 +120,16 @@ export class Keyboard extends PageObject {
     await expect(this.#page.getByTestId(titleFieldTestIds.title)).toBeFocused()
     await this.#page.keyboard.type(title)
     await this.#page.keyboard.press("Enter")
+  }
+
+  /** `R` on a list's highlighted task: types over its title in the row, then Enter, or Escape to keep it. */
+  async renameRow(title: string, finish: "Enter" | "Escape" = "Enter"): Promise<void> {
+    await this.press("r")
+    const field = this.#page.getByTestId(rowTitleFieldTestIds.field)
+    await expect(field).toBeFocused()
+    await this.#page.keyboard.type(title)
+    await this.#page.keyboard.press(finish)
+    await expect(field).toHaveCount(0)
   }
 
   /** `N`: writes at the end of the notes, then leaves them with Escape. */

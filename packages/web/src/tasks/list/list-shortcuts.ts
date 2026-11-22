@@ -6,7 +6,7 @@ import { RowMenuEntry } from "./row/row-menu-entry.ts"
 
 type Session = Pick<
   ListSessionActions,
-  "moveHighlight" | "highlight" | "toggle" | "startOrStop" | "undo" | "openRowMenu"
+  "moveHighlight" | "highlight" | "toggle" | "startOrStop" | "undo" | "openRowMenu" | "rename"
 > & {
   readonly state: Pick<ListSessionState, "highlighted" | "undoable">
 }
@@ -112,6 +112,7 @@ export const listShortcuts = (
         session.openRowMenu(task, entry === RowMenuEntry.MOVE && filedFromRow(task) ? RowMenuEntry.FILE : entry)
       )
     })),
+    { keys: ["r"], ...onHighlighted("Rename the task", session.rename) },
     { keys: ["f"], ...onHighlighted("Add a follow-on task", followOn) },
     { keys: ["Delete"], ...removing },
     { keys: ["Backspace"], ...removing },

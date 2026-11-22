@@ -59,3 +59,23 @@ test("a highlighted task in a list changes from the keyboard, with the task page
   await home.undo()
   await home.expectTasks(["H-2 Bleed the radiators"])
 })
+
+test("a task is renamed in its list, with R or from its menu", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  await taxa.matt.addTask("Bleed the radiators", { domain: "H" })
+  const home = await (await (await taxa.openTab("Matt")).openInbox()).sidebar.openDomain("Home")
+  await home.keyboard.press("j")
+  await home.keyboard.renameRow("Fix the kitchen tap")
+  await home.expectTasks(["H-1 Fix the kitchen tap", "H-2 Bleed the radiators"])
+  await home.expectHighlighted("Fix the kitchen tap")
+  await taxa.expectTask("H-1", { title: "Fix the kitchen tap" })
+
+  await home.keyboard.renameRow("Never mind", "Escape")
+  await home.expectTasks(["H-1 Fix the kitchen tap", "H-2 Bleed the radiators"])
+  await home.expectHighlighted("Fix the kitchen tap")
+
+  await (await home.openMenu("Bleed the radiators")).rename("Bleed the upstairs radiators")
+  await home.expectTasks(["H-1 Fix the kitchen tap", "H-2 Bleed the upstairs radiators"])
+  await home.expectHighlighted("Bleed the upstairs radiators")
+})

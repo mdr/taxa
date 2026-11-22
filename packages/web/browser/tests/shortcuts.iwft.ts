@@ -66,6 +66,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Move to a domain M",
     "Add a tag L",
     "Open the task's menu .",
+    "Rename the task R",
     "Add a follow-on task F",
     "Delete the task Delete or Backspace",
     "Leave the list Esc",

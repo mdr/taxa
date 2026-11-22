@@ -14,6 +14,7 @@ import {
   Ellipsis,
   FolderInput,
   Inbox,
+  Pencil,
   Tag,
   Timer,
   Trash2
@@ -66,6 +67,7 @@ const SECTION_TEXT: Record<Section, string> = {
 }
 
 enum Action {
+  RENAME = "RENAME",
   FOLLOW_ON = "FOLLOW_ON",
   COPY_REF = "COPY_REF",
   DELETE = "DELETE"
@@ -94,10 +96,12 @@ const MainOptions = ({
 }: PanelProps & { open: (section: Section) => void }) => {
   const domain = domains.find(({ id }) => id === task.domainId)
   const { start } = useFollowOn()
+  const { rename } = useListSession()
   const WhenIcon = WHEN_ICONS[whenOf(task, today)]
   return (
     <OptionList
       options={[
+        { value: Action.RENAME, label: "Rename", icon: <Pencil size={15} aria-hidden /> },
         {
           value: Section.STATUS,
           label: "Status",
@@ -150,7 +154,10 @@ const MainOptions = ({
       ]}
       onChoose={(choice) => {
         const chosen = choice as Action | Section
-        if (chosen === Action.FOLLOW_ON) {
+        if (chosen === Action.RENAME) {
+          close()
+          rename(task)
+        } else if (chosen === Action.FOLLOW_ON) {
           close()
           start(task)
         } else if (chosen === Action.COPY_REF) {

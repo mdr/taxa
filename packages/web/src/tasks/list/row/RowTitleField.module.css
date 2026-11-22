@@ -1,0 +1,16 @@
+.field {
+  flex: 1;
+  min-width: 10rem;
+  margin: -0.2rem 0 -0.2rem -0.35rem;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+}

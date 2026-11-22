@@ -20,10 +20,12 @@ import {
   useCelebrated,
   useHighlighted,
   useListSession,
+  useRenaming,
   useRowMenuOpening,
   useShownDone
 } from "../list-session-service.ts"
-import { useTaskProblem } from "../../changes/task-changes-service.ts"
+import { TaskChangeType, useTaskChanges, useTaskProblem } from "../../changes/task-changes-service.ts"
+import { RowTitleField } from "./RowTitleField.tsx"
 import { DomainChoice } from "../../filing/DomainChoice.tsx"
 import { TaskRowMenu } from "./TaskRowMenu.tsx"
 import type { When } from "@taxa/shared/tasks/when"
@@ -59,9 +61,17 @@ export const TaskRow = ({
   /** Deletes it from its menu, with a chance to undo it. */
   onDelete: (task: Task) => void
 }) => {
-  const { toggle, highlight, rememberOpened } = useListSession()
+  const { toggle, highlight, rememberOpened, rename } = useListSession()
+  const { change } = useTaskChanges()
   const highlighted = useHighlighted(task.id)
+  const renaming = useRenaming(task.id)
   const row = useRef<HTMLLIElement>(null)
+  const wasRenaming = useRef(false)
+  // Renamed, the keyboard goes back to the row.
+  useEffect(() => {
+    if (wasRenaming.current && !renaming && highlighted) row.current?.querySelector("a")?.focus()
+    wasRenaming.current = renaming
+  }, [renaming, highlighted])
   // The highlight is the keyboard's focus, so Enter opens the task and screen readers follow it.
   useEffect(() => {
     if (highlighted && !row.current?.contains(document.activeElement)) row.current?.querySelector("a")?.focus()
@@ -102,14 +112,22 @@ export const TaskRow = ({
         onChange={() => void toggle(task)}
         testId={taskRowTestIds.done}
       />
-      <Link
-        href={`/tasks/${task.ref}`}
-        className={styles.title}
-        onClick={() => rememberOpened(task)}
-        data-testid={taskRowTestIds.title}
-      >
-        {task.title}
-      </Link>
+      {renaming ? (
+        <RowTitleField
+          title={task.title}
+          onRename={(title) => void change(task, { type: TaskChangeType.UPDATE, request: { set: { title } } })}
+          onDone={() => rename(undefined)}
+        />
+      ) : (
+        <Link
+          href={`/tasks/${task.ref}`}
+          className={styles.title}
+          onClick={() => rememberOpened(task)}
+          data-testid={taskRowTestIds.title}
+        >
+          {task.title}
+        </Link>
+      )}
       <span className={styles.details} data-testid={taskRowTestIds.highlights}>
         {(task.status === TaskStatus.IN_PROGRESS || task.status === TaskStatus.WAITING) && (
           <span className={styles.meta}>
