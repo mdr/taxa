@@ -235,8 +235,11 @@ the Zod schemas in `shared`.
   repo"`), which is stored with its changes.
 - **Keys are scoped:** read or write, optionally limited to some domains. An
   agent's access is its owner's access narrowed by its key's scopes. Keys
-  are stored hashed and shown once. People keep them in 1Password and pass
-  them in with `op run`.
+  are stored hashed and shown once. `taxa` keeps them in a credentials
+  file readable only by its owner, as named identities: the person by
+  default, and an agent with `--as` or `TAXA_AS`, which Claude Code sets
+  for its sessions. That labels agents' changes honestly; it isn't a
+  boundary, since an agent could pick the person's identity.
 - **Assign vs delegate:** people are assigned tasks and stay accountable.
   Agents are delegated tasks to work on.
 - **The activity log** records every change with its actor (a person or an

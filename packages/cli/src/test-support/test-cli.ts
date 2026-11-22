@@ -23,18 +23,20 @@ export interface CliRunOptions {
   timeZone?: TimeZone
   /** The credentials file, if there's to be one. */
   credentials?: CredentialsFile
+  /** More environment, such as TAXA_AS. */
+  env?: Record<string, string>
 }
 
 /** Runs `taxa` in this process as `caller`, capturing what it prints. */
 export const runTaxaAs = async (
   caller: CliCaller,
   argv: string[],
-  { stdin = "", timeZone = zoneNamed("Europe/London"), credentials }: CliRunOptions = {}
+  { stdin = "", timeZone = zoneNamed("Europe/London"), credentials, env = {} }: CliRunOptions = {}
 ): Promise<CliRun> => {
   let stdout = ""
   let stderr = ""
   const exitCode = await runCli(argv, {
-    env: { TAXA_SERVER: caller.httpUrl, TAXA_API_KEY: caller.secret, TAXA_AGENT_CONTEXT: caller.agentContext },
+    env: { TAXA_SERVER: caller.httpUrl, TAXA_API_KEY: caller.secret, TAXA_AGENT_CONTEXT: caller.agentContext, ...env },
     stdout: (text) => (stdout += text),
     stderr: (text) => (stderr += text),
     readStdin: () => Promise.resolve(stdin),

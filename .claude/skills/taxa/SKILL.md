@@ -11,16 +11,19 @@ this page is how to use it well.
 
 ## Who you are
 
-`TAXA_API_KEY` decides who you act as. With an agent's key, every change
-you make is recorded as that agent, acting for Matt. Set
+You act as your own agent, never as Matt: every change you make is
+recorded as that agent, acting for Matt. `taxa` takes the key from an
+identity in `~/.config/taxa/credentials`; Claude Code sets `TAXA_AS` to
+yours, so you needn't pass `--as`. Never use `--as` or `TAXA_API_KEY`
+to act as anyone else. Set
 `TAXA_AGENT_CONTEXT` to what you're working on (a repo, a session) so
 Matt can tell your changes apart: `export TAXA_AGENT_CONTEXT="mdr/taxa"`.
 `taxa whoami` says who the server thinks you are: check it before your
-first change.
+first change. If it names Matt rather than an agent, stop and tell him.
 
-The key usually comes from `~/.config/taxa/credentials`, which `taxa`
-reads itself. Never print, log or echo the key, and never read that file.
-If `taxa` says it has no valid key, tell Matt; don't look for one.
+Never print, log or echo a key, and never read the credentials file. If
+`taxa` says it has no valid key or no such identity, tell Matt; don't look
+for one.
 
 Against the local development server (`task dev`), calls without a key
 act as Matt himself. `TAXA_SERVER` says where the server is

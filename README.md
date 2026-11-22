@@ -31,15 +31,30 @@ taxa add-agent "Claude Code"              # prints its id
 taxa add-key "Claude Code" --agent <id>   # prints the key's secret, once
 ```
 
-Agents pass the key as `TAXA_API_KEY`, or `taxa` reads it from
-`~/.config/taxa/credentials`, a file of `TAXA_API_KEY=…` and optionally
-`TAXA_SERVER=…` lines that only you can read (it refuses the file
-otherwise). The environment wins over the file. To make a key straight
-into the file, without it showing on screen:
+`taxa` finds keys in `~/.config/taxa/credentials`, which holds an
+identity for you and one for each agent, and must be readable only by you
+(it refuses the file otherwise):
+
+```ini
+server = http://localhost:8787
+
+[default]
+key = taxa_…
+
+[claude-code]
+key = taxa_…
+```
+
+`taxa` acts as `[default]` unless `--as NAME` or `TAXA_AS=NAME` names
+another identity; `TAXA_API_KEY` overrides the file. Set `TAXA_AS` in
+Claude Code's settings (`env`), so its sessions act as their agent while
+your own terminal acts as you. Against the dev server, `[default]` can be
+left out, since calls without a key act as Matt. To add an agent's key
+straight into the file, without it showing on screen:
 
 ```sh
 mkdir -p ~/.config/taxa
-(umask 077; { printf 'TAXA_API_KEY='; taxa add-key "Claude Code" --agent <id>; } > ~/.config/taxa/credentials)
+(umask 077; { printf '\n[claude-code]\nkey = '; taxa add-key "Claude Code" --agent <id>; } >> ~/.config/taxa/credentials)
 ```
 
 Agents can say what they're working on with `TAXA_AGENT_CONTEXT`. The Claude Code skill in

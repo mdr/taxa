@@ -16,12 +16,13 @@ const COMMANDS: Command[] = [...TASK_COMMANDS, ...TAG_COMMANDS, ...STATUS_COMMAN
 const GLOBAL_OPTIONS = {
   json: { type: "boolean", default: false },
   server: { type: "string" },
+  as: { type: "string" },
   help: { type: "boolean", short: "h", default: false }
 } satisfies ParseArgsOptionsConfig
 
 const width = Math.max(...COMMANDS.map(({ name }) => name.length), "health".length)
 
-const USAGE = `Usage: taxa <command> [arguments] [--json] [--server URL]
+const USAGE = `Usage: taxa <command> [arguments] [--json] [--server URL] [--as NAME]
 
 Commands:
 ${COMMANDS.map(({ name, summary }) => `  ${name.padEnd(width)}  ${summary}`).join("\n")}
@@ -37,11 +38,19 @@ Environment:
   TAXA_SERVER         The server (default ${DEFAULT_SERVER}); --server overrides it
   TAXA_API_KEY        Your API key, or your agent's
   TAXA_AGENT_CONTEXT  For agents: what you're working on, recorded with your changes
+  TAXA_AS             Which identity in the credentials file to act as; --as overrides it
   TAXA_CREDENTIALS    The credentials file (default ~/.config/taxa/credentials)
 
-The credentials file holds TAXA_API_KEY=… and optionally TAXA_SERVER=… lines,
-used when the environment doesn't set them. It must be readable only by
-you (chmod 600).
+The credentials file holds keys for you and your agents, readable only by
+you (chmod 600). Without --as, TAXA_API_KEY or TAXA_AS, taxa acts as [default]:
+
+  server = http://localhost:8787
+
+  [default]
+  key = taxa_…
+
+  [claude-code]
+  key = taxa_…
 `
 
 const commandUsage = ({ name, summary, usage }: Command): string => `${summary}.\n\nUsage: taxa ${name} ${usage}\n`
@@ -128,13 +137,13 @@ export const runCli = async (argv: string[], io: CliIo): Promise<ExitCode> => {
     return ExitCode.USAGE
   }
   const [name] = parsed.positionals
-  const serverOption = parsed.values.server
+  const { server, as } = parsed.values
   const connect = async (): Promise<Connection> => {
     const file = await io.readCredentials()
     return connectionFrom(
-      typeof serverOption === "string" ? serverOption : undefined,
+      { server: typeof server === "string" ? server : undefined, as: typeof as === "string" ? as : undefined },
       io.env,
-      file ? parseCredentials(file) : {},
+      file && parseCredentials(file),
       DEFAULT_SERVER
     )
   }

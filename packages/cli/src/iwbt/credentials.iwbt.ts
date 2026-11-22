@@ -8,25 +8,37 @@ const PATH = "/home/matt/.config/taxa/credentials"
 describe("the credentials file", () => {
   const it = useInProcessServer()
 
-  it("gives taxa a key when the environment doesn't", async ({ server }) => {
+  it("acts as you by default, and as an agent when asked", async ({ server }) => {
     const matt = await server.user("Matt")
     const claude = await matt.agent("Claude Code")
-    const credentials = { path: PATH, text: `TAXA_API_KEY=${claude.secret}\n`, mode: 0o600 }
-    expect((await runTaxaAs({ httpUrl: server.httpUrl }, ["whoami"], { credentials })).stdout).toBe(
-      "Claude Code, an agent of Matt\n"
-    )
-    expect(
-      (await runTaxaAs({ httpUrl: server.httpUrl, secret: matt.secret }, ["whoami"], { credentials })).stdout
-    ).toBe("Matt\n")
+    const credentials = {
+      path: PATH,
+      text: `[default]\nkey = ${matt.secret}\n\n[claude-code]\nkey = ${claude.secret}\n`,
+      mode: 0o600
+    }
+    const whoami = async (argv: string[], env: Record<string, string> = {}): Promise<string> =>
+      (await runTaxaAs({ httpUrl: server.httpUrl }, argv, { credentials, env })).stdout
+    expect(await whoami(["whoami"])).toBe("Matt\n")
+    expect(await whoami(["whoami", "--as", "claude-code"])).toBe("Claude Code, an agent of Matt\n")
+    expect(await whoami(["whoami"], { TAXA_AS: "claude-code" })).toBe("Claude Code, an agent of Matt\n")
+  })
+
+  it("says so, and does nothing, for an identity it doesn't have", async ({ server }) => {
+    const matt = await server.user("Matt")
+    const run = await runTaxaAs({ httpUrl: server.httpUrl }, ["add", "Fix the tap", "--as", "claude"], {
+      credentials: { path: PATH, text: `[default]\nkey = ${matt.secret}\n`, mode: 0o600 }
+    })
+    expect(run.exitCode).toBe(ExitCode.FAILED)
+    expect(run.stderr).toBe('There\'s no identity "claude" in the credentials file; it has default.\n')
+    expect(await matt.client.tasks({})).toEqual([])
   })
 
   it("isn't used while others can read it", async ({ server }) => {
     const claude = await (await server.user("Matt")).agent("Claude Code")
     const run = await runTaxaAs({ httpUrl: server.httpUrl }, ["whoami"], {
-      credentials: { path: PATH, text: `TAXA_API_KEY=${claude.secret}\n`, mode: 0o644 }
+      credentials: { path: PATH, text: `[default]\nkey = ${claude.secret}\n`, mode: 0o644 }
     })
     expect(run.exitCode).toBe(ExitCode.FAILED)
-    expect(run.stderr).toBe(`${PATH} can be read by others; it holds an API key. Run: chmod 600 ${PATH}\n`)
-    expect(run.stdout).toBe("")
+    expect(run.stderr).toBe(`${PATH} can be read by others; it holds API keys. Run: chmod 600 ${PATH}\n`)
   })
 })
