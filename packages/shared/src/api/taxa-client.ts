@@ -131,6 +131,11 @@ export class TaxaClient {
     return this.#request(TaskSchema, `${taskPath(ref)}/restore`, { method: "POST" })
   }
 
+  /** Takes back the change that brought a task to `version`; undoing an undo redoes it. */
+  undoTask(ref: string, version: Version): Promise<Task> {
+    return this.#request(TaskSchema, `${taskPath(ref)}/undo`, { method: "POST", body: { version } })
+  }
+
   async activity(ref: string): Promise<Activity[]> {
     return (await this.#request(ListSchema(ActivitySchema), `${taskPath(ref)}/activity`)).items
   }

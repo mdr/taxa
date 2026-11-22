@@ -245,7 +245,10 @@ the Zod schemas in `shared`.
   Agents are delegated tasks to work on.
 - **The activity log** records every change with its actor (a person or an
   agent). The UI marks automated changes clearly, and anything can be
-  undone from the log.
+  undone from the log: each entry records the version it brought the task
+  to, and undoing it puts back each field it changed, unless one has been
+  changed since. Undoing an addition deletes the task, undoing a deletion
+  restores it, and an undo is itself an entry, so undoing it redoes.
 - **The CLI (`taxa`)** wraps the API. It prints readable output by default,
   `--json` for machines, takes JSON on stdin, has meaningful exit codes, and
   never prompts unless asked to. In v1, tasks are created with explicit

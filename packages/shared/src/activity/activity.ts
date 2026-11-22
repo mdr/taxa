@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { ActorSchema } from "../identity/actor.ts"
-import { flavoured, type ActivitySequence } from "../units.ts"
+import { flavoured, type ActivitySequence, type Version } from "../units.ts"
 
 export enum ActivityType {
   DOMAIN_CREATED = "DOMAIN_CREATED",
@@ -22,6 +22,10 @@ export const ActivitySchema = z.object({
   at: z.iso.datetime(),
   actor: ActorSchema,
   type: z.enum(ActivityType),
+  /** The version the change brought it to: what `undo` is given to undo it. */
+  version: flavoured<Version>(z.number().int()),
+  /** When the change undid an earlier one, the version that one brought it to. */
+  undoesVersion: flavoured<Version>(z.number().int()).optional(),
   /** What changed, field by field. */
   changes: z.record(z.string(), FieldChangeSchema)
 })

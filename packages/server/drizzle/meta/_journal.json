@@ -57,6 +57,13 @@
       "when": 1795287699956,
       "tag": "0007_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795377841404,
+      "tag": "0008_activity_versions",
+      "breakpoints": true
     }
   ]
 }

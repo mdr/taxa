@@ -65,6 +65,7 @@ taxa done H-142
 taxa cancel H-142 --reason "Not needed after all"
 taxa reopen H-142
 taxa delete H-142                   # soft: taxa restore brings it back
+taxa undo H-142                     # takes back the last change; --version N for one from taxa log
 ```
 
 Dates are `YYYY-MM-DD`, `today`, `tomorrow`, a weekday (`fri`), `+3d` or

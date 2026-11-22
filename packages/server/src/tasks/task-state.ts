@@ -56,6 +56,36 @@ const INSTANT_FIELDS: ReadonlySet<keyof TaskState> = new Set(["completedAt", "ca
 const logged = (key: keyof TaskState, value: unknown): unknown =>
   INSTANT_FIELDS.has(key) && typeof value === "number" ? new Date(value).toISOString() : value
 
+/** A logged value as the field holds it again. */
+const unlogged = (key: keyof TaskState, value: unknown): unknown =>
+  INSTANT_FIELDS.has(key) && typeof value === "string" ? Date.parse(value) : value
+
+/** Whether taking back a change could, or which of its fields have changed since. */
+export enum RevertType {
+  REVERTED = "REVERTED",
+  CHANGED_SINCE = "CHANGED_SINCE"
+}
+
+export type Reverted =
+  | { type: RevertType.REVERTED; outcome: Outcome }
+  | { type: RevertType.CHANGED_SINCE; fields: (keyof TaskState)[] }
+
+/**
+ * The state with a logged change taken back, each field it changed put back
+ * as it was; unless any of them has changed since, which it won't overwrite.
+ */
+export const revertedState = (state: TaskState, changes: Record<string, FieldChange>): Reverted => {
+  const fields = Object.keys(changes).filter((key): key is keyof TaskState => key in state)
+  const changedSince = fields.filter(
+    (key) => JSON.stringify(logged(key, state[key])) !== JSON.stringify(changes[key]?.to)
+  )
+  if (changedSince.length > 0) return { type: RevertType.CHANGED_SINCE, fields: changedSince }
+  const after: Record<string, unknown> = { ...state }
+  for (const key of fields) after[key] = unlogged(key, changes[key]?.from)
+  const reverted = after as unknown as TaskState
+  return { type: RevertType.REVERTED, outcome: { state: reverted, changes: changesBetween(state, reverted) } }
+}
+
 const changesBetween = (before: TaskState, after: TaskState): Record<string, FieldChange> => {
   const changes: Record<string, FieldChange> = {}
   for (const key of Object.keys(after) as (keyof TaskState)[]) {

@@ -4,6 +4,7 @@ import type { Clock } from "@taxa/shared/clock"
 import type { ServerLogger } from "../telemetry/log.ts"
 import {
   ChangeStatusRequestSchema,
+  UndoTaskRequestSchema,
   CreateTaskRequestSchema,
   ListTasksQuerySchema,
   UpdateTaskRequestSchema
@@ -24,6 +25,7 @@ import {
   taskActivity,
   updateTask
 } from "./task-service.ts"
+import { undoTask } from "./task-undo.ts"
 
 const TASK_PATH = `${TASKS_PATH}/{ref}`
 const RefSchema = z.object({
@@ -88,6 +90,16 @@ const routes = {
     request: { params: RefSchema },
     responses: { 200: json(TaskSchema, "The restored task"), ...PROBLEMS }
   }),
+  undo: createRoute({
+    method: "post",
+    path: `${TASK_PATH}/undo`,
+    summary: "Undo the change that brought a task to a version",
+    description:
+      "Whoever made it. A task added is deleted, a deleted one restored, and an edit or status change put back, unless what it changed has changed since (409). The undo is a change too: undo it to redo.",
+    security: BEARER,
+    request: { params: RefSchema, ...jsonBody(UndoTaskRequestSchema) },
+    responses: { 200: json(TaskSchema, "The task as it is now"), ...PROBLEMS }
+  }),
   activity: createRoute({
     method: "get",
     path: `${TASK_PATH}/activity`,
@@ -142,6 +154,11 @@ export const taskRoutes = (app: TaxaApp, db: Db, log: ServerLogger, clock: Clock
   app.openapi(routes.restore, async (context) =>
     context.json(await restoreTask(db, log, context.var.caller, context.req.valid("param").ref, clock.now()), 200)
   )
+  app.openapi(routes.undo, async (context) => {
+    const { ref } = context.req.valid("param")
+    const task = await undoTask(db, log, context.var.caller, ref, context.req.valid("json").version, clock.now())
+    return context.json(task, 200, { etag: `"${task.version}"` })
+  })
   app.openapi(routes.activity, async (context) =>
     context.json({ items: await taskActivity(db, context.var.caller, context.req.valid("param").ref) }, 200)
   )

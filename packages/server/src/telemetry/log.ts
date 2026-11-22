@@ -34,7 +34,8 @@ export const LOG_CODES = {
     updated: "task.updated",
     statusChanged: "task.statusChanged",
     deleted: "task.deleted",
-    restored: "task.restored"
+    restored: "task.restored",
+    undone: "task.undone"
   }
 } as const
 

@@ -166,6 +166,10 @@ export const activity = pgTable(
     /** Empty for a task in the Inbox. */
     domainId: domainId("domain_id").references(() => domains.id),
     type: text("type").$type<ActivityType>().notNull(),
+    /** The version the change brought the task or domain to. */
+    version: integer("version").$type<Version>().notNull(),
+    /** When the change undid an earlier one, the version that one brought it to. */
+    undoesVersion: integer("undoes_version").$type<Version>(),
     changes: jsonb("changes").$type<Record<string, FieldChange>>().notNull()
   },
   (table) => [index("activity_entity").on(table.entityId, table.sequence)]

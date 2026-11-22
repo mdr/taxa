@@ -119,18 +119,25 @@ const actionOf = ({ type, changes }: Activity, context: ActivityContext): string
     case ActivityType.TASK_STATUS_CHANGED:
       return statusAction(changes)
     case ActivityType.TASK_UPDATED: {
-      const parts = Object.entries(changes)
-        .map(([field, change]) => phrase(field, change, context))
-        .filter((text) => text !== undefined)
+      // An undo can put a status back along with other fields.
+      const parts = [
+        ...(changes["status"] ? [statusAction(changes)] : []),
+        ...Object.entries(changes)
+          .map(([field, change]) => phrase(field, change, context))
+          .filter((text) => text !== undefined)
+      ]
       return joined(parts) || "changed it"
     }
   }
 }
 
-export const activityParts = (activity: Activity, context: ActivityContext): ActivityParts => ({
-  actor: actorText(activity.actor),
-  action: actionOf(activity, context)
-})
+export const activityParts = (activity: Activity, context: ActivityContext): ActivityParts => {
+  const action = actionOf(activity, context)
+  return {
+    actor: actorText(activity.actor),
+    action: activity.undoesVersion === undefined ? action : `undid change ${activity.undoesVersion}: ${action}`
+  }
+}
 
 /** `Matt set due to Fri 9 Jan and set priority to high`. */
 export const activityText = (activity: Activity, context: ActivityContext): string => {

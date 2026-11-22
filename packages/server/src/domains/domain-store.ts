@@ -74,6 +74,7 @@ export const createDomain = async (
       type: ActivityType.DOMAIN_CREATED,
       entityId: domain.id,
       domainId: domain.id,
+      version: 1,
       changes: { name: { to: domain.name }, prefix: { to: domain.prefix } }
     })
     return domain

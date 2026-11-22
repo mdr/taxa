@@ -77,6 +77,11 @@ export const ChangeStatusRequestSchema = z.object({
 
 export type ChangeStatusRequest = z.input<typeof ChangeStatusRequestSchema>
 
+export const UndoTaskRequestSchema = z.object({
+  /** The version the change to undo brought the task to, as its activity says. */
+  version: z.number().int().min(1)
+})
+
 export const ListTasksQuerySchema = z.object({
   /** A domain's prefix or id. */
   domain: z.string().optional(),

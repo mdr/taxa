@@ -11,6 +11,7 @@ const context = { today: "2026-01-05", domainName: (id: string) => (id === HOME 
 
 const makeActivity = (type: ActivityType, changes: Activity["changes"] = {}): Activity => ({
   sequence: 1,
+  version: 1,
   at: "2026-01-05T09:00:00.000Z",
   actor: { user: MATT },
   type,

@@ -19,7 +19,7 @@ import type {
   UpdateTaskRequestSchema
 } from "@taxa/shared/tasks/task-requests"
 import { ACTIVE_STATUSES, Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
-import type { Instant } from "@taxa/shared/units"
+import type { Instant, Version } from "@taxa/shared/units"
 import { activityOf, recordActivity } from "../activity/activity-store.ts"
 import { actorsNamed, type ActorIds } from "../activity/actor-names.ts"
 import type { Caller } from "../auth/caller.ts"
@@ -181,6 +181,7 @@ export const createTask = async (
       type: ActivityType.TASK_CREATED,
       entityId: taskId,
       domainId,
+      version: 1,
       changes: created
     })
     return {
@@ -221,9 +222,14 @@ const NO_CHANGES: Record<string, FieldChange> = {}
 export interface Change {
   type: ActivityType
   code: ServerLogCode
-  /** What the change does to the task's state, and whether it deletes or restores it. */
-  apply: (state: TaskState, row: TaskRow, tx: Db) => Promise<Outcome & { deletion?: Deletion }>
+  /**
+   * What the change does to the task's state, and whether it deletes or
+   * restores it; an undo also says what the change is, and which it undoes.
+   */
+  apply: (state: TaskState, row: TaskRow, tx: Db) => Promise<Applied>
 }
+
+export type Applied = Outcome & { deletion?: Deletion; type?: ActivityType; undoesVersion?: Version }
 
 /**
  * Changes one task in a transaction: locks it, refuses if `ifMatch` isn't
@@ -237,7 +243,7 @@ export const changeTask = async (
   ref: string,
   ifMatch: number | undefined,
   now: Instant,
-  { type, code, apply }: Change
+  { type: changeType, code, apply }: Change
 ): Promise<Task> => {
   const { task, changes } = await db.transaction(async (tx) => {
     const found = await findTask(tx, caller.user.id, lookupOf(ref), true)
@@ -249,7 +255,7 @@ export const changeTask = async (
         await taskFrom(tx, found)
       )
     }
-    const { state, changes, deletion } = await apply(stateOf(row), row, tx)
+    const { state, changes, deletion, type = changeType, undoesVersion } = await apply(stateOf(row), row, tx)
     if (Object.keys(changes).length === 0) return { task: await taskFrom(tx, found), changes }
     await tx
       .update(tasks)
@@ -262,7 +268,14 @@ export const changeTask = async (
         version: row.version + 1
       })
       .where(eq(tasks.id, row.id))
-    await recordActivity(tx, caller, now, { type, entityId: row.id, domainId: state.domainId, changes })
+    await recordActivity(tx, caller, now, {
+      type,
+      entityId: row.id,
+      domainId: state.domainId,
+      version: row.version + 1,
+      ...(undoesVersion !== undefined && { undoesVersion }),
+      changes
+    })
     return { task: await taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: row.id })), changes }
   })
   // Only changes that changed something: an edit that matches the task as it is has no effect to log.
@@ -337,22 +350,28 @@ export const deleteTask = (
   changeTask(db, log, caller, ref, ifMatch, now, {
     type: ActivityType.TASK_DELETED,
     code: LOG_CODES.task.deleted,
-    apply: async (state, row) => ({
-      state,
-      changes: row.deletedAt ? NO_CHANGES : { deletedAt: { to: new Date(now).toISOString() } },
-      deletion: Deletion.DELETE
-    })
+    apply: async (state, row) => deletion(state, row, now)
   })
+
+/** Deleting a task: soft, so it can be restored. */
+export const deletion = (state: TaskState, row: TaskRow, now: Instant): Applied => ({
+  state,
+  changes: row.deletedAt ? NO_CHANGES : { deletedAt: { to: new Date(now).toISOString() } },
+  deletion: Deletion.DELETE
+})
+
+/** Restoring a deleted task. */
+export const restoration = (state: TaskState, row: TaskRow): Applied => ({
+  state,
+  changes: row.deletedAt ? { deletedAt: { from: row.deletedAt.toISOString() } } : NO_CHANGES,
+  deletion: Deletion.RESTORE
+})
 
 export const restoreTask = (db: Db, log: ServerLogger, caller: Caller, ref: string, now: Instant): Promise<Task> =>
   changeTask(db, log, caller, ref, undefined, now, {
     type: ActivityType.TASK_RESTORED,
     code: LOG_CODES.task.restored,
-    apply: async (state, row) => ({
-      state,
-      changes: row.deletedAt ? { deletedAt: { from: row.deletedAt.toISOString() } } : NO_CHANGES,
-      deletion: Deletion.RESTORE
-    })
+    apply: async (state, row) => restoration(state, row)
   })
 
 export const taskActivity = async (db: Db, caller: Caller, ref: string): Promise<Activity[]> =>

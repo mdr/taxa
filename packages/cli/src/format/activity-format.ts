@@ -6,6 +6,13 @@ import type { Activity } from "@taxa/shared/activity/activity"
 const when = (at: string, timeZone: TimeZone): string =>
   new Date(at).toLocaleString("sv-SE", { timeZone, dateStyle: "short", timeStyle: "short" })
 
-/** One line per change, oldest first. */
-export const activityLines = (activity: Activity[], timeZone: TimeZone, context: ActivityContext): string =>
-  activity.map((entry) => `${when(entry.at, timeZone)}  ${activityText(entry, context)}`).join("\n")
+/** One line per change, oldest first, numbered by the version it brought the task to: what `taxa undo` takes. */
+export const activityLines = (activity: Activity[], timeZone: TimeZone, context: ActivityContext): string => {
+  const width = String(activity.at(-1)?.version ?? 1).length
+  return activity
+    .map(
+      (entry) =>
+        `${String(entry.version).padStart(width)}  ${when(entry.at, timeZone)}  ${activityText(entry, context)}`
+    )
+    .join("\n")
+}

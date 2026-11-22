@@ -2,7 +2,15 @@ import { agentId, domainId, userId } from "@taxa/shared/ids"
 import { describe, expect, it } from "vite-plus/test"
 import { ClearableField } from "@taxa/shared/tasks/task-requests"
 import { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
-import { changeStatus, changesFromNothing, editTask, type StatusContext, type TaskState } from "./task-state.ts"
+import {
+  changeStatus,
+  changesFromNothing,
+  editTask,
+  revertedState,
+  RevertType,
+  type StatusContext,
+  type TaskState
+} from "./task-state.ts"
 
 const HOME = domainId("0190a1b2-0000-7000-8000-00000000000a")
 const MATT = userId("0190a1b2-0000-7000-8000-000000000001")
@@ -121,5 +129,31 @@ describe("changesFromNothing", () => {
       priority: { to: Priority.NORMAL },
       due: { to: "2026-01-09" }
     })
+  })
+})
+
+describe("revertedState", () => {
+  it("puts back what a change did, times and cleared fields too", () => {
+    const inProgress = changeStatus(makeState({ priority: Priority.HIGH }), { status: TaskStatus.IN_PROGRESS }, CONTEXT)
+    const done = changeStatus(inProgress.state, { status: TaskStatus.DONE }, CONTEXT)
+    const reverted = revertedState(done.state, done.changes)
+    expect(reverted).toEqual({
+      type: RevertType.REVERTED,
+      outcome: { state: inProgress.state, changes: expect.anything() }
+    })
+    const cancelled = changeStatus(makeState(), { status: TaskStatus.CANCELLED, reason: "moved" }, CONTEXT)
+    const reopened = changeStatus(cancelled.state, { status: TaskStatus.OPEN }, CONTEXT)
+    expect(revertedState(reopened.state, reopened.changes)).toMatchObject({ outcome: { state: cancelled.state } })
+  })
+
+  it("takes back moving a task, out of its domain and back into the Inbox", () => {
+    const moved = editTask(makeState(), { set: { domainId: HOME }, clear: [] })
+    expect(revertedState(moved.state, moved.changes)).toMatchObject({ outcome: { state: makeState() } })
+  })
+
+  it("won't overwrite what's changed since, saying which", () => {
+    const edited = editTask(makeState(), { set: { title: "Fix the kitchen tap", priority: Priority.HIGH }, clear: [] })
+    const since = editTask(edited.state, { set: { priority: Priority.LOW }, clear: [] }).state
+    expect(revertedState(since, edited.changes)).toEqual({ type: RevertType.CHANGED_SINCE, fields: ["priority"] })
   })
 })
