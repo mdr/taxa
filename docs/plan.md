@@ -24,8 +24,10 @@ be reviewed on their own.
 - Dev-mode login, one person. A Claude Code skill for `taxa`
 
 Also in the CLI: `log` (the activity log), `start`, `wait`, `cancel`,
-`reopen`, `delete`, `restore`, domains, agents and keys. Not yet: key
-scopes (Stage 3), and `taxa` outside this repository's dev shell.
+`reopen`, `delete`, `restore`, domains, agents and keys; for agents,
+`edit --append-notes`, `list --search` and `--follows-on`. `taxa` is also
+a Nix package (`packages.taxa`), with the skill in it, so it runs outside
+this repository. Not yet: key scopes (Stage 3).
 
 Brought forward from Stage 2 after first use: the notes editor (Tiptap)
 with its Markdown toggle. The web app saves notes in the canonical style;

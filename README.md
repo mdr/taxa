@@ -35,6 +35,13 @@ Agents pass the key as `TAXA_API_KEY`, and can say what they're working
 on with `TAXA_AGENT_CONTEXT`. The Claude Code skill in
 `.claude/skills/taxa` teaches agents to use `taxa`.
 
+To use `taxa` outside this repository, install the flake's package
+(`nix build .#taxa`, or `taxa.packages.${system}.taxa` from another
+flake). It's the CLI bundled into one file and run by Node, with the skill
+at `share/claude/skills/taxa/SKILL.md`, to link into `~/.claude/skills`.
+When the lockfile changes what the CLI depends on, its build fails with a
+hash mismatch: put the hash it got in `nix/taxa-cli.nix`.
+
 `task db:start` creates a Postgres cluster in `.data/postgres` the first time
 (port 5433, override with `DB_PORT`), and `task db:stop` stops it. `task
 --list` shows everything else.

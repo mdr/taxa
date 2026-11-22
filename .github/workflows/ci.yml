@@ -27,3 +27,6 @@ jobs:
         run: nix develop .#ci -c pnpm check
       - name: Build web app
         run: nix develop .#ci -c pnpm build
+      # Fails with a hash mismatch when the lockfile changes the CLI's dependencies.
+      - name: Build the taxa package
+        run: nix build .#taxa

@@ -1,6 +1,6 @@
 ---
 name: taxa
-description: Read and update Matt's tasks in Taxa with the `taxa` CLI. Use when asked to add, find, check, plan, claim, update or finish tasks or to-dos, when a task reference like H-142 comes up, or when work you're doing should be recorded against a task.
+description: Read and update Matt's tasks in Taxa with the `taxa` CLI. Use when asked to add, find, check, plan, claim, update or finish tasks or to-dos, when a task reference like H-142 comes up, when work you're doing should be recorded against a task, or when you finish or get blocked on work that came from one.
 ---
 
 # Taxa
@@ -15,7 +15,8 @@ this page is how to use it well.
 you make is recorded as that agent, acting for Matt. Set
 `TAXA_AGENT_CONTEXT` to what you're working on (a repo, a session) so
 Matt can tell your changes apart: `export TAXA_AGENT_CONTEXT="mdr/taxa"`.
-`taxa whoami` says who the server thinks you are.
+`taxa whoami` says who the server thinks you are: check it before your
+first change.
 
 Never print, log or echo the API key. If it's missing, say so; don't
 look for one.
@@ -34,7 +35,11 @@ taxa list --json                    # active tasks, most urgent first
 taxa list --domain H --json         # one domain's
 taxa list --inbox --json            # not yet organised
 taxa list --status done,cancelled --json
+taxa list --search "council tax" --json  # every word in the title, notes or tags
+taxa list --tag "Life Admin" --json
+taxa list --follows-on H-142 --json  # what H-142 led to
 taxa show H-142 --json              # one task, everything about it
+taxa show H-142                     # readable, with what it came from and led to
 taxa log H-142                      # every change, with who made it
 taxa domains --json
 ```
@@ -47,6 +52,9 @@ its id. The number never changes, so `H-142` still works after it moves.
 ```sh
 taxa add "Pay council tax" --domain H --due fri --priority high --estimate 30m
 taxa edit H-142 --due +3d --clear scheduled
+taxa edit H-142 --append-notes "Rang the garage: they'll call back Thursday."
+taxa edit H-142 --tag "Life Admin" --untag errand
+taxa add "Dispose of the old disks" --domain H --follows-on H-142
 taxa start H-142                    # you're working on it: a claim others can see
 taxa wait H-142 --on "Dave's quote" --follow-up mon
 taxa done H-142
@@ -78,9 +86,18 @@ echo '{"set": {"priority": "HIGH"}, "clear": ["due"]}' | taxa edit H-142 - --jso
   twice, however often it's retried. Use one key per task you mean to add.
 - **Claim before you work.** `taxa start` marks a task as yours. If it's
   already in progress by someone else, ask Matt before taking it over.
-- **Matt's notes are his.** Don't rewrite the notes field. If you must
-  record something there, add a short dated section at the end.
-- **Ask before deleting or cancelling** anything you didn't create.
+- **Matt's notes are his.** Report progress with `--append-notes`, which
+  adds to the end and keeps what's there. Never `--notes` on a task you
+  didn't create: it replaces them all.
+- **Say what happened.** As you go, and when you finish, append a short
+  note: what you did, what you found, what's left. Don't mark something
+  done you haven't checked.
+- **Blocked?** `taxa wait H-142 --on "..."` with a note saying why, rather
+  than leaving it in progress. What's left over that's new work is a new
+  task with `--follows-on`.
+- **Ask before deleting or cancelling** anything you didn't create, or
+  changing the priority, dates or domain of Matt's tasks: suggest it in a
+  note instead.
 
 Exit codes: 0 OK, 1 failed (including no key or no server), 2 bad usage,
 3 the task changed since `--if-version`, 4 not found. Errors go to stderr;

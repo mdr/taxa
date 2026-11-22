@@ -28,8 +28,14 @@
           COREPACK_ENABLE_DOWNLOAD_PROMPT = "0";
           COREPACK_ENABLE_NETWORK = "0";
         };
+        taxa = pkgs.callPackage ./nix/taxa-cli.nix { inherit nodejs pnpm; };
       in
       {
+        packages = {
+          inherit taxa;
+          default = taxa;
+        };
+
         devShells.default = pkgs.mkShell (corepack // {
           packages = [
             nodejs
