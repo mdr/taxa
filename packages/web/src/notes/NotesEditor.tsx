@@ -81,6 +81,7 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
           .find((mark) => mark.type.name === "link")
         if (!link) return false
         window.open(String(link.attrs["href"]), "_blank", "noopener,noreferrer")
+        draft.followedLink()
         return true
       }
     },

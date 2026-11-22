@@ -81,9 +81,13 @@ describe("DayPlanService", () => {
   })
 
   it("leaves a task taken out for soon, and saves the order moved", async () => {
-    const { api, changes, plan, refreshed } = setUp()
+    const { api, changes, plan, refreshed, telemetry } = setUp()
     plan.move(quote.id, 0)
     await plan.remove(tap.id)
+    expect(telemetry.tracked()).toEqual([
+      [ANALYTICS_CODES.today.reordered, { taskId: quote.id, to: 0 }],
+      [ANALYTICS_CODES.today.taskUnplanned, { taskId: tap.id, taskRef: "H-1" }]
+    ])
     await plan.saved()
     expect(titles(plan)).toEqual(["Send the quote"])
     expect(changes).toEqual([

@@ -89,6 +89,10 @@ export class NotesDraftService extends AbstractService<NotesDraftState> implemen
     this.setState({ draft: incoming, source: incoming, shown: { notes: incoming } })
   }
 
+  /** A link in the notes has been followed, out of the app. */
+  readonly followedLink = (): void =>
+    this.#analytics.track(ANALYTICS_CODES.notes.linkFollowed, "followed a link in notes")
+
   readonly switchMode = (): void => {
     const mode = this.state.mode === NotesMode.RICH ? NotesMode.MARKDOWN : NotesMode.RICH
     if (mode === NotesMode.MARKDOWN) this.setState({ mode, source: this.state.draft })

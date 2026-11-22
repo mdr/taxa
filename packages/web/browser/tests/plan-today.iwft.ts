@@ -39,6 +39,7 @@ test("planning today: choosing what to do from suggestions, in the order you'll 
   today = await planning.done()
   await today.expectTasks(["H-3 Pay the bill", "H-4 Research boilers", "H-1 Fix the tap"])
   await tab.expectLogged(["today.taskPlanned", "today.taskPlanned"])
+  await tab.expectLogged(["today.taskUnplanned", "today.reordered"])
 
   // The order's kept for the day.
   const again = await (await taxa.openTab("Matt")).openInbox()

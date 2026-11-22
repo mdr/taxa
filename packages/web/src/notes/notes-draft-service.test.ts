@@ -127,6 +127,12 @@ describe("NotesDraftService", () => {
     ])
   })
 
+  it("tracks following a link, without the address", () => {
+    const { service, telemetry } = makeNotesDraftService("[Shop](https://example.com)")
+    service.followedLink()
+    expect(telemetry.tracked()).toEqual([[ANALYTICS_CODES.notes.linkFollowed, {}]])
+  })
+
   it("opens in the remembered mode, with the notes normalised in both editors", () => {
     const { service } = makeNotesDraftService("* Notes", new FakeModeStore(NotesMode.MARKDOWN))
     expect(service.state).toMatchObject({ mode: NotesMode.MARKDOWN, source: "- Notes", shown: { notes: "- Notes" } })

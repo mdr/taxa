@@ -31,6 +31,7 @@ export const ANALYTICS_CODES = {
     changed: "task.changed",
     undone: "task.undone",
     refCopied: "task.refCopied",
+    followOnStarted: "task.followOnStarted",
     followOnAdded: "task.followOnAdded"
   },
   tag: {
@@ -53,7 +54,8 @@ export const ANALYTICS_CODES = {
     taskOpened: "commandMenu.taskOpened"
   },
   notes: {
-    modeSwitched: "notes.modeSwitched"
+    modeSwitched: "notes.modeSwitched",
+    linkFollowed: "notes.linkFollowed"
   },
   session: {
     started: "session.started",
@@ -66,7 +68,9 @@ export const ANALYTICS_CODES = {
     finishUndone: "session.finishUndone"
   },
   today: {
-    taskPlanned: "today.taskPlanned"
+    taskPlanned: "today.taskPlanned",
+    taskUnplanned: "today.taskUnplanned",
+    reordered: "today.reordered"
   }
 } as const
 

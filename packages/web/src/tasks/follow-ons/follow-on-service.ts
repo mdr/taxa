@@ -1,5 +1,7 @@
 import type { Task } from "@taxa/shared/tasks/task"
 import { AbstractService } from "../../services/abstract-service.ts"
+import type { Analytics } from "../../telemetry/analytics.ts"
+import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { createServiceContext, useService, useServiceState } from "../../services/service-hooks.ts"
 
 export interface FollowOnState {
@@ -9,11 +11,21 @@ export interface FollowOnState {
 
 /** Adding a follow-on task: which task it follows on from, while it's being written. */
 export class FollowOnService extends AbstractService<FollowOnState> {
-  constructor() {
+  readonly #analytics: Analytics
+
+  constructor(analytics: Analytics) {
     super({ from: undefined })
+    this.#analytics = analytics
   }
 
-  readonly start = (from: Task): void => this.setState({ from })
+  /** Opens the dialog for a follow-on to `from`. */
+  readonly start = (from: Task): void => {
+    this.setState({ from })
+    this.#analytics.track(ANALYTICS_CODES.task.followOnStarted, `started a follow-on to ${from.ref}`, {
+      taskId: from.id,
+      taskRef: from.ref
+    })
+  }
 
   readonly end = (): void => this.setState({ from: undefined })
 }

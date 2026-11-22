@@ -100,6 +100,10 @@ export class DayPlanService extends AbstractService<DayPlanState> {
     if (!entry) return
     this.setState({ entries: removeEntry(this.state.entries ?? [], taskId), problem: undefined })
     this.#save()
+    this.#analytics.track(ANALYTICS_CODES.today.taskUnplanned, `took ${entry.task.ref} out of today`, {
+      taskId,
+      taskRef: entry.task.ref
+    })
     await this.#changes.change(entry.task, {
       type: TaskChangeType.UPDATE,
       request: whenRequest(When.SOON, this.#today)
@@ -109,6 +113,7 @@ export class DayPlanService extends AbstractService<DayPlanState> {
   readonly move = (taskId: TaskId, to: number): void => {
     this.setState({ entries: moveEntry(this.state.entries ?? [], taskId, to), problem: undefined })
     this.#save()
+    this.#analytics.track(ANALYTICS_CODES.today.reordered, "reordered today", { taskId, to })
   }
 
   /** A task's estimate has changed, and been saved. */

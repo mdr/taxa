@@ -152,7 +152,7 @@ export const App = () => {
   const [sessionPlan] = useState(
     () => new SessionPlanService(taxaApi, realClock, appAnalytics, (session) => sessionChanged(queryClient, session))
   )
-  const [followOn] = useState(() => new FollowOnService())
+  const [followOn] = useState(() => new FollowOnService(appAnalytics))
   useEffect(() => shortcuts.dispose, [shortcuts])
   useKeyboardShortcuts(shortcuts)
   return (
