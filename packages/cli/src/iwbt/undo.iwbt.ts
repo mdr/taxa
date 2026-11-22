@@ -37,6 +37,7 @@ describe("taxa undo", () => {
     await matt.addTask("Fix the tpa")
     await taxa(server, matt, "undo", "1")
     expect((await taxa(server, matt, "list")).stdout).toBe("No tasks.\n")
+    expect((await taxa(server, matt, "list", "--deleted")).stdout).toContain("IN-1  Fix the tpa")
   })
 
   it("says when what a change did has been changed since, with its own exit code", async ({ server }) => {

@@ -68,7 +68,7 @@ with `X` and `I`, replanning, and a summary at the end. Not yet in the CLI.
 - Key scopes enforced everywhere. Delegating to agents, claims, stale claims
 - Threads, and the timeline
 - The change feed and live updates over SSE
-- Undo and trash: undo in the API, `taxa undo`, and `⌘Z`/`⇧⌘Z` done; undo from the activity log and a trash page next
+- Undo and trash: done (undo in the API and `taxa undo`, `⌘Z`/`⇧⌘Z`, undo from a task's activity, the Trash page and `taxa list --deleted`)
 - The attention list in the API and CLI
 
 ## Stage 4: Sharing and going online

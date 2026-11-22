@@ -64,7 +64,7 @@ taxa wait H-142 --on "Dave's quote" --follow-up mon
 taxa done H-142
 taxa cancel H-142 --reason "Not needed after all"
 taxa reopen H-142
-taxa delete H-142                   # soft: taxa restore brings it back
+taxa delete H-142                   # soft: taxa restore brings it back; taxa list --deleted shows the trash
 taxa undo H-142                     # takes back the last change; --version N for one from taxa log
 ```
 

@@ -138,7 +138,7 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
           </p>
         )}
         <NotesEditor key={task.id} notes={task.notes} change={change} />
-        <ActivityList taskId={task.id} domains={domains.data ?? []} />
+        <ActivityList task={task} domains={domains.data ?? []} />
         {undoable && <UndoToast task={undoable} undoes={undoes} />}
       </article>
     </ListSessionContext.Provider>

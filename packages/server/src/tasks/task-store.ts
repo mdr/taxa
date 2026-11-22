@@ -47,20 +47,22 @@ export interface TaskFilter {
   inbox: boolean | undefined
   /** Only those that follow on from this task. */
   followsOnId?: TaskId | undefined
+  /** The deleted ones instead of the live ones. */
+  deleted?: boolean
 }
 
-/** The live (not deleted) tasks this person can see that match. */
+/** The live tasks this person can see that match, or the deleted ones. */
 export const findTasks = async (
   db: Db,
   userId: UserId,
-  { domainId, statuses, inbox, followsOnId }: TaskFilter
+  { domainId, statuses, inbox, followsOnId, deleted = false }: TaskFilter
 ): Promise<FoundTask[]> =>
   (
     await selectVisible(
       db,
       userId,
       and(
-        isNull(tasks.deletedAt),
+        deleted ? isNotNull(tasks.deletedAt) : isNull(tasks.deletedAt),
         inArray(tasks.status, [...statuses]),
         domainId === undefined ? undefined : eq(tasks.domainId, domainId),
         followsOnId === undefined ? undefined : eq(tasks.followsOnId, followsOnId),

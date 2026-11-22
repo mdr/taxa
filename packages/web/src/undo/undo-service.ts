@@ -52,8 +52,8 @@ export interface UndoActions extends ChangeHistory {
   recordAdded: (task: Task) => void
   undo: () => Promise<void>
   redo: () => Promise<void>
-  /** Undoes the change that brought a task to the version it's at, wherever it is in the history; the task then, or undefined if refused. */
-  undoChange: (task: Task) => Promise<Task | undefined>
+  /** Undoes the change that brought a task to a version, by default the one it's at, whether made here or not; the task then, or undefined if refused. */
+  undoChange: (task: Task, version?: Version) => Promise<Task | undefined>
   dismiss: () => void
 }
 
@@ -107,10 +107,10 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
     })
   }
 
-  readonly undoChange = (task: Task): Promise<Task | undefined> =>
+  readonly undoChange = (task: Task, version: Version = task.version): Promise<Task | undefined> =>
     this.#queued(() => {
-      const step = this.state.undoable.find(({ taskId, version }) => taskId === task.id && version === task.version)
-      return this.#take(step ?? { taskId: task.id, version: task.version, label: changedLabel(task) }, true)
+      const step = this.state.undoable.find((other) => other.taskId === task.id && other.version === version)
+      return this.#take(step ?? { taskId: task.id, version, label: changedLabel(task) }, true)
     })
 
   readonly dismiss = (): void => {

@@ -82,7 +82,8 @@ const list: Command = {
   --status LIST         Only these statuses, e.g. done or open,waiting (default: open, in progress, waiting)
   --when LIST           Only these, e.g. today or soon,someday (today, on a day, soon, any time, someday;
                         default: all but someday)
-  --all                 Include tasks whose start date is still to come, and someday ones`,
+  --all                 Include tasks whose start date is still to come, and someday ones
+  --deleted             The trash instead: deleted tasks, the last deleted first (taxa restore brings one back)`,
   options: {
     domain: { type: "string" },
     inbox: { type: "boolean" },
@@ -91,7 +92,8 @@ const list: Command = {
     "follows-on": { type: "string" },
     status: { type: "string" },
     when: { type: "string" },
-    all: { type: "boolean" }
+    all: { type: "boolean" },
+    deleted: { type: "boolean" }
   },
   run: async (context, values, positionals) => {
     if (positionals.length > 0) throw new UsageError(`list takes no arguments, got: ${positionals.join(" ")}`)
@@ -103,7 +105,8 @@ const list: Command = {
       search: stringOption(values, "search"),
       followsOn: stringOption(values, "follows-on"),
       includeNotStarted: values["all"] === true ? "true" : undefined,
-      when: values["all"] === true ? ALL_WHENS : stringOption(values, "when")?.toUpperCase().replaceAll(" ", "_")
+      when: values["all"] === true ? ALL_WHENS : stringOption(values, "when")?.toUpperCase().replaceAll(" ", "_"),
+      deleted: values["deleted"] === true ? "true" : undefined
     })
     print(context, tasks, () => taskLines(tasks, context.today()))
     return ExitCode.OK

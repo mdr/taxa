@@ -40,6 +40,7 @@ describe("undo", () => {
     const deleted = await matt.client.undoTask(oops.id, oops.version)
     expect(deleted.deletedAt).toBeDefined()
     expect(await matt.client.tasks({})).toEqual([])
+    expect((await matt.client.tasks({ deleted: "true" })).map(({ title }) => title)).toEqual(["Fix the tpa"])
     const restored = await matt.client.undoTask(oops.id, deleted.version)
     expect(restored.deletedAt).toBeUndefined()
   })

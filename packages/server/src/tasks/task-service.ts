@@ -95,8 +95,20 @@ const parseWhens = (text: string | undefined): ReadonlySet<When> => {
   return new Set(whens as When[])
 }
 
+/** The trash: deleted tasks, in a domain if asked, the last deleted first. */
+const deletedTasks = async (db: Db, caller: Caller, domainId: DomainId | undefined): Promise<Task[]> => {
+  const found = await findTasks(db, caller.user.id, {
+    domainId,
+    statuses: Object.values(TaskStatus),
+    inbox: undefined,
+    deleted: true
+  })
+  return (await tasksOf(db, found)).sort((a, b) => (b.deletedAt ?? "").localeCompare(a.deletedAt ?? ""))
+}
+
 export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, now: Instant): Promise<Task[]> => {
   const domainId = query.domain === undefined ? undefined : (await findDomain(db, caller.user.id, query.domain)).id
+  if (query.deleted === "true") return deletedTasks(db, caller, domainId)
   const inbox = query.inbox === undefined ? undefined : query.inbox === "true"
   const followsOnId =
     query.followsOn === undefined ? undefined : (await findTask(db, caller.user.id, lookupOf(query.followsOn))).row.id

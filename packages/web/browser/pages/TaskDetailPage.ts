@@ -23,12 +23,14 @@ import { taskPropertiesTestIds } from "../../src/tasks/detail/TaskPropertiesTest
 import { titleFieldTestIds } from "../../src/tasks/detail/TitleFieldTestIds.ts"
 import { CONFLICT_NOTICE } from "../../src/tasks/changes/task-changes-service.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
+import { UndoNotice } from "./UndoNotice.ts"
 
 /** Everything about one task, editable. */
 export class TaskDetailPage extends PageObject {
   readonly #page: Page
   readonly sidebar: Sidebar
   readonly keyboard: Keyboard
+  readonly undoNotice: UndoNotice
   readonly followOns: FollowOnLinks
   readonly tags: TaskTags
   /** Shown once it's marked done here. */
@@ -39,6 +41,7 @@ export class TaskDetailPage extends PageObject {
     this.#page = page
     this.sidebar = new Sidebar(page)
     this.keyboard = new Keyboard(page)
+    this.undoNotice = new UndoNotice(page)
     this.followOns = new FollowOnLinks(page)
     this.tags = new TaskTags(page)
     this.toast = new UndoToast(page)
@@ -365,6 +368,13 @@ export class TaskDetailPage extends PageObject {
   }
 
   /** The activity log, oldest first, without times. */
+  /** Undoes a change from the activity, by what it says: `set priority to high`. */
+  async undoFromActivity(entry: string): Promise<void> {
+    const row = this.#page.getByTestId(activityListTestIds.entry).filter({ hasText: entry })
+    await row.hover()
+    await row.getByTestId(activityListTestIds.undo).click()
+  }
+
   async expectActivity(entries: string[]): Promise<void> {
     await expect(this.#page.getByTestId(activityListTestIds.text)).toHaveText(entries)
   }

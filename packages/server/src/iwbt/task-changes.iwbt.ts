@@ -2,7 +2,7 @@ import { describe, expect } from "vite-plus/test"
 import { ActivityType } from "@taxa/shared/activity/activity"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { ClearableField } from "@taxa/shared/tasks/task-requests"
-import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
+import { Horizon, Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { expectProblem } from "../test-support/problems.ts"
 import { useInProcessServer } from "../test-support/use-in-process-server.ts"
 
@@ -113,6 +113,26 @@ describe("changing tasks", () => {
     const restored = await matt.client.restoreTask(task.ref)
     expect(restored.deletedAt).toBeUndefined()
     expect(await matt.client.tasks()).toHaveLength(1)
+  })
+
+  it("keeps deleted tasks in the trash, whatever their status, the last deleted first", async ({ server }) => {
+    const matt = await server.user("Matt")
+    await matt.addDomain("Home", "H")
+    await matt.addDomain("Work", "WK")
+    const tap = await matt.addTask("Fix the tap", { domain: "H" })
+    const done = await matt.addTask("Put the bins out", { domain: "H", horizon: Horizon.SOMEDAY })
+    const report = await matt.addTask("Write the report", { domain: "WK" })
+    await matt.client.changeStatus(done.ref, { status: TaskStatus.DONE })
+    await matt.client.deleteTask(done.ref)
+    server.advance(60_000)
+    await matt.client.deleteTask(tap.ref)
+    server.advance(60_000)
+    await matt.client.deleteTask(report.ref)
+    const trash = async (domain?: string): Promise<string[]> =>
+      (await matt.client.tasks({ deleted: "true", domain })).map(({ ref }) => ref)
+    expect(await trash()).toEqual(["WK-3", "H-1", "H-2"])
+    expect(await trash("H")).toEqual(["H-1", "H-2"])
+    expect(await matt.client.tasks()).toEqual([])
   })
 
   it("logs every change, with who made it", async ({ server }) => {

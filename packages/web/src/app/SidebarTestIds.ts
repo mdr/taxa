@@ -14,5 +14,6 @@ export const sidebarTestIds = {
   domain: "Sidebar.domain",
   tag: "Sidebar.tag",
   tagCount: "Sidebar.tagCount",
+  trash: "Sidebar.trash",
   shortcuts: "Sidebar.shortcuts"
 }
