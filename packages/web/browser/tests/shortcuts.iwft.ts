@@ -124,6 +124,7 @@ test("moving through a list, and ticking off and opening tasks, from the keyboar
 
   // So too for a task opened with a click.
   const clicked = await back.openTask("Fix the tap")
+  await clicked.expectRef("H-1")
   await (await clicked.keyboard.backToList()).expectHighlighted("Fix the tap")
 })
 

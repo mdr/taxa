@@ -44,6 +44,7 @@ test("tagging a task from its menu in a list", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Fix the tap", { domain: "H", tags: ["DIY"] })
   await taxa.matt.addTask("Bleed the radiators", { domain: "H" })
+  await taxa.matt.addTask("Clear the gutters", { domain: "H" })
   const home = await (await (await taxa.openTab("Matt")).openInbox()).sidebar.openDomain("Home")
   let menu = await home.openMenu("Bleed the radiators")
   await menu.expectShows("Tags", "None")
@@ -55,7 +56,6 @@ test("tagging a task from its menu in a list", async ({ taxa }) => {
   await taxa.expectTask("H-2", { tags: ["DIY", "Winter jobs"] })
 
   // From the keyboard: L, then Down to the first tag offered, and Enter.
-  await taxa.matt.addTask("Clear the gutters", { domain: "H" })
   await home.expectTasks(["H-1 Fix the tap", "H-2 Bleed the radiators", "H-3 Clear the gutters"])
   await home.keyboard.press("j j j")
   await home.expectHighlighted("Clear the gutters")
