@@ -3,6 +3,7 @@ import { timeZone } from "@taxa/shared/dates/plain-date"
 import { text } from "node:stream/consumers"
 import { realClock } from "@taxa/shared/clock"
 import { runCli } from "./cli.ts"
+import { credentialsPath, readCredentialsFile } from "./credentials/credentials-file.ts"
 
 process.exitCode = await runCli(process.argv.slice(2), {
   env: process.env,
@@ -10,5 +11,6 @@ process.exitCode = await runCli(process.argv.slice(2), {
   stderr: (output) => process.stderr.write(output),
   readStdin: () => text(process.stdin),
   now: () => realClock.now(),
-  timeZone: timeZone(Intl.DateTimeFormat().resolvedOptions().timeZone)
+  timeZone: timeZone(Intl.DateTimeFormat().resolvedOptions().timeZone),
+  readCredentials: () => readCredentialsFile(credentialsPath(process.env))
 })

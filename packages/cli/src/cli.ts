@@ -9,6 +9,7 @@ import { TASK_COMMANDS } from "./commands/task-commands.ts"
 import { TAG_COMMANDS } from "./commands/tag-commands.ts"
 import { UsageError, type Command } from "./command.ts"
 import { healthCommand } from "./health-command.ts"
+import { connectionFrom, CredentialsError, parseCredentials, type Connection } from "./credentials/credentials.ts"
 
 const COMMANDS: Command[] = [...TASK_COMMANDS, ...TAG_COMMANDS, ...STATUS_COMMANDS, ...ACCOUNT_COMMANDS]
 
@@ -36,6 +37,11 @@ Environment:
   TAXA_SERVER         The server (default ${DEFAULT_SERVER}); --server overrides it
   TAXA_API_KEY        Your API key, or your agent's
   TAXA_AGENT_CONTEXT  For agents: what you're working on, recorded with your changes
+  TAXA_CREDENTIALS    The credentials file (default ~/.config/taxa/credentials)
+
+The credentials file holds TAXA_API_KEY=… and optionally TAXA_SERVER=… lines,
+used when the environment doesn't set them. It must be readable only by
+you (chmod 600).
 `
 
 const commandUsage = ({ name, summary, usage }: Command): string => `${summary}.\n\nUsage: taxa ${name} ${usage}\n`
@@ -51,14 +57,21 @@ const PROBLEM_EXIT: Partial<Record<ProblemType, ExitCode>> = {
 const reportApiError = (error: TaxaApiError, json: boolean, io: CliIo): ExitCode => {
   if (json) io.stdout(`${JSON.stringify(error.problem, undefined, 2)}\n`)
   const hint =
-    error.problem.type === ProblemType.UNAUTHENTICATED ? "\nSet TAXA_API_KEY to an API key from taxa add-key." : ""
+    error.problem.type === ProblemType.UNAUTHENTICATED
+      ? "\nSet TAXA_API_KEY to an API key from taxa add-key, or put it in the credentials file (taxa --help)."
+      : ""
   const conflictHint =
     error.problem.type === ProblemType.VERSION_CONFLICT ? "\nRun taxa show to see it as it is now, then try again." : ""
   io.stderr(`${error.problem.message}${hint}${conflictHint}\n`)
   return PROBLEM_EXIT[error.problem.type] ?? ExitCode.FAILED
 }
 
-const runCommand = async (command: Command, args: string[], server: string, io: CliIo): Promise<ExitCode> => {
+const runCommand = async (
+  command: Command,
+  args: string[],
+  connect: () => Promise<Connection>,
+  io: CliIo
+): Promise<ExitCode> => {
   let parsed
   try {
     parsed = parseArgs({ args, allowPositionals: true, options: { ...GLOBAL_OPTIONS, ...command.options } })
@@ -71,11 +84,8 @@ const runCommand = async (command: Command, args: string[], server: string, io: 
     return ExitCode.OK
   }
   const json = parsed.values.json
-  const client = new TaxaClient({
-    baseUrl: server,
-    apiKey: io.env["TAXA_API_KEY"],
-    agentContext: io.env["TAXA_AGENT_CONTEXT"]
-  })
+  const { server, apiKey } = await connect()
+  const client = new TaxaClient({ baseUrl: server, apiKey, agentContext: io.env["TAXA_AGENT_CONTEXT"] })
   try {
     return await command.run(
       { client, io, json, today: () => dateIn(io.timeZone, io.now()) },
@@ -96,6 +106,17 @@ const runCommand = async (command: Command, args: string[], server: string, io: 
   }
 }
 
+/** Runs `run`, reporting a credentials file it can't use. */
+const withCredentials = async (io: CliIo, run: () => Promise<ExitCode>): Promise<ExitCode> => {
+  try {
+    return await run()
+  } catch (error) {
+    if (!(error instanceof CredentialsError)) throw error
+    io.stderr(`${error.message}\n`)
+    return ExitCode.FAILED
+  }
+}
+
 /** Run one CLI invocation, returning its exit code. */
 export const runCli = async (argv: string[], io: CliIo): Promise<ExitCode> => {
   let parsed
@@ -108,8 +129,15 @@ export const runCli = async (argv: string[], io: CliIo): Promise<ExitCode> => {
   }
   const [name] = parsed.positionals
   const serverOption = parsed.values.server
-  const server =
-    (typeof serverOption === "string" ? serverOption : undefined) ?? io.env["TAXA_SERVER"] ?? DEFAULT_SERVER
+  const connect = async (): Promise<Connection> => {
+    const file = await io.readCredentials()
+    return connectionFrom(
+      typeof serverOption === "string" ? serverOption : undefined,
+      io.env,
+      file ? parseCredentials(file) : {},
+      DEFAULT_SERVER
+    )
+  }
   if (name === undefined) {
     if (parsed.values.help === true) {
       io.stdout(USAGE)
@@ -126,12 +154,12 @@ export const runCli = async (argv: string[], io: CliIo): Promise<ExitCode> => {
       io.stderr(`Unknown option '--${unknown}'\n\n${USAGE}`)
       return ExitCode.USAGE
     }
-    return healthCommand(server, strict.values.json === true, io)
+    return withCredentials(io, async () => healthCommand((await connect()).server, strict.values.json === true, io))
   }
   const command = COMMANDS.find((candidate) => candidate.name === name)
   if (!command) {
     io.stderr(`Unknown command: ${name}\n\n${USAGE}`)
     return ExitCode.USAGE
   }
-  return runCommand(command, rest, server, io)
+  return withCredentials(io, () => runCommand(command, rest, connect, io))
 }

@@ -1,5 +1,6 @@
 import type { TimeZone } from "@taxa/shared/dates/plain-date"
 import type { Instant } from "@taxa/shared/units"
+import type { CredentialsFile } from "./credentials/credentials.ts"
 
 /** What a CLI run reads and writes, so tests can run it in-process. */
 export interface CliIo {
@@ -11,6 +12,8 @@ export interface CliIo {
   now: () => Instant
   /** Where "today" and "friday" are worked out. */
   timeZone: TimeZone
+  /** The credentials file, or nothing when there's none. */
+  readCredentials: () => Promise<CredentialsFile | undefined>
 }
 
 /** What `taxa` exits with, so scripts and agents can tell outcomes apart. */

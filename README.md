@@ -31,8 +31,18 @@ taxa add-agent "Claude Code"              # prints its id
 taxa add-key "Claude Code" --agent <id>   # prints the key's secret, once
 ```
 
-Agents pass the key as `TAXA_API_KEY`, and can say what they're working
-on with `TAXA_AGENT_CONTEXT`. The Claude Code skill in
+Agents pass the key as `TAXA_API_KEY`, or `taxa` reads it from
+`~/.config/taxa/credentials`, a file of `TAXA_API_KEY=…` and optionally
+`TAXA_SERVER=…` lines that only you can read (it refuses the file
+otherwise). The environment wins over the file. To make a key straight
+into the file, without it showing on screen:
+
+```sh
+mkdir -p ~/.config/taxa
+(umask 077; { printf 'TAXA_API_KEY='; taxa add-key "Claude Code" --agent <id>; } > ~/.config/taxa/credentials)
+```
+
+Agents can say what they're working on with `TAXA_AGENT_CONTEXT`. The Claude Code skill in
 `.claude/skills/taxa` teaches agents to use `taxa`.
 
 To use `taxa` outside this repository, install the flake's package

@@ -18,8 +18,9 @@ Matt can tell your changes apart: `export TAXA_AGENT_CONTEXT="mdr/taxa"`.
 `taxa whoami` says who the server thinks you are: check it before your
 first change.
 
-Never print, log or echo the API key. If it's missing, say so; don't
-look for one.
+The key usually comes from `~/.config/taxa/credentials`, which `taxa`
+reads itself. Never print, log or echo the key, and never read that file.
+If `taxa` says it has no valid key, tell Matt; don't look for one.
 
 Against the local development server (`task dev`), calls without a key
 act as Matt himself. `TAXA_SERVER` says where the server is

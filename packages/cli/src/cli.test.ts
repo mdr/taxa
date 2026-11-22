@@ -11,6 +11,7 @@ const run = async (...argv: string[]): Promise<{ exitCode: ExitCode; stdout: str
     stdout: (text) => (stdout += text),
     stderr: (text) => (stderr += text),
     readStdin: () => Promise.resolve(""),
+    readCredentials: () => Promise.resolve(undefined),
     now: () => 0,
     timeZone: timeZone("UTC")
   })
