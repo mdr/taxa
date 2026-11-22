@@ -25,6 +25,7 @@ import { OptionList } from "../../ui/OptionList.tsx"
 import { Popover, PopoverLook } from "../../ui/Popover.tsx"
 import { INBOX_CHOICE } from "../filing/filing.ts"
 import { loadCaptureFiling, saveCaptureFiling } from "./capture-filing.ts"
+import { useListSession } from "./list-session-service.ts"
 import { FocusTarget, useFocusRequested, useShortcutActions } from "../../shortcuts/shortcut-service.ts"
 
 /** In the Inbox, where a new task goes: the Inbox, or straight into a domain. */
@@ -100,6 +101,7 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
   const create = useCreateTask()
   const field = useRef<HTMLInputElement>(null)
   const { focusTaken } = useShortcutActions()
+  const { highlight } = useListSession()
   const focusWanted = useFocusRequested(FocusTarget.CAPTURE)
   useEffect(() => {
     if (!focusWanted) return
@@ -135,7 +137,10 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
         onSuccess: (task) => {
           setTitle("")
           setTags([])
-          setFiled(domainPrefix === undefined && !task.inbox ? task : undefined)
+          const filedElsewhere = domainPrefix === undefined && !task.inbox
+          setFiled(filedElsewhere ? task : undefined)
+          // Highlighting the new row moves focus to it, for its keys; C comes back here.
+          if (!filedElsewhere) highlight(task.id)
           appAnalytics.track(ANALYTICS_CODES.task.captured, `captured ${task.ref}`, {
             taskId: task.id,
             taskRef: task.ref,

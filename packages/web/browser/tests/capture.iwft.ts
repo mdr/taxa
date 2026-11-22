@@ -75,6 +75,19 @@ test("a new domain's prefix is suggested from its name", async ({ taxa }) => {
   await inbox.sidebar.expectDomains(["H Home", "HO Hobbies"])
 })
 
+test("a captured task is highlighted, ready for its keys, and C goes back to capture", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  const home = await (await (await taxa.openTab("Matt")).openInbox()).sidebar.openDomain("Home")
+  await home.expectTasks(["H-1 Fix the tap"])
+  const list = await home.keyboard.addTask("Bleed the radiators")
+  await list.expectHighlighted("Bleed the radiators")
+  await list.keyboard.press("k")
+  await list.expectHighlighted("Fix the tap")
+  await (await list.keyboard.addTask("Clear the gutters")).expectHighlighted("Clear the gutters")
+  await list.expectTasks(["H-1 Fix the tap", "H-2 Bleed the radiators", "H-3 Clear the gutters"])
+})
+
 test("a task captured in a domain's list goes straight into it", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   const inbox = await (await taxa.openTab("Matt")).openInbox()

@@ -27,7 +27,7 @@ export class Keyboard extends PageObject {
     for (const key of keys.split(" ")) await this.#page.keyboard.press(key.replace("mod+", "ControlOrMeta+"))
   }
 
-  /** `C`, a title and Enter, then Escape to leave capture: lands on the list the task goes into. */
+  /** `C`, a title and Enter, into the list shown: the keyboard moves on to the new task's row. */
   async addTask(title: string): Promise<TaskListPage> {
     await this.press("c")
     const input = this.#page.getByTestId(quickCaptureTestIds.title)
@@ -35,7 +35,6 @@ export class Keyboard extends PageObject {
     await this.#page.keyboard.type(title)
     await this.#page.keyboard.press("Enter")
     await expect(input).toHaveValue("")
-    await this.#page.keyboard.press("Escape")
     await expect(input).not.toBeFocused()
     return new TaskListPage(this.#page)
   }
