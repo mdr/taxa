@@ -58,7 +58,9 @@ export const UpdateTaskRequestSchema = z.object({
   /** Tags to add, after those it has; any it has already, in any case, stay as they are. */
   addTags: z.array(TagSchema).max(MAX_TAGS).default([]),
   /** Tags to take off, in any case. */
-  removeTags: z.array(TagSchema).max(MAX_TAGS).default([])
+  removeTags: z.array(TagSchema).max(MAX_TAGS).default([]),
+  /** Markdown to add at the end of the notes, after a blank line, keeping what's there: for progress notes. */
+  appendNotes: z.string().trim().min(1).max(100_000).optional()
 })
 
 export type UpdateTaskRequest = z.input<typeof UpdateTaskRequestSchema>

@@ -9,6 +9,7 @@ import { dateIn } from "@taxa/shared/dates/plain-date"
 import { taskId as newTaskId, uuidv7, type DomainId, type TaskId, type UserId } from "@taxa/shared/ids"
 import { compareTasks } from "@taxa/shared/tasks/task-order"
 import { hasTag, withoutTags, withTags } from "@taxa/shared/tasks/tags"
+import { appendedNotes } from "@taxa/shared/tasks/notes-append"
 import { matchesSearch, searchResults } from "@taxa/shared/tasks/task-search"
 import { parseTaskLookup, type TaskLookup } from "@taxa/shared/tasks/task-ref"
 import type {
@@ -274,7 +275,13 @@ export const updateTask = (
   log: ServerLogger,
   caller: Caller,
   ref: string,
-  { set: { domain, inbox, followsOn, ...set }, clear, addTags, removeTags }: z.infer<typeof UpdateTaskRequestSchema>,
+  {
+    set: { domain, inbox, followsOn, ...set },
+    clear,
+    addTags,
+    removeTags,
+    appendNotes
+  }: z.infer<typeof UpdateTaskRequestSchema>,
   ifMatch: number | undefined,
   now: Instant
 ): Promise<Task> =>
@@ -284,6 +291,8 @@ export const updateTask = (
     apply: async (state, row, tx) => {
       if (domain !== undefined && inbox)
         throw new ProblemError(ProblemType.INVALID_REQUEST, "A task is either in a domain or in the Inbox, not both.")
+      if (appendNotes !== undefined && set.notes !== undefined)
+        throw new ProblemError(ProblemType.INVALID_REQUEST, "Set the notes or add to them, not both.")
       const domainId = domain === undefined ? undefined : (await findDomain(tx, caller.user.id, domain)).id
       const inboxUserId = inbox && state.inboxUserId === undefined ? caller.user.id : undefined
       const followsOnId = followsOn === undefined ? undefined : await followsOnIdFor(tx, caller, followsOn, row.id)
@@ -293,7 +302,8 @@ export const updateTask = (
           ...(domainId && { domainId }),
           ...(inboxUserId && { inboxUserId }),
           ...(followsOnId && { followsOnId }),
-          tags: withTags(withoutTags(state.tags, removeTags), addTags)
+          tags: withTags(withoutTags(state.tags, removeTags), addTags),
+          ...(appendNotes !== undefined && { notes: appendedNotes(state.notes, appendNotes) })
         },
         clear
       })

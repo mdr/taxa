@@ -24,8 +24,21 @@ const row = (label: string, value: string | undefined): string[] =>
 
 const day = (date: IsoDate | undefined, today: IsoDate): string | undefined => date && formatDay(date, today)
 
+/** The tasks one is linked to: the one it follows on from, and those it led to. */
+export interface FollowOnLinks {
+  followsOn: Task | undefined
+  ledTo: readonly Task[]
+}
+
+const named = (task: Task): string => `${task.ref}  ${task.title}`
+
 /** Everything about one task. */
-export const taskDetail = (task: Task, domain: Domain | undefined, today: IsoDate): string =>
+export const taskDetail = (
+  task: Task,
+  domain: Domain | undefined,
+  today: IsoDate,
+  links: FollowOnLinks = { followsOn: undefined, ledTo: [] }
+): string =>
   [
     `${task.ref}  ${task.title}`,
     "",
@@ -42,6 +55,8 @@ export const taskDetail = (task: Task, domain: Domain | undefined, today: IsoDat
     ...row("Energy", task.energy && ENERGY_TEXT[task.energy]),
     ...row("Horizon", task.horizon && HORIZON_TEXT[task.horizon]),
     ...row("Tags", task.tags.length > 0 ? task.tags.join(", ") : undefined),
+    ...row("Came from", links.followsOn && named(links.followsOn)),
+    ...row("Led to", links.ledTo.length > 0 ? links.ledTo.map(named).join(`\n${" ".repeat(10)}`) : undefined),
     ...row("Working", task.inProgressBy && actorText(task.inProgressBy)),
     ...row("Waiting", task.waitingOn),
     ...row("Follow up", day(task.followUp, today)),

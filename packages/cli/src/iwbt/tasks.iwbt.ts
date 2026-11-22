@@ -1,5 +1,5 @@
 import { describe, expect } from "vite-plus/test"
-import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
+import { Horizon, Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import type { InProcessServer } from "@taxa/server/src/test-support/in-process-server"
 import type { TestUser } from "@taxa/server/src/test-support/test-user"
 import { useInProcessServer } from "@taxa/server/src/test-support/use-in-process-server"
@@ -124,6 +124,31 @@ describe("taxa list and show", () => {
     )
   })
 
+  it("shows the task one follows on from, and those it led to", async ({ server }) => {
+    const matt = await mattAtHome(server)
+    const disks = await matt.addTask("Back up the floppy disks", { domain: "H" })
+    await matt.addTask("Dispose of the disks", { domain: "H", followsOn: disks.ref })
+    await matt.addTask("Upload the photos", { domain: "H", followsOn: disks.ref, horizon: Horizon.SOMEDAY })
+    expect((await taxa(server, matt, "show", "H-2")).stdout).toContain("Came from H-1  Back up the floppy disks\n")
+    expect((await taxa(server, matt, "show", "H-1")).stdout).toContain(
+      "Led to    H-2  Dispose of the disks\n          H-3  Upload the photos\n"
+    )
+    expect((await taxa(server, matt, "list", "--follows-on", "H-1")).stdout).toBe("H-2  Dispose of the disks\n")
+  })
+
+  it("finds tasks by words in their title, notes or tags", async ({ server }) => {
+    const matt = await mattAtHome(server)
+    await matt.addTask("Fix the tap", { domain: "H", notes: "Kitchen, dripping" })
+    await matt.addTask("Paint the kitchen", { domain: "H" })
+    await matt.addTask("Renew passport", { tags: ["Life Admin"] })
+    expect((await taxa(server, matt, "list", "--search", "kitchen")).stdout).toBe(
+      "H-2  Paint the kitchen\nH-1  Fix the tap\n"
+    )
+    expect((await taxa(server, matt, "list", "--search", "life admin")).stdout).toBe(
+      "IN-3  Renew passport  (inbox, #Life Admin)\n"
+    )
+  })
+
   it("says when there's no such task, with its own exit code", async ({ server }) => {
     const matt = await mattAtHome(server)
     expect(await taxa(server, matt, "show", "M-99")).toMatchObject({
@@ -169,6 +194,18 @@ describe("taxa edit and status commands", () => {
     )
     expect((await taxa(server, matt, "rename-tag", "life admin", "Admin")).stdout).toBe("Renamed it on 2 tasks.\n")
     expect((await taxa(server, matt, "tags")).stdout).toBe("Admin  (2 to do)\n")
+  })
+
+  it("adds to the notes, keeping what's there", async ({ server }) => {
+    const matt = await mattAtHome(server)
+    await matt.addTask("Fix the tap", { domain: "H", notes: "Washer, probably." })
+    expect((await taxa(server, matt, "edit", "H-1", "--append-notes", "Rang the plumber: Tuesday.")).exitCode).toBe(
+      ExitCode.OK
+    )
+    expect((await matt.client.task("H-1")).notes).toBe("Washer, probably.\n\nRang the plumber: Tuesday.")
+    const both = await taxa(server, matt, "edit", "H-1", "--notes", "New", "--append-notes", "More")
+    expect(both.exitCode).toBe(ExitCode.USAGE)
+    expect(both.stderr).toContain("Set the notes or add to them, not both.")
   })
 
   it("takes changes as JSON on stdin", async ({ server }) => {

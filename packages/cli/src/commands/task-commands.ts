@@ -1,7 +1,7 @@
 import { When } from "@taxa/shared/tasks/when"
 import { z } from "zod"
 import { CreateTaskRequestSchema, UpdateTaskRequestSchema } from "@taxa/shared/tasks/task-requests"
-import type { Task } from "@taxa/shared/tasks/task"
+import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { ExitCode } from "../cli-io.ts"
 import { oneArgument, print, stringOption, UsageError, type Command, type CommandContext } from "../command.ts"
 import { activityLines } from "../format/activity-format.ts"
@@ -10,15 +10,27 @@ import { readStdinJson, STDIN } from "../input/stdin-json.ts"
 import { clearedFrom, fieldsFrom, repeatedOption, TASK_FIELD_HELP, TASK_FIELD_OPTIONS } from "../input/task-input.ts"
 import { ifVersion, VERSION_HELP, VERSION_OPTION } from "../input/version-option.ts"
 
+const ALL_WHENS = Object.values(When).join(",")
+
 const NewTasksSchema = z.union([CreateTaskRequestSchema, z.array(CreateTaskRequestSchema).min(1)])
 
 const showTask = async (context: CommandContext, task: Task): Promise<void> => {
-  const domains = await context.client.domains()
+  const [domains, followsOn, ledTo] = await Promise.all([
+    context.client.domains(),
+    task.followsOnId === undefined ? undefined : context.client.task(task.followsOnId).catch(() => undefined),
+    context.client.tasks({
+      followsOn: task.id,
+      status: Object.values(TaskStatus).join(","),
+      when: ALL_WHENS,
+      includeNotStarted: "true"
+    })
+  ])
   print(context, task, () =>
     taskDetail(
       task,
       domains.find(({ id }) => id === task.domainId),
-      context.today()
+      context.today(),
+      { followsOn, ledTo }
     )
   )
 }
@@ -65,6 +77,8 @@ const list: Command = {
   --domain PREFIX       Only this domain's
   --inbox               Only your Inbox
   --tag NAME            Only those with this tag, in any case
+  --search WORDS        Only those with every word in their title, notes or tags, best matches first
+  --follows-on TASK     Only those that follow on from this task
   --status LIST         Only these statuses, e.g. done or open,waiting (default: open, in progress, waiting)
   --when LIST           Only these, e.g. today or soon,someday (today, on a day, soon, any time, someday;
                         default: all but someday)
@@ -73,6 +87,8 @@ const list: Command = {
     domain: { type: "string" },
     inbox: { type: "boolean" },
     tag: { type: "string" },
+    search: { type: "string" },
+    "follows-on": { type: "string" },
     status: { type: "string" },
     when: { type: "string" },
     all: { type: "boolean" }
@@ -84,11 +100,10 @@ const list: Command = {
       status: stringOption(values, "status")?.toUpperCase().replaceAll(" ", "_"),
       inbox: values["inbox"] === true ? "true" : undefined,
       tag: stringOption(values, "tag"),
+      search: stringOption(values, "search"),
+      followsOn: stringOption(values, "follows-on"),
       includeNotStarted: values["all"] === true ? "true" : undefined,
-      when:
-        values["all"] === true
-          ? Object.values(When).join(",")
-          : stringOption(values, "when")?.toUpperCase().replaceAll(" ", "_")
+      when: values["all"] === true ? ALL_WHENS : stringOption(values, "when")?.toUpperCase().replaceAll(" ", "_")
     })
     print(context, tasks, () => taskLines(tasks, context.today()))
     return ExitCode.OK
@@ -113,13 +128,16 @@ const edit: Command = {
   --title TEXT          A new title
 ${TASK_FIELD_HELP}
   --untag NAME          Take a tag off; again for more
+  --append-notes TEXT   Add to the end of the notes, keeping what's there: for progress notes
   --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, energy, horizon, follows-on)
 ${VERSION_HELP}
-With -, stdin holds {"set": {...}, "clear": [...], "addTags": [...], "removeTags": [...]}, as the API's UpdateTaskRequest.`,
+With -, stdin holds {"set": {...}, "clear": [...], "addTags": [...], "removeTags": [...], "appendNotes": "..."},
+as the API's UpdateTaskRequest.`,
   options: {
     ...TASK_FIELD_OPTIONS,
     title: { type: "string" },
     untag: { type: "string", multiple: true },
+    "append-notes": { type: "string" },
     clear: { type: "string" },
     ...VERSION_OPTION
   },
@@ -139,14 +157,16 @@ With -, stdin holds {"set": {...}, "clear": [...], "addTags": [...], "removeTags
             },
             clear: clearedFrom(values),
             addTags: repeatedOption(values, "tag"),
-            removeTags: repeatedOption(values, "untag")
+            removeTags: repeatedOption(values, "untag"),
+            appendNotes: stringOption(values, "append-notes")
           }
     const nothing = (list: readonly unknown[] | undefined): boolean => (list ?? []).length === 0
     if (
       Object.keys(request.set).length === 0 &&
       nothing(request.clear) &&
       nothing(request.addTags) &&
-      nothing(request.removeTags)
+      nothing(request.removeTags) &&
+      request.appendNotes === undefined
     ) {
       throw new UsageError("Say what to change, e.g. --due friday or --clear due.")
     }
