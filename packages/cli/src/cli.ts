@@ -2,7 +2,7 @@ import { parseArgs, type ParseArgsOptionsConfig } from "node:util"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { TaxaApiError, TaxaClient } from "@taxa/shared/api/taxa-client"
 import { dateIn } from "@taxa/shared/dates/plain-date"
-import { DEFAULT_SERVER, ExitCode, type CliIo } from "./cli-io.ts"
+import { DEFAULT_SERVER, DEFAULT_WEB, ExitCode, type CliIo } from "./cli-io.ts"
 import { ACCOUNT_COMMANDS } from "./commands/account-commands.ts"
 import { STATUS_COMMANDS } from "./commands/status-commands.ts"
 import { TASK_COMMANDS } from "./commands/task-commands.ts"
@@ -36,6 +36,7 @@ taxa <command> --help says more about a command.
 
 Environment:
   TAXA_SERVER         The server (default ${DEFAULT_SERVER}); --server overrides it
+  TAXA_WEB            The web app, for links to tasks (default ${DEFAULT_WEB})
   TAXA_API_KEY        Your API key, or your agent's
   TAXA_AGENT_CONTEXT  For agents: what you're working on, recorded with your changes
   TAXA_AS             Which identity in the credentials file to act as; --as overrides it
@@ -45,6 +46,7 @@ The credentials file holds keys for you and your agents, readable only by
 you (chmod 600). Without --as, TAXA_API_KEY or TAXA_AS, taxa acts as [default]:
 
   server = http://localhost:8787
+  web = http://localhost:5173
 
   [default]
   key = taxa_…
@@ -93,11 +95,11 @@ const runCommand = async (
     return ExitCode.OK
   }
   const json = parsed.values.json
-  const { server, apiKey } = await connect()
+  const { server, apiKey, web } = await connect()
   const client = new TaxaClient({ baseUrl: server, apiKey, agentContext: io.env["TAXA_AGENT_CONTEXT"] })
   try {
     return await command.run(
-      { client, io, json, today: () => dateIn(io.timeZone, io.now()) },
+      { client, io, json, web, today: () => dateIn(io.timeZone, io.now()) },
       parsed.values,
       parsed.positionals
     )
@@ -144,7 +146,7 @@ export const runCli = async (argv: string[], io: CliIo): Promise<ExitCode> => {
       { server: typeof server === "string" ? server : undefined, as: typeof as === "string" ? as : undefined },
       io.env,
       file && parseCredentials(file),
-      DEFAULT_SERVER
+      { server: DEFAULT_SERVER, web: DEFAULT_WEB }
     )
   }
   if (name === undefined) {

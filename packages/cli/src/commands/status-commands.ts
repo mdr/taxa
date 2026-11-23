@@ -3,6 +3,7 @@ import type { ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { ExitCode } from "../cli-io.ts"
 import {
+  linked,
   oneArgument,
   print,
   stringOption,
@@ -15,7 +16,7 @@ import { STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 import { ifVersion, VERSION_HELP, VERSION_OPTION } from "../input/version-option.ts"
 
 const changed = (context: CommandContext, task: Task, verb: string): ExitCode => {
-  print(context, task, () => `${verb} ${task.ref}  ${task.title}`)
+  print(context, linked(context, task), () => `${verb} ${task.ref}  ${task.title}`)
   return ExitCode.OK
 }
 
@@ -86,7 +87,7 @@ Undoing an undo redoes it. Exit 3 if what the change did has been changed since.
     if (!Number.isInteger(version) || version < 1)
       throw new UsageError(`--version must be a change's number, not ${typed}.`)
     const task = await context.client.undoTask(ref, version)
-    print(context, task, () => `Undid change ${version} to ${task.ref}  ${task.title}`)
+    print(context, linked(context, task), () => `Undid change ${version} to ${task.ref}  ${task.title}`)
     return ExitCode.OK
   }
 }

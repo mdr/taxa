@@ -11,6 +11,7 @@ describe("parseCredentials", () => {
         file(
           [
             "server = http://taxa.local",
+            "web = http://web.local",
             "",
             "[default]",
             'key = "taxa_matt"   # me',
@@ -18,15 +19,17 @@ describe("parseCredentials", () => {
             "# For every Claude session",
             "[claude-code]",
             "key = taxa_claude",
-            "server = http://elsewhere"
+            "server = http://elsewhere",
+            "web = http://elsewhere-web"
           ].join("\n")
         )
       )
     ).toEqual({
       server: "http://taxa.local",
+      web: "http://web.local",
       identities: new Map([
         ["default", { key: "taxa_matt" }],
-        ["claude-code", { key: "taxa_claude", server: "http://elsewhere" }]
+        ["claude-code", { key: "taxa_claude", server: "http://elsewhere", web: "http://elsewhere-web" }]
       ])
     })
   })
@@ -46,36 +49,42 @@ describe("parseCredentials", () => {
 
   it("refuses what it doesn't know, so a typo isn't ignored", () => {
     expect(() => parseCredentials(file("[default]\nkye = taxa_matt"))).toThrow(
-      `${PATH}, line 2: expected key = … or server = ….`
+      `${PATH}, line 2: expected key = …, server = … or web = ….`
     )
     expect(() => parseCredentials(file("key = taxa_matt"))).toThrow(
-      `${PATH}, line 1: expected server = …, or an identity such as [default].`
+      `${PATH}, line 1: expected server = …, web = …, or an identity such as [default].`
     )
     expect(() => parseCredentials(file("[default]\n[default]"))).toThrow(`${PATH}, line 2: [default] is here twice.`)
   })
 })
 
 describe("connectionFrom", () => {
+  const DEFAULTS = { server: "http://default", web: "http://default-web" }
   const credentials: Credentials = {
     server: "http://file",
+    web: "http://file-web",
     identities: new Map([
       ["default", { key: "taxa_matt" }],
-      ["claude-code", { key: "taxa_claude", server: "http://claude" }]
+      ["claude-code", { key: "taxa_claude", server: "http://claude", web: "http://claude-web" }]
     ])
   }
   const connect = (
     options: { server?: string; as?: string },
     env: Record<string, string> = {}
   ): ReturnType<typeof connectionFrom> =>
-    connectionFrom({ server: options.server, as: options.as }, env, credentials, "http://default")
+    connectionFrom({ server: options.server, as: options.as }, env, credentials, DEFAULTS)
   const withoutFile = { server: undefined, as: undefined }
 
   it("acts as [default] unless asked otherwise", () => {
-    expect(connect({})).toEqual({ server: "http://file", apiKey: "taxa_matt" })
+    expect(connect({})).toEqual({ server: "http://file", apiKey: "taxa_matt", web: "http://file-web" })
   })
 
   it("acts as the identity --as or TAXA_AS names, --as first", () => {
-    expect(connect({ as: "claude-code" })).toEqual({ server: "http://claude", apiKey: "taxa_claude" })
+    expect(connect({ as: "claude-code" })).toEqual({
+      server: "http://claude",
+      apiKey: "taxa_claude",
+      web: "http://claude-web"
+    })
     expect(connect({}, { TAXA_AS: "claude-code" }).apiKey).toBe("taxa_claude")
     expect(connect({ as: "default" }, { TAXA_AS: "claude-code" }).apiKey).toBe("taxa_matt")
   })
@@ -92,10 +101,15 @@ describe("connectionFrom", () => {
     expect(connect({ as: "claude-code" }, { TAXA_SERVER: "http://env" }).server).toBe("http://env")
   })
 
-  it("has no key without a file, and the default server", () => {
-    expect(connectionFrom(withoutFile, {}, undefined, "http://default")).toEqual({
+  it("prefers TAXA_WEB to the file's web app", () => {
+    expect(connect({ as: "claude-code" }, { TAXA_WEB: "http://env-web" }).web).toBe("http://env-web")
+  })
+
+  it("has no key without a file, and the default server and web app", () => {
+    expect(connectionFrom(withoutFile, {}, undefined, DEFAULTS)).toEqual({
       server: "http://default",
-      apiKey: undefined
+      apiKey: undefined,
+      web: "http://default-web"
     })
   })
 
@@ -103,7 +117,7 @@ describe("connectionFrom", () => {
     expect(() => connect({ as: "claude" })).toThrow(
       'There\'s no identity "claude" in the credentials file; it has default, claude-code.'
     )
-    expect(() => connectionFrom(withoutFile, { TAXA_AS: "claude-code" }, undefined, "http://default")).toThrow(
+    expect(() => connectionFrom(withoutFile, { TAXA_AS: "claude-code" }, undefined, DEFAULTS)).toThrow(
       "There's no identity \"claude-code\": there's no credentials file (see taxa --help)."
     )
   })

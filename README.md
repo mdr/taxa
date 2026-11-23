@@ -37,6 +37,7 @@ identity for you and one for each agent, and must be readable only by you
 
 ```ini
 server = http://localhost:8787
+web = http://localhost:5173   # where its links to tasks go
 
 [default]
 key = taxa_…

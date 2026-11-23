@@ -23,9 +23,17 @@ describe("taxa add", () => {
     const matt = await mattAtHome(server)
     expect(await taxa(server, matt, "add", "Renew", "passport")).toEqual({
       exitCode: ExitCode.OK,
-      stdout: "Added IN-1  Renew passport\n",
+      stdout: "Added IN-1  Renew passport\nhttp://localhost:5173/tasks/IN-1\n",
       stderr: ""
     })
+  })
+
+  it("links to the task in the web app TAXA_WEB names", async ({ server }) => {
+    const matt = await mattAtHome(server)
+    const run = await runTaxaAs({ httpUrl: server.httpUrl, secret: matt.secret }, ["add", "Renew passport"], {
+      env: { TAXA_WEB: "https://taxa.example/" }
+    })
+    expect(run.stdout).toBe("Added IN-1  Renew passport\nhttps://taxa.example/tasks/IN-1\n")
   })
 
   it("reads dates as people write them, in their time zone", async ({ server }) => {
@@ -60,9 +68,9 @@ describe("taxa add", () => {
     ])
     const run = await runTaxaAs({ httpUrl: server.httpUrl, secret: matt.secret }, ["add", "-", "--json"], { stdin })
     expect(run.exitCode).toBe(ExitCode.OK)
-    expect((JSON.parse(run.stdout) as Task[]).map(({ ref, due }) => [ref, due])).toEqual([
-      ["H-1", undefined],
-      ["IN-2", "2026-02-01"]
+    expect((JSON.parse(run.stdout) as (Task & { url: string })[]).map(({ ref, due, url }) => [ref, due, url])).toEqual([
+      ["H-1", undefined, "http://localhost:5173/tasks/H-1"],
+      ["IN-2", "2026-02-01", "http://localhost:5173/tasks/IN-2"]
     ])
   })
 
@@ -91,6 +99,17 @@ describe("taxa list and show", () => {
     expect((await taxa(server, matt, "list", "--inbox")).stdout).toBe("IN-1  Renew passport  (inbox)\n")
   })
 
+  it("gives each task's link in the web app with --json", async ({ server }) => {
+    const matt = await mattAtHome(server)
+    await matt.addTask("Fix the tap", { domain: "H" })
+    const listed = JSON.parse((await taxa(server, matt, "list", "--json")).stdout) as { url: string }[]
+    expect(listed.map(({ url }) => url)).toEqual(["http://localhost:5173/tasks/H-1"])
+    const shown = JSON.parse((await taxa(server, matt, "show", "H-1", "--json")).stdout) as { url: string }
+    expect(shown.url).toBe("http://localhost:5173/tasks/H-1")
+    const started = JSON.parse((await taxa(server, matt, "start", "H-1", "--json")).stdout) as { url: string }
+    expect(started.url).toBe("http://localhost:5173/tasks/H-1")
+  })
+
   it("lists finished tasks when asked", async ({ server }) => {
     const matt = await mattAtHome(server)
     const { ref } = await matt.addTask("Renew passport")
@@ -110,6 +129,7 @@ describe("taxa list and show", () => {
     expect((await taxa(server, matt, "show", "1")).stdout).toBe(
       [
         "H-1  Fix the tap",
+        "http://localhost:5173/tasks/H-1",
         "",
         "Status    open",
         "Domain    Home",
@@ -184,7 +204,7 @@ describe("taxa edit and status commands", () => {
   it("tags tasks, lists them by tag, and renames a tag", async ({ server }) => {
     const matt = await mattAtHome(server)
     expect((await taxa(server, matt, "add", "Renew passport", "--tag", "Life Admin", "--tag", "errand")).stdout).toBe(
-      "Added IN-1  Renew passport\n"
+      "Added IN-1  Renew passport\nhttp://localhost:5173/tasks/IN-1\n"
     )
     await matt.addTask("Fix the tap", { domain: "H" })
     expect((await taxa(server, matt, "edit", "H-2", "--tag", "life admin")).exitCode).toBe(ExitCode.OK)

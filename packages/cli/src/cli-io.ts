@@ -27,3 +27,6 @@ export enum ExitCode {
 }
 
 export const DEFAULT_SERVER = "http://localhost:8787"
+
+/** The web app as `task dev` runs it, where task links go. */
+export const DEFAULT_WEB = "http://localhost:5173"

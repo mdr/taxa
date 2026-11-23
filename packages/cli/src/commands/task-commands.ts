@@ -3,7 +3,7 @@ import { z } from "zod"
 import { CreateTaskRequestSchema, UpdateTaskRequestSchema } from "@taxa/shared/tasks/task-requests"
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { ExitCode } from "../cli-io.ts"
-import { oneArgument, print, stringOption, UsageError, type Command, type CommandContext } from "../command.ts"
+import { linked, oneArgument, print, stringOption, UsageError, type Command, type CommandContext } from "../command.ts"
 import { activityLines } from "../format/activity-format.ts"
 import { taskDetail, taskLines } from "../format/task-format.ts"
 import { readStdinJson, STDIN } from "../input/stdin-json.ts"
@@ -25,13 +25,23 @@ const showTask = async (context: CommandContext, task: Task): Promise<void> => {
       includeNotStarted: "true"
     })
   ])
-  print(context, task, () =>
+  const shown = linked(context, task)
+  print(context, shown, () =>
     taskDetail(
       task,
       domains.find(({ id }) => id === task.domainId),
       context.today(),
+      shown.url,
       { followsOn, ledTo }
     )
+  )
+}
+
+/** Says what was added, and where to find it. */
+const printAdded = (context: CommandContext, tasks: Task[]): void => {
+  const shown = tasks.map((task) => linked(context, task))
+  print(context, shown.length === 1 ? shown[0] : shown, () =>
+    shown.map(({ ref, title, url }) => `Added ${ref}  ${title}\n${url}`).join("\n")
   )
 }
 
@@ -52,11 +62,10 @@ With -, stdin holds one task or an array of them, as the API's CreateTaskRequest
         for (const [index, request] of requests.entries()) {
           tasks.push(await context.client.createTask(request, key && `${key}#${index}`))
         }
-        print(context, tasks, () => taskLines(tasks, context.today()))
+        printAdded(context, tasks)
         return ExitCode.OK
       }
-      const task = await context.client.createTask(requests, key)
-      print(context, task, () => `Added ${task.ref}  ${task.title}`)
+      printAdded(context, [await context.client.createTask(requests, key)])
       return ExitCode.OK
     }
     const title = positionals.join(" ").trim()
@@ -65,7 +74,7 @@ With -, stdin holds one task or an array of them, as the API's CreateTaskRequest
       { title, ...fieldsFrom(values, context.today()), tags: repeatedOption(values, "tag") },
       key
     )
-    print(context, task, () => `Added ${task.ref}  ${task.title}`)
+    printAdded(context, [task])
     return ExitCode.OK
   }
 }
@@ -108,7 +117,11 @@ const list: Command = {
       when: values["all"] === true ? ALL_WHENS : stringOption(values, "when")?.toUpperCase().replaceAll(" ", "_"),
       deleted: values["deleted"] === true ? "true" : undefined
     })
-    print(context, tasks, () => taskLines(tasks, context.today()))
+    print(
+      context,
+      tasks.map((task) => linked(context, task)),
+      () => taskLines(tasks, context.today())
+    )
     return ExitCode.OK
   }
 }

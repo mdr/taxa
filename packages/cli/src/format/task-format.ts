@@ -37,10 +37,12 @@ export const taskDetail = (
   task: Task,
   domain: Domain | undefined,
   today: IsoDate,
+  url: string,
   links: FollowOnLinks = { followsOn: undefined, ledTo: [] }
 ): string =>
   [
     `${task.ref}  ${task.title}`,
+    url,
     "",
     ...row("Status", STATUS_TEXT[task.status]),
     ...row("Domain", task.inbox ? "Inbox" : domain?.name),

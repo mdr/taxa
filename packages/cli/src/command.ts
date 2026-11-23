@@ -1,5 +1,7 @@
 import type { ParseArgsOptionsConfig } from "node:util"
 import type { TaxaClient } from "@taxa/shared/api/taxa-client"
+import type { Task } from "@taxa/shared/tasks/task"
+import { taskUrl } from "./format/task-url.ts"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import type { CliIo, ExitCode } from "./cli-io.ts"
 
@@ -10,6 +12,8 @@ export interface CommandContext {
   io: CliIo
   /** --json: print what the API answered, for machines. */
   json: boolean
+  /** The web app, where links to tasks go. */
+  web: string
   today: () => IsoDate
 }
 
@@ -42,6 +46,14 @@ export const oneArgument = (positionals: string[], what: string): string => {
 export const print = (context: CommandContext, data: unknown, human: () => string): void => {
   context.io.stdout(context.json ? `${JSON.stringify(data, undefined, 2)}\n` : `${human()}\n`)
 }
+
+/** A task as `taxa` prints it with --json: the API's, with a link to it in the web app. */
+export type LinkedTask = Task & { url: string }
+
+export const linked = (context: CommandContext, task: Task): LinkedTask => ({
+  ...task,
+  url: taskUrl(context.web, task.ref)
+})
 
 /** Any schema that checks text and brands it as an id. */
 interface IdSchema<Id> {

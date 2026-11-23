@@ -32,7 +32,9 @@ act as Matt himself. `TAXA_SERVER` says where the server is
 ## Reading
 
 Use `--json` whenever you'll act on the output: it prints exactly what
-the API answered.
+the API answered, with each task's `url` in the web app added. Give Matt
+that link whenever you mention a task you added or changed; `taxa add`
+and `taxa show` print it too.
 
 ```sh
 taxa list --json                    # active tasks, most urgent first

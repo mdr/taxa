@@ -10,17 +10,26 @@ export interface CredentialsFile {
 interface Identity {
   key?: string
   server?: string
+  web?: string
 }
 
 export interface Credentials {
   server?: string
+  web?: string
   identities: Map<string, Identity>
 }
 
-/** Where `taxa` finds its server and key. */
+/** Where `taxa` finds its server and key, and the web app its links go to. */
 export interface Connection {
   server: string
   apiKey: string | undefined
+  web: string
+}
+
+/** Where to look when nothing says otherwise. */
+export interface Defaults {
+  server: string
+  web: string
 }
 
 /** A credentials file `taxa` won't use, or an identity it doesn't have, with why. */
@@ -31,15 +40,16 @@ const DEFAULT_IDENTITY = "default"
 
 const unquoted = (value: string): string => /^(["'])(.*)\1$/.exec(value)?.[2] ?? value
 
-const TOP_LEVEL = "expected server = …, or an identity such as [default]"
-const IN_IDENTITY = "expected key = … or server = …"
+const TOP_LEVEL = "expected server = …, web = …, or an identity such as [default]"
+const IN_IDENTITY = "expected key = …, server = … or web = …"
 
 /** Puts one `name = value` where it belongs, or says it doesn't belong anywhere. */
 const settled = (credentials: Credentials, identity: Identity | undefined, name: string, value: string): boolean => {
   if (identity) {
-    if (name !== "key" && name !== "server") return false
+    if (name !== "key" && name !== "server" && name !== "web") return false
     identity[name] = value
   } else if (name === "server" || name === "TAXA_SERVER") credentials.server = value
+  else if (name === "web" || name === "TAXA_WEB") credentials.web = value
   else if (name === "TAXA_API_KEY")
     credentials.identities.set(DEFAULT_IDENTITY, { ...credentials.identities.get(DEFAULT_IDENTITY), key: value })
   else return false
@@ -47,9 +57,10 @@ const settled = (credentials: Credentials, identity: Identity | undefined, name:
 }
 
 /**
- * Reads an INI file: `server = …` at the top, then `[name]` sections of
- * `key = …` and `server = …`. `#` starts a comment. The older one-identity
- * form, `TAXA_API_KEY=…` and `TAXA_SERVER=…` at the top, still works.
+ * Reads an INI file: `server = …` and `web = …` at the top, then `[name]`
+ * sections of `key = …`, `server = …` and `web = …`. `#` starts a comment.
+ * The older one-identity form, `TAXA_API_KEY=…` and `TAXA_SERVER=…` at the
+ * top, still works.
  */
 export const parseCredentials = (file: CredentialsFile): Credentials => {
   if ((file.mode & 0o077) !== 0)
@@ -90,18 +101,20 @@ const identityNamed = (name: string | undefined, credentials: Credentials | unde
 /**
  * The server and key to use. The key: `--as NAME`'s, else TAXA_API_KEY,
  * else TAXA_AS's identity, else [default]'s. The server: `--server`, else
- * TAXA_SERVER, else the identity's, else the file's, else the default.
+ * TAXA_SERVER, else the identity's, else the file's, else the default. The
+ * web app: TAXA_WEB, else the identity's, else the file's, else the default.
  */
 export const connectionFrom = (
   options: { server: string | undefined; as: string | undefined },
   env: Record<string, string | undefined>,
   credentials: Credentials | undefined,
-  defaultServer: string
+  defaults: Defaults
 ): Connection => {
   const envKey = options.as === undefined ? env["TAXA_API_KEY"] : undefined
   const identity = envKey === undefined ? identityNamed(options.as ?? env["TAXA_AS"], credentials) : {}
   return {
-    server: options.server ?? env["TAXA_SERVER"] ?? identity.server ?? credentials?.server ?? defaultServer,
-    apiKey: envKey ?? identity.key
+    server: options.server ?? env["TAXA_SERVER"] ?? identity.server ?? credentials?.server ?? defaults.server,
+    apiKey: envKey ?? identity.key,
+    web: env["TAXA_WEB"] ?? identity.web ?? credentials?.web ?? defaults.web
   }
 }

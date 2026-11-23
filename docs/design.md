@@ -251,7 +251,8 @@ the Zod schemas in `shared`.
   restores it, and an undo is itself an entry, so undoing it redoes.
 - **The CLI (`taxa`)** wraps the API. It prints readable output by default,
   `--json` for machines, takes JSON on stdin, has meaningful exit codes, and
-  never prompts unless asked to. In v1, tasks are created with explicit
+  never prompts unless asked to. It gives each task's link in the web app
+  (`taxa add`, `taxa show` and `--json`), so agents can hand people one. In v1, tasks are created with explicit
   flags (`taxa add "Pay council tax" --domain H --due friday`). A Claude
   Code skill teaches agents to use it.
 - **The attention list** (`taxa attention`) is what needs a person's
