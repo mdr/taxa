@@ -118,7 +118,7 @@ export class InProcessServer {
     this.clock.advance(time)
   }
 
-  /** What the hourly clear-out of the bin does, now. */
+  /** What the daily clear-out of the bin does, now. */
   clearOldBin(): Promise<number> {
     return clearOldBin(this.#database.db, this.#logger, this.clock.now())
   }

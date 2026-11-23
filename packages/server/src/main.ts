@@ -38,7 +38,7 @@ serve({ fetch: app.fetch, port: config.PORT }, ({ port }) =>
 )
 
 /** How often tasks left in the bin too long are deleted for good. */
-const CLEAR_BIN_EVERY_MS = 60 * 60 * 1000
+const CLEAR_BIN_EVERY_MS = 24 * 60 * 60 * 1000
 
 const clearBin = (): void => {
   clearOldBin(database.db, logger, realClock.now()).catch((error: unknown) =>
