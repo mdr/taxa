@@ -1,6 +1,6 @@
 import { isIsoTime } from "@taxa/shared/dates/plain-date"
 import { sessionTimeline } from "@taxa/shared/sessions/session-timeline"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import styles from "../Session.module.css"
 import { sessionPageTestIds } from "../SessionPageTestIds.ts"
 import { PlanEditor } from "./PlanEditor.tsx"
@@ -115,7 +115,11 @@ const TaskChoice = ({ plan }: { plan: SessionPlanService }) => {
   const tag = useServiceState(plan, (state) => state.tag)
   const starting = useServiceState(plan, (state) => state.starting)
   const problem = useServiceState(plan, (state) => state.problem)
-  const tasks = useSessionCandidates()
+  const candidates = useSessionCandidates()
+  const tasks = candidates ?? []
+  useEffect(() => {
+    if (candidates) plan.tasksAre(candidates)
+  }, [plan, candidates])
   const now = useNow()
   const endsAt = endsAtFor(window, now) ?? now
   const timeline = sessionTimeline(draftSession(entries, now, endsAt), now)

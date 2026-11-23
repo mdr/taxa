@@ -33,6 +33,17 @@ describe("SessionPlanService", () => {
     expect(plan.state.problem).toBeUndefined()
   })
 
+  it("takes a planned task out once it's gone, such as when its adding is undone", () => {
+    const { plan } = setUp()
+    plan.add(tap)
+    plan.add(radiators)
+    const before = plan.state
+    plan.tasksAre([tap, radiators])
+    expect(plan.state).toBe(before)
+    plan.tasksAre([tap])
+    expect(plan.state.entries.map(({ task }) => task.title)).toEqual(["Fix the tap"])
+  })
+
   it("narrows the suggestions to a tag, and lets them all back", () => {
     const { plan } = setUp()
     plan.filterByTag("errand")

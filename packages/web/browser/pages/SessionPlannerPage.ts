@@ -4,6 +4,8 @@ import { expectAccessible } from "./accessibility.ts"
 import { PlanEditor } from "./PlanEditor.ts"
 import { RunningSessionPage } from "./RunningSessionPage.ts"
 import { Sidebar } from "./Sidebar.ts"
+import { Keyboard } from "./Keyboard.ts"
+import { UndoNotice } from "./UndoNotice.ts"
 import { sessionPageTestIds } from "../../src/sessions/SessionPageTestIds.ts"
 
 /** Choosing a session's tasks, before it starts. */
@@ -11,12 +13,16 @@ export class SessionPlannerPage extends PageObject {
   readonly #page: Page
   readonly plan: PlanEditor
   readonly sidebar: Sidebar
+  readonly keyboard: Keyboard
+  readonly undoNotice: UndoNotice
 
   constructor(page: Page) {
     super()
     this.#page = page
     this.plan = new PlanEditor(page)
     this.sidebar = new Sidebar(page)
+    this.keyboard = new Keyboard(page)
+    this.undoNotice = new UndoNotice(page)
   }
 
   #byId(id: string): Locator {

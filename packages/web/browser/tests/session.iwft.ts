@@ -211,3 +211,20 @@ test("planning a session: suggestions narrowed to a tag, and a task thought of w
   await taxa.expectTask("IN-4", { title: "Call the plumber", inbox: true })
   await planner.expectAccessible()
 })
+
+test("a task added to a session's plan by mistake, undone, comes out of the plan", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap")
+  const setup = await (await (await taxa.openTab("Matt")).openInbox()).sidebar.openSession()
+  await setup.chooseLength("1 hour")
+  const planner = await setup.chooseTasks()
+  await planner.plan.add("Fix the tap")
+  await planner.plan.addNewTask("Call the plumber")
+  await planner.plan.expectPlan(["9:00 – 9:30 Fix the tap", "9:30 – 10:00 Call the plumber"])
+
+  await planner.keyboard.press("Escape mod+z")
+  await planner.undoNotice.expectSays("Undid: Added IN-2")
+  await planner.plan.expectPlan(["9:00 – 9:30 Fix the tap"])
+  const session = await planner.start()
+  await session.expectCurrent("Fix the tap", "30:00")
+})

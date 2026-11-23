@@ -231,7 +231,7 @@ export const SessionNow = ({ session }: { session: Session }) => {
   const [replanning, setReplanning] = useState(false)
   const [search, setSearch] = useState("")
   const [, navigate] = useLocation()
-  const tasks = useSessionCandidates(replanning)
+  const tasks = useSessionCandidates(replanning) ?? []
   const timeline = sessionTimeline(session, useNow())
   const { current } = timeline
 

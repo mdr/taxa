@@ -95,6 +95,13 @@ export class SessionPlanService extends AbstractService<SessionPlanState> {
       )
     })
 
+  /** The tasks there are now: a planned one no longer among them (deleted, or finished elsewhere) comes out of the plan. */
+  readonly tasksAre = (tasks: readonly Task[]): void => {
+    const there = new Set(tasks.map(({ id }) => id))
+    const entries = this.state.entries.filter(({ taskId }) => there.has(taskId))
+    if (entries.length !== this.state.entries.length) this.setState({ entries })
+  }
+
   readonly search = (search: string): void => this.setState({ search })
 
   readonly filterByTag = (tag: string | undefined): void => this.setState({ tag })
