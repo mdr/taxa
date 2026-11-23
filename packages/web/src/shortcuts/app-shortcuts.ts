@@ -1,7 +1,7 @@
 import { MENU_KEY } from "./command-menu-service.ts"
 import { SESSION_PATH } from "../sessions/session-paths.ts"
 import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
-import { TRASH_PATH } from "../tasks/trash/trash-path.ts"
+import { BIN_PATH } from "../tasks/bin/bin-path.ts"
 import { SOMEDAY_PATH, SOON_PATH, TODAY_PATH } from "../tasks/when/when-paths.ts"
 import type { UndoActions } from "../undo/undo-service.ts"
 import { FocusTarget, ShortcutGroup, type Shortcut, type ShortcutActions } from "./shortcut-service.ts"
@@ -17,7 +17,7 @@ const GO_TO: readonly { key: string; description: string; path: string }[] = [
   { key: "p", description: "In progress", path: IN_PROGRESS_PATH },
   { key: "n", description: "Session", path: SESSION_PATH },
   { key: "m", description: "Someday", path: SOMEDAY_PATH },
-  { key: "x", description: "Trash", path: TRASH_PATH }
+  { key: "b", description: "Bin", path: BIN_PATH }
 ]
 
 /** Whether a page shows a list, with quick capture at the top. */

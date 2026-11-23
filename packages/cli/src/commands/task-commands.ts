@@ -92,7 +92,7 @@ const list: Command = {
   --when LIST           Only these, e.g. today or soon,someday (today, on a day, soon, any time, someday;
                         default: all but someday)
   --all                 Include tasks whose start date is still to come, and someday ones
-  --deleted             The trash instead: deleted tasks, the last deleted first (taxa restore brings one back)`,
+  --deleted             The bin instead: deleted tasks, the last deleted first (taxa restore brings one back)`,
   options: {
     domain: { type: "string" },
     inbox: { type: "boolean" },

@@ -115,7 +115,7 @@ describe("changing tasks", () => {
     expect(await matt.client.tasks()).toHaveLength(1)
   })
 
-  it("keeps deleted tasks in the trash, whatever their status, the last deleted first", async ({ server }) => {
+  it("keeps deleted tasks in the bin, whatever their status, the last deleted first", async ({ server }) => {
     const matt = await server.user("Matt")
     await matt.addDomain("Home", "H")
     await matt.addDomain("Work", "WK")
@@ -128,10 +128,10 @@ describe("changing tasks", () => {
     await matt.client.deleteTask(tap.ref)
     server.advance(60_000)
     await matt.client.deleteTask(report.ref)
-    const trash = async (domain?: string): Promise<string[]> =>
+    const bin = async (domain?: string): Promise<string[]> =>
       (await matt.client.tasks({ deleted: "true", domain })).map(({ ref }) => ref)
-    expect(await trash()).toEqual(["WK-3", "H-1", "H-2"])
-    expect(await trash("H")).toEqual(["H-1", "H-2"])
+    expect(await bin()).toEqual(["WK-3", "H-1", "H-2"])
+    expect(await bin("H")).toEqual(["H-1", "H-2"])
     expect(await matt.client.tasks()).toEqual([])
   })
 

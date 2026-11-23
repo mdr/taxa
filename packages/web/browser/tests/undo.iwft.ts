@@ -75,7 +75,7 @@ test("undoing an earlier change from a task's activity", async ({ taxa }) => {
   ])
 })
 
-test("restoring a deleted task from the trash", async ({ taxa }) => {
+test("restoring a deleted task from the bin", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   const tap = await taxa.matt.addTask("Fix the tap", { domain: "H" })
   const bins = await taxa.matt.addTask("Put the bins out", { domain: "H" })
@@ -83,19 +83,19 @@ test("restoring a deleted task from the trash", async ({ taxa }) => {
   await taxa.advance(60_000)
   await taxa.matt.client.deleteTask(tap.ref)
   const home = await (await taxa.openTab("Matt")).openInbox().then((inbox) => inbox.sidebar.openDomain("Home"))
-  const trash = await home.sidebar.openTrash()
-  await trash.expectTasks(["H-1 Fix the tap", "H-2 Put the bins out"])
-  await trash.expectAccessible()
+  const bin = await home.sidebar.openBin()
+  await bin.expectTasks(["H-1 Fix the tap", "H-2 Put the bins out"])
+  await bin.expectAccessible()
 
-  await trash.restore("Fix the tap")
-  await trash.expectTasks(["H-2 Put the bins out"])
+  await bin.restore("Fix the tap")
+  await bin.expectTasks(["H-2 Put the bins out"])
   await taxa.expectTaskCount(1)
-  await trash.restore("Put the bins out")
-  await trash.expectEmpty()
+  await bin.restore("Put the bins out")
+  await bin.expectEmpty()
   // Restoring is a change like any other.
-  await trash.keyboard.press("mod+z")
-  await trash.undoNotice.expectSays("Undid: Restored H-2")
-  await trash.expectTasks(["H-2 Put the bins out"])
+  await bin.keyboard.press("mod+z")
+  await bin.undoNotice.expectSays("Undid: Restored H-2")
+  await bin.expectTasks(["H-2 Put the bins out"])
 })
 
 test("⌘Z takes back the last change, though ticking off one before it is still on offer", async ({ taxa }) => {

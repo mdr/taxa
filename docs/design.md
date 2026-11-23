@@ -309,7 +309,7 @@ offline editing from the start, even though it ships in stages.
   wins, the overwritten value is kept in the activity log, and the person
   sees a "changed while you were offline" notice with undo.
 - **Deletes are soft** (`deleted_at`), so they sync like any other change
-  and give us a trash. They can be cleaned up later.
+  and give us a bin.
 - If several people ever need to edit the same notes at once, Yjs could be
   used for notes alone.
 

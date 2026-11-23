@@ -43,8 +43,8 @@ import { SequenceHint } from "../shortcuts/SequenceHint.tsx"
 import { localShortcutSettings } from "../shortcuts/shortcut-settings.ts"
 import { FollowOnDialog } from "../tasks/follow-ons/FollowOnDialog.tsx"
 import { UndoNotice } from "../undo/UndoNotice.tsx"
-import { TrashPage } from "../tasks/trash/TrashPage.tsx"
-import { TRASH_PATH } from "../tasks/trash/trash-path.ts"
+import { BinPage } from "../tasks/bin/BinPage.tsx"
+import { BIN_PATH } from "../tasks/bin/bin-path.ts"
 import { UndoContext, UndoService, useUndo, useUndoNotice } from "../undo/undo-service.ts"
 import { FollowOnContext, FollowOnService, useFollowingOn } from "../tasks/follow-ons/follow-on-service.ts"
 import {
@@ -91,8 +91,8 @@ const Pages = () => (
     <Route path="/tags/:name">
       {({ name }) => <TaskListPage key={`TAG:${name}`} list={{ type: ListType.TAG, name: tagFromPath(name) }} />}
     </Route>
-    <Route path={TRASH_PATH}>
-      <TrashPage />
+    <Route path={BIN_PATH}>
+      <BinPage />
     </Route>
     <Route path="/tasks/:ref">{({ ref }) => <TaskDetailPage key={ref} taskRef={ref} />}</Route>
     <Route path={SESSION_PATH}>

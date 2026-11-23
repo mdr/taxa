@@ -4,7 +4,7 @@ import { sidebarTestIds } from "../../src/app/SidebarTestIds.ts"
 import { newDomainFormTestIds } from "../../src/domains/NewDomainFormTestIds.ts"
 import { ShortcutsHelp } from "./ShortcutsHelp.ts"
 import { TaskListPage } from "./TaskListPage.ts"
-import { TrashPage } from "./TrashPage.ts"
+import { BinPage } from "./BinPage.ts"
 import { SessionPlannerPage } from "./SessionPlannerPage.ts"
 import { SessionSetupPage } from "./SessionSetupPage.ts"
 
@@ -97,11 +97,11 @@ export class Sidebar extends PageObject {
     return page
   }
 
-  async openTrash(): Promise<TrashPage> {
-    await this.#page.getByTestId(sidebarTestIds.trash).click()
-    const trash = new TrashPage(this.#page)
-    await trash.expectShown()
-    return trash
+  async openBin(): Promise<BinPage> {
+    await this.#page.getByTestId(sidebarTestIds.bin).click()
+    const bin = new BinPage(this.#page)
+    await bin.expectShown()
+    return bin
   }
 
   async openDomain(name: string): Promise<TaskListPage> {

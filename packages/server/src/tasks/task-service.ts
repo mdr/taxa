@@ -96,7 +96,7 @@ const parseWhens = (text: string | undefined): ReadonlySet<When> => {
   return new Set(whens as When[])
 }
 
-/** The trash: deleted tasks, in a domain if asked, the last deleted first. */
+/** The bin: deleted tasks, in a domain if asked, the last deleted first. */
 const deletedTasks = async (db: Db, caller: Caller, domainId: DomainId | undefined): Promise<Task[]> => {
   const found = await findTasks(db, caller.user.id, {
     domainId,

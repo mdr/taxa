@@ -35,7 +35,7 @@ normalising what the API receives from others is still to come.
 
 Also added after first use: keyboard shortcuts. `C` adds a task, `G` then a letter goes to a
 list used every day (`T` Today, `S` Soon, `I` Inbox, `P` In progress, `N` the
-session, `M` Someday, `X` Trash; domains, which people tend to stay in, are in
+session, `M` Someday, `B` the bin; domains, which people tend to stay in, are in
 the command menu instead; after `G` a panel shows what can come next, until
 the next key, `Esc` or a click elsewhere), `⌘Z` undoes the tab's last change of any kind and `⇧⌘Z` redoes it, and `?` lists them, with
 single-key ones able to be turned off. In a list, `J`/`K` or the arrows move
@@ -71,7 +71,7 @@ with `X` and `I`, replanning, and a summary at the end. Not yet in the CLI.
 - Key scopes enforced everywhere. Delegating to agents, claims, stale claims
 - Threads, and the timeline
 - The change feed and live updates over SSE
-- Undo and trash: done (undo in the API and `taxa undo`, `⌘Z`/`⇧⌘Z`, undo from a task's activity, the Trash page and `taxa list --deleted`)
+- Undo and bin: done (undo in the API and `taxa undo`, `⌘Z`/`⇧⌘Z`, undo from a task's activity, the Bin page and `taxa list --deleted`)
 - The attention list in the API and CLI
 
 ## Stage 4: Sharing and going online

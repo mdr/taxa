@@ -4,10 +4,10 @@ import { PageObject } from "./steps.ts"
 import { Sidebar } from "./Sidebar.ts"
 import { UndoNotice } from "./UndoNotice.ts"
 import { Keyboard } from "./Keyboard.ts"
-import { trashPageTestIds } from "../../src/tasks/trash/TrashPageTestIds.ts"
+import { binPageTestIds } from "../../src/tasks/bin/BinPageTestIds.ts"
 
 /** Deleted tasks, to restore. */
-export class TrashPage extends PageObject {
+export class BinPage extends PageObject {
   readonly #page: Page
   readonly sidebar: Sidebar
   readonly undoNotice: UndoNotice
@@ -22,12 +22,12 @@ export class TrashPage extends PageObject {
   }
 
   async expectShown(): Promise<void> {
-    await expect(this.#page.getByTestId(trashPageTestIds.heading)).toBeVisible()
+    await expect(this.#page.getByTestId(binPageTestIds.heading)).toBeVisible()
   }
 
-  /** The tasks in the trash, last deleted first, each `H-1 Fix the tap`. */
+  /** The tasks in the bin, last deleted first, each `H-1 Fix the tap`. */
   async expectTasks(tasks: string[]): Promise<void> {
-    const rows = this.#page.getByTestId(trashPageTestIds.task)
+    const rows = this.#page.getByTestId(binPageTestIds.task)
     await expect(rows).toHaveCount(tasks.length)
     for (const [index, task] of tasks.entries()) {
       const [ref = "", ...title] = task.split(" ")
@@ -37,18 +37,18 @@ export class TrashPage extends PageObject {
   }
 
   async expectEmpty(): Promise<void> {
-    await expect(this.#page.getByTestId(trashPageTestIds.empty)).toBeVisible()
+    await expect(this.#page.getByTestId(binPageTestIds.empty)).toBeVisible()
   }
 
   async restore(title: string): Promise<void> {
     await this.#page
-      .getByTestId(trashPageTestIds.task)
+      .getByTestId(binPageTestIds.task)
       .filter({ hasText: title })
-      .getByTestId(trashPageTestIds.restore)
+      .getByTestId(binPageTestIds.restore)
       .click()
   }
 
   async expectAccessible(): Promise<void> {
-    await expectAccessible(this.#page, "trash")
+    await expectAccessible(this.#page, "bin")
   }
 }

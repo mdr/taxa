@@ -17,7 +17,7 @@ test("adding tasks and moving between lists from the keyboard", async ({ taxa })
 
   // G shows the keys that can come next; Escape or a click elsewhere cancels it.
   const going = await work.keyboard.startGoingTo()
-  await going.expectOffered(["T Today", "S Soon", "I Inbox", "P In progress", "N Session", "M Someday", "X Trash"])
+  await going.expectOffered(["T Today", "S Soon", "I Inbox", "P In progress", "N Session", "M Someday", "B Bin"])
   await going.expectAccessible()
   await going.cancel()
   await going.expectGone()
@@ -31,7 +31,7 @@ test("adding tasks and moving between lists from the keyboard", async ({ taxa })
   await (await work.keyboard.goTo("g p")).expectHeading("In progress")
   await (await work.keyboard.goTo("g m")).expectHeading("Someday")
   await (await work.keyboard.goToSession()).expectShown()
-  await (await work.keyboard.goToTrash()).expectShown()
+  await (await work.keyboard.goToBin()).expectShown()
   await (await work.keyboard.goTo("g i")).expectHeading("Inbox")
 
   // From a task's page, C adds to the list the task is in.
@@ -72,7 +72,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "In progress G then P",
     "Session G then N",
     "Someday G then M",
-    "Trash G then X",
+    "Bin G then B",
     "Search the list /",
     "Next task J or ↓",
     "Previous task K or ↑",
@@ -192,8 +192,7 @@ test("finding and running commands from the command menu", async ({ taxa }) => {
   await menu.expectAccessible()
   // Domains have no shortcut, but are here.
   await menu.search("go h")
-  await menu.expectCommands(["Trash", "Home"])
-  await menu.pickNext()
+  await menu.expectCommands(["Home"])
   await menu.expectPicked("Home")
   await menu.run()
   await inbox.expectHeading("Home")

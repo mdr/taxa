@@ -9,7 +9,7 @@ export enum Page {
   SOMEDAY = "SOMEDAY",
   SESSION = "SESSION",
   SESSION_SUMMARY = "SESSION_SUMMARY",
-  TRASH = "TRASH",
+  BIN = "BIN",
   DOMAIN = "DOMAIN",
   TASK = "TASK",
   NOT_FOUND = "NOT_FOUND"
@@ -24,7 +24,7 @@ export const pageOpened = (location: string): LogFields => {
   if (location === "/soon") return { page: Page.SOON }
   if (location === "/someday") return { page: Page.SOMEDAY }
   if (location === "/session") return { page: Page.SESSION }
-  if (location === "/trash") return { page: Page.TRASH }
+  if (location === "/bin") return { page: Page.BIN }
   const [, section, name] = location.split("/")
   if (section === "domains" && name) return { page: Page.DOMAIN, domainPrefix: name.toUpperCase() }
   if (section === "tasks" && name) return { page: Page.TASK, taskRef: name.toUpperCase() }

@@ -5,7 +5,7 @@ import { ShortcutsHelp } from "./ShortcutsHelp.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { SequenceHint } from "./SequenceHint.ts"
 import { SessionSetupPage } from "./SessionSetupPage.ts"
-import { TrashPage } from "./TrashPage.ts"
+import { BinPage } from "./BinPage.ts"
 import { TaskListPage } from "./TaskListPage.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
@@ -59,9 +59,9 @@ export class Keyboard extends PageObject {
     return new SessionSetupPage(this.#page)
   }
 
-  async goToTrash(): Promise<TrashPage> {
-    await this.press("g x")
-    return new TrashPage(this.#page)
+  async goToBin(): Promise<BinPage> {
+    await this.press("g b")
+    return new BinPage(this.#page)
   }
 
   async openCommandMenu(): Promise<CommandMenu> {

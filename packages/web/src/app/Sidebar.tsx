@@ -11,7 +11,7 @@ import { useTasks } from "../tasks/task-queries.ts"
 import { StatusIcon } from "../tasks/StatusIcon.tsx"
 import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
 import { SOMEDAY_PATH, SOON_PATH, TODAY_PATH } from "../tasks/when/when-paths.ts"
-import { TRASH_PATH } from "../tasks/trash/trash-path.ts"
+import { BIN_PATH } from "../tasks/bin/bin-path.ts"
 import { WHEN_ICONS } from "../tasks/when/when-choices.tsx"
 import { When } from "@taxa/shared/tasks/when"
 import type { ReactNode } from "react"
@@ -221,14 +221,9 @@ export const Sidebar = () => {
         countTestId={sidebarTestIds.somedayCount}
       />
       <SidebarTags />
-      <Link
-        href={TRASH_PATH}
-        className={styles.link}
-        aria-current={current(TRASH_PATH)}
-        data-testid={sidebarTestIds.trash}
-      >
+      <Link href={BIN_PATH} className={styles.link} aria-current={current(BIN_PATH)} data-testid={sidebarTestIds.bin}>
         <Trash2 size={16} className={styles.linkIcon} aria-hidden />
-        <span className={styles.name}>Trash</span>
+        <span className={styles.name}>Bin</span>
       </Link>
       <button
         type="button"

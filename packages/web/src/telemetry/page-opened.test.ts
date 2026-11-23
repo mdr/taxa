@@ -10,7 +10,7 @@ describe("pageOpened", () => {
     expect(pageOpened("/today/plan")).toEqual({ page: Page.PLAN_TODAY })
     expect(pageOpened("/soon")).toEqual({ page: Page.SOON })
     expect(pageOpened("/someday")).toEqual({ page: Page.SOMEDAY })
-    expect(pageOpened("/trash")).toEqual({ page: Page.TRASH })
+    expect(pageOpened("/bin")).toEqual({ page: Page.BIN })
     expect(pageOpened("/sessions/0190a1b2-0000-7000-8000-5e5510000001")).toEqual({
       page: Page.SESSION_SUMMARY,
       sessionId: "0190a1b2-0000-7000-8000-5e5510000001"
