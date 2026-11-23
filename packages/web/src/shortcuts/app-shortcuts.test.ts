@@ -1,12 +1,6 @@
-import { domainPrefix } from "@taxa/shared/domains/domain"
 import { describe, expect, it } from "vite-plus/test"
 import { appShortcuts } from "./app-shortcuts.ts"
 import { FocusTarget, type Shortcut } from "./shortcut-service.ts"
-
-const domains = [
-  { name: "Home", prefix: domainPrefix("H") },
-  { name: "Work", prefix: domainPrefix("WK") }
-]
 
 const setUp = (
   location: string
@@ -24,7 +18,6 @@ const setUp = (
   const shortcuts = appShortcuts(
     location,
     (to) => went.push(to),
-    domains,
     {
       openHelp: () => helped.push(1),
       openMenu: () => helped.push(2),
@@ -54,12 +47,10 @@ describe("appShortcuts", () => {
     expect(focused).toEqual([FocusTarget.CAPTURE])
   })
 
-  it("goes to the Inbox, or to a domain by its prefix", () => {
+  it("goes to each list used every day, but not to domains", () => {
     const { went, shortcuts } = setUp("/")
-    run(shortcuts, "g i")
-    run(shortcuts, "g h")
-    run(shortcuts, "g w k")
-    expect(went).toEqual(["/", "/domains/H", "/domains/WK"])
+    for (const keys of ["g t", "g s", "g i", "g p", "g n", "g m", "g x", "g h"]) run(shortcuts, keys)
+    expect(went).toEqual(["/today", "/soon", "/", "/in-progress", "/session", "/someday", "/trash"])
   })
 
   it("shows the shortcuts, and the command menu", () => {

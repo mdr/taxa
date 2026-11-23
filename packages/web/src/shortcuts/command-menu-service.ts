@@ -1,3 +1,4 @@
+import type { Domain } from "@taxa/shared/domains/domain"
 import type { Task } from "@taxa/shared/tasks/task"
 import { TaskRefSchema } from "@taxa/shared/tasks/task-ref"
 import { matchesSearch } from "@taxa/shared/tasks/task-search"
@@ -44,6 +45,18 @@ export const menuCommands = (shortcuts: readonly Shortcut[]): Command[] => {
     })
     .map(({ description, group, keys, run }) => ({ description, group, keys, run }))
 }
+
+/** Going to each domain, which has no shortcut. */
+export const domainCommands = (
+  domains: readonly Pick<Domain, "name" | "prefix">[],
+  navigate: (to: string) => void
+): Command[] =>
+  domains.map(({ name, prefix }) => ({
+    description: name,
+    group: ShortcutGroup.GO,
+    keys: undefined,
+    run: () => navigate(`/domains/${prefix}`)
+  }))
 
 /** The key that opens the menu. */
 export const MENU_KEY = "mod+k"

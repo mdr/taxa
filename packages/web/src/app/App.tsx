@@ -121,7 +121,7 @@ const Layout = () => {
   const followingOn = useFollowingOn()
   const history = useUndo()
   const undoNotice = useUndoNotice()
-  useShortcuts(ShortcutScope.APP, appShortcuts(location, navigate, domains.data ?? [], shortcuts, history))
+  useShortcuts(ShortcutScope.APP, appShortcuts(location, navigate, shortcuts, history))
   if (domains.data?.length === 0) {
     return (
       <main className={styles.onboarding}>

@@ -3,6 +3,8 @@ import { PageObject } from "./steps.ts"
 import { CommandMenu } from "./CommandMenu.ts"
 import { ShortcutsHelp } from "./ShortcutsHelp.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
+import { SessionSetupPage } from "./SessionSetupPage.ts"
+import { TrashPage } from "./TrashPage.ts"
 import { TaskListPage } from "./TaskListPage.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
@@ -43,6 +45,16 @@ export class Keyboard extends PageObject {
   async goTo(keys: string): Promise<TaskListPage> {
     await this.press(keys)
     return new TaskListPage(this.#page)
+  }
+
+  async goToSession(): Promise<SessionSetupPage> {
+    await this.press("g n")
+    return new SessionSetupPage(this.#page)
+  }
+
+  async goToTrash(): Promise<TrashPage> {
+    await this.press("g x")
+    return new TrashPage(this.#page)
   }
 
   async openCommandMenu(): Promise<CommandMenu> {

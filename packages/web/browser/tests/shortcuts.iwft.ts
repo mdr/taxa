@@ -11,14 +11,18 @@ test("adding tasks and moving between lists from the keyboard", async ({ taxa })
   await inbox.keyboard.addTask("Get coffee")
   await inbox.expectTasks(["IN-1 Get coffee"])
 
-  const work = await inbox.keyboard.goTo("g w k")
-  await work.expectHeading("Work")
+  const work = await inbox.sidebar.openDomain("Work")
   await work.keyboard.addTask("Plan the quarter")
   await work.expectTasks(["WK-2 Plan the quarter"])
 
-  const home = await work.keyboard.goTo("g h")
-  await home.expectHeading("Home")
-  await (await home.keyboard.goTo("g i")).expectHeading("Inbox")
+  // G then a letter goes to each list used every day.
+  await (await work.keyboard.goTo("g t")).expectHeading("Today")
+  await (await work.keyboard.goTo("g s")).expectHeading("Soon")
+  await (await work.keyboard.goTo("g p")).expectHeading("In progress")
+  await (await work.keyboard.goTo("g m")).expectHeading("Someday")
+  await (await work.keyboard.goToSession()).expectShown()
+  await (await work.keyboard.goToTrash()).expectShown()
+  await (await work.keyboard.goTo("g i")).expectHeading("Inbox")
 
   // From a task's page, C adds to the list the task is in.
   const detail = await tab.openTask("WK-2")
@@ -52,8 +56,13 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Find a command or task ⌘K",
     "Undo the last change ⌘Z",
     "Redo what was undone ⌘⇧Z",
+    "Today G then T",
+    "Soon G then S",
     "Inbox G then I",
-    "Home G then H",
+    "In progress G then P",
+    "Session G then N",
+    "Someday G then M",
+    "Trash G then X",
     "Search the list /",
     "Next task J or ↓",
     "Previous task K or ↑",
@@ -171,8 +180,9 @@ test("finding and running commands from the command menu", async ({ taxa }) => {
 
   const menu = await inbox.keyboard.openCommandMenu()
   await menu.expectAccessible()
-  await menu.search("go")
-  await menu.expectCommands(["Inbox", "Home"])
+  // Domains have no shortcut, but are here.
+  await menu.search("go h")
+  await menu.expectCommands(["Trash", "Home"])
   await menu.pickNext()
   await menu.expectPicked("Home")
   await menu.run()

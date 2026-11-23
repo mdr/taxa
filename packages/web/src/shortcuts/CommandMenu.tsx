@@ -6,7 +6,8 @@ import { useEffect, useId, useRef, useState } from "react"
 import { useLocation } from "wouter"
 import styles from "./CommandMenu.module.css"
 import { commandMenuTestIds } from "./CommandMenuTestIds.ts"
-import { CommandMenuService, menuCommands, type Command } from "./command-menu-service.ts"
+import { CommandMenuService, domainCommands, menuCommands, type Command } from "./command-menu-service.ts"
+import { useDomains } from "../domains/domain-queries.ts"
 import { keyLabel } from "./key-press.ts"
 import { GROUP_TEXT } from "./shortcut-list.ts"
 import { useShortcutActions } from "./shortcut-service.ts"
@@ -22,18 +23,24 @@ const MAC = navigator.userAgent.includes("Mac")
 export const CommandMenu = () => {
   const { active, closeMenu } = useShortcutActions()
   const [, navigate] = useLocation()
+  const domains = useDomains().data ?? []
   const [menu] = useState(
     () =>
-      new CommandMenuService(menuCommands(active()), (ref) => navigate(`/tasks/${ref}`), appAnalytics, {
-        scheduler: realScheduler,
-        find: (search) =>
-          taxaApi.tasks({
-            search,
-            status: Object.values(TaskStatus).join(","),
-            includeNotStarted: "true",
-            when: Object.values(When).join(",")
-          })
-      })
+      new CommandMenuService(
+        [...menuCommands(active()), ...domainCommands(domains, navigate)],
+        (ref) => navigate(`/tasks/${ref}`),
+        appAnalytics,
+        {
+          scheduler: realScheduler,
+          find: (search) =>
+            taxaApi.tasks({
+              search,
+              status: Object.values(TaskStatus).join(","),
+              includeNotStarted: "true",
+              when: Object.values(When).join(",")
+            })
+        }
+      )
   )
   useEffect(() => menu.dispose, [menu])
   const query = useServiceState(menu, (state) => state.query)

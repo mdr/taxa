@@ -1,7 +1,24 @@
-import type { Domain } from "@taxa/shared/domains/domain"
 import { MENU_KEY } from "./command-menu-service.ts"
+import { SESSION_PATH } from "../sessions/session-paths.ts"
+import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
+import { TRASH_PATH } from "../tasks/trash/trash-path.ts"
+import { SOMEDAY_PATH, SOON_PATH, TODAY_PATH } from "../tasks/when/when-paths.ts"
 import type { UndoActions } from "../undo/undo-service.ts"
 import { FocusTarget, ShortcutGroup, type Shortcut, type ShortcutActions } from "./shortcut-service.ts"
+
+/**
+ * `G` then a letter: the lists used every day. Not domains, since people tend
+ * to stay in one; those are in the command menu.
+ */
+const GO_TO: readonly { key: string; description: string; path: string }[] = [
+  { key: "t", description: "Today", path: TODAY_PATH },
+  { key: "s", description: "Soon", path: SOON_PATH },
+  { key: "i", description: "Inbox", path: "/" },
+  { key: "p", description: "In progress", path: IN_PROGRESS_PATH },
+  { key: "n", description: "Session", path: SESSION_PATH },
+  { key: "m", description: "Someday", path: SOMEDAY_PATH },
+  { key: "x", description: "Trash", path: TRASH_PATH }
+]
 
 /** Whether a page shows a list, with quick capture at the top. */
 const isList = (location: string): boolean => location === "/" || location.startsWith("/domains/")
@@ -10,7 +27,6 @@ const isList = (location: string): boolean => location === "/" || location.start
 export const appShortcuts = (
   location: string,
   navigate: (to: string) => void,
-  domains: readonly Pick<Domain, "name" | "prefix">[],
   shortcuts: Pick<ShortcutActions, "openHelp" | "openMenu" | "requestFocus">,
   history: Pick<UndoActions, "undo" | "redo">
 ): readonly Shortcut[] => [
@@ -37,11 +53,10 @@ export const appShortcuts = (
     group: ShortcutGroup.GENERAL,
     run: () => void history.redo()
   },
-  { keys: ["g", "i"], description: "Inbox", group: ShortcutGroup.GO, run: () => navigate("/") },
-  ...domains.map((domain): Shortcut => ({
-    keys: ["g", ...domain.prefix.toLowerCase().split("")],
-    description: domain.name,
+  ...GO_TO.map(({ key, description, path }): Shortcut => ({
+    keys: ["g", key],
+    description,
     group: ShortcutGroup.GO,
-    run: () => navigate(`/domains/${domain.prefix}`)
+    run: () => navigate(path)
   }))
 ]

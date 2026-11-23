@@ -1,9 +1,11 @@
+import { domainPrefix } from "@taxa/shared/domains/domain"
 import { describe, expect, it } from "vite-plus/test"
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { makeTask } from "@taxa/shared/test-support/make-task"
 import {
   CommandMenuService,
   matchCommands,
+  domainCommands,
   menuCommands,
   MOST_FOUND,
   SEARCH_PAUSE_MS,
@@ -41,6 +43,16 @@ describe("menuCommands", () => {
       shortcut("mod+k", "Search commands", ShortcutGroup.GENERAL)
     ])
     expect(offered.map(({ description, keys }) => [description, keys])).toEqual([["Next task", ["j"]]])
+  })
+})
+
+describe("domainCommands", () => {
+  it("goes to each domain, with no keys", () => {
+    const went: string[] = []
+    const [home] = domainCommands([{ name: "Home", prefix: domainPrefix("H") }], (to) => went.push(to))
+    expect(home && [home.description, home.group, home.keys]).toEqual(["Home", ShortcutGroup.GO, undefined])
+    home?.run()
+    expect(went).toEqual(["/domains/H"])
   })
 })
 
