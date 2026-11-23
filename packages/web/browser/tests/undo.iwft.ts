@@ -33,7 +33,7 @@ test("undoing any change, last first, from any page", async ({ taxa }) => {
   await detail.setPriorityWithKeys(Priority.HIGH)
   await taxa.expectTask("H-1", { priority: Priority.HIGH })
 
-  const home = await detail.keyboard.goTo("g h")
+  const home = await detail.sidebar.openDomain("Home")
   await home.keyboard.press("mod+z")
   await home.undoNotice.expectSays("Undid: Changed H-1")
   await taxa.expectTask("H-1", { priority: Priority.NORMAL })
