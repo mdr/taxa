@@ -256,7 +256,9 @@ the Zod schemas in `shared`.
   undone from the log: each entry records the version it brought the task
   to, and undoing it puts back each field it changed, unless one has been
   changed since. Undoing an addition deletes the task, undoing a deletion
-  restores it, and an undo is itself an entry, so undoing it redoes. In the
+  restores it, and an undo is itself an entry, so undoing it redoes.
+  `taxa undo` names the change by its number in the log rather than taking
+  the last, which may be someone else's. In the
   web app, ⌘Z undoes the tab's last change and ⇧⌘Z redoes it; an offer to
   undo something on a page (a tick, a deletion) stands only until another
   change is made, after which ⌘Z takes back that one. Whatever a page shows

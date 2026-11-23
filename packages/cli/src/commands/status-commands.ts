@@ -74,16 +74,18 @@ const deletion = (name: string, summary: string, verb: string, versioned: boolea
 
 const undo: Command = {
   name: "undo",
-  summary: "Undo a change to a task: the last, or any from taxa log",
-  usage: `<ref> [--version N]
-  --version N           The change to undo, by the number taxa log gives it (default: the last)
+  summary: "Undo a change to a task, by its number in taxa log",
+  usage: `<ref> --version N
+  --version N           The change to undo, by the number taxa log gives it
+It takes a number, not "the last", because the last change may be someone else's.
 Undoing a change that added the task deletes it; one that deleted it restores it.
 Undoing an undo redoes it. Exit 3 if what the change did has been changed since.`,
   options: { version: { type: "string" } },
   run: async (context, values, positionals) => {
     const ref = oneArgument(positionals, "task")
     const typed = stringOption(values, "version")
-    const version = typed === undefined ? (await context.client.task(ref)).version : Number(typed)
+    if (typed === undefined) throw new UsageError("Say which change to undo with --version N, its number in taxa log.")
+    const version = Number(typed)
     if (!Number.isInteger(version) || version < 1)
       throw new UsageError(`--version must be a change's number, not ${typed}.`)
     const task = await context.client.undoTask(ref, version)

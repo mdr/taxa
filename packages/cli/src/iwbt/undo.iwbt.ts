@@ -11,12 +11,14 @@ const taxa = (server: InProcessServer, matt: TestUser, ...argv: string[]): Promi
 describe("taxa undo", () => {
   const it = useInProcessServer()
 
-  it("undoes the last change, or any by its number in the log, and an undo redoes", async ({ server }) => {
+  it("undoes a change by its number in the log, and an undo redoes", async ({ server }) => {
     const matt = await server.user("Matt")
     await matt.addTask("Fix the tap")
     await taxa(server, matt, "edit", "1", "--priority", "high")
     await taxa(server, matt, "done", "1")
-    expect((await taxa(server, matt, "undo", "1")).stdout).toBe("Undid change 3 to IN-1  Fix the tap\n")
+    expect((await taxa(server, matt, "undo", "1", "--version", "3")).stdout).toBe(
+      "Undid change 3 to IN-1  Fix the tap\n"
+    )
     expect((await taxa(server, matt, "undo", "1", "--version", "2")).exitCode).toBe(ExitCode.OK)
     expect((await taxa(server, matt, "log", "1")).stdout).toBe(
       [
@@ -28,14 +30,14 @@ describe("taxa undo", () => {
         ""
       ].join("\n")
     )
-    await taxa(server, matt, "undo", "1")
+    await taxa(server, matt, "undo", "1", "--version", "5")
     expect((await matt.client.task("1")).priority).toBe("HIGH")
   })
 
   it("deletes a task added by mistake", async ({ server }) => {
     const matt = await server.user("Matt")
     await matt.addTask("Fix the tpa")
-    await taxa(server, matt, "undo", "1")
+    await taxa(server, matt, "undo", "1", "--version", "1")
     expect((await taxa(server, matt, "list")).stdout).toBe("No tasks.\n")
     expect((await taxa(server, matt, "list", "--deleted")).stdout).toContain("IN-1  Fix the tpa")
   })
@@ -48,5 +50,14 @@ describe("taxa undo", () => {
     const run = await taxa(server, matt, "undo", "1", "--version", "2")
     expect(run.exitCode).toBe(ExitCode.CONFLICT)
     expect(run.stderr).toContain("undo the later change first")
+  })
+  it("won't guess which change to undo, since the last may be someone else's", async ({ server }) => {
+    const matt = await server.user("Matt")
+    await matt.addTask("Fix the tap")
+    await taxa(server, matt, "done", "1")
+    const run = await taxa(server, matt, "undo", "1")
+    expect(run.exitCode).toBe(ExitCode.USAGE)
+    expect(run.stderr).toContain("--version")
+    expect((await matt.client.task("1")).status).toBe("DONE")
   })
 })
