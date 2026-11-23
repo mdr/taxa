@@ -186,3 +186,28 @@ test("a session's end has to be still to come, its plan can change as it goes, a
     ["9:00 – 9:00", "Fix the tap", "0 min of 15 min"]
   ])
 })
+
+test("planning a session: suggestions narrowed to a tag, and a task thought of while planning", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Buy washers", { domain: "H", tags: ["errand"] })
+  await taxa.matt.addTask("Bleed the radiators", { domain: "H" })
+  await taxa.matt.addTask("Post the letter", { tags: ["Errand", "admin"] })
+  const tab = await taxa.openTab("Matt")
+  const setup = await (await tab.openInbox()).sidebar.openSession()
+  await setup.chooseLength("1 hour")
+  const planner = await setup.chooseTasks()
+  await planner.plan.expectSuggestions(["Buy washers", "Bleed the radiators", "Post the letter"])
+
+  await planner.plan.filterByTag("errand")
+  await planner.plan.expectSuggestions(["Buy washers", "Post the letter"])
+  await planner.expectAccessible()
+  await planner.plan.add("Post the letter")
+  await planner.plan.expectSuggestions(["Buy washers"])
+  await planner.plan.filterByTag(undefined)
+  await planner.plan.expectSuggestions(["Buy washers", "Bleed the radiators"])
+
+  await planner.plan.addNewTask("Call the plumber")
+  await planner.plan.expectPlan(["9:00 – 9:30 Post the letter", "9:30 – 10:00 Call the plumber"])
+  await taxa.expectTask("IN-4", { title: "Call the plumber", inbox: true })
+  await planner.expectAccessible()
+})

@@ -30,6 +30,8 @@ export interface SessionPlanState {
   window: SessionWindow
   entries: readonly PlannedEntry[]
   search: string
+  /** Suggestions only with this tag, if one's chosen. */
+  tag: string | undefined
   starting: boolean
   problem: string | undefined
 }
@@ -39,6 +41,7 @@ const NEW_PLAN: SessionPlanState = {
   window: DEFAULT_WINDOW,
   entries: [],
   search: "",
+  tag: undefined,
   starting: false,
   problem: undefined
 }
@@ -93,6 +96,8 @@ export class SessionPlanService extends AbstractService<SessionPlanState> {
     })
 
   readonly search = (search: string): void => this.setState({ search })
+
+  readonly filterByTag = (tag: string | undefined): void => this.setState({ tag })
 
   /** Starts the session now, on the first task planned. */
   readonly start = async (): Promise<void> => {

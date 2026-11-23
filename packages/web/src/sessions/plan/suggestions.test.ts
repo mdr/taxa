@@ -1,7 +1,7 @@
 import { Energy, Horizon, Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { makeTask } from "@taxa/shared/test-support/make-task"
 import { describe, expect, it } from "vite-plus/test"
-import { suggestedTasks, suggestionReason, todayFirst } from "./suggestions.ts"
+import { suggestedTasks, suggestionReason, suggestionTags, todayFirst } from "./suggestions.ts"
 
 const TODAY = "2026-01-05"
 
@@ -39,5 +39,24 @@ describe("suggestedTasks", () => {
   it("finds tasks by title or ref", () => {
     expect(suggestedTasks([tap, radiators], [], "TAP")).toEqual([tap])
     expect(suggestedTasks([tap, radiators], [], "h-2")).toEqual([radiators])
+  })
+})
+
+describe("suggestedTasks and suggestionTags, by tag", () => {
+  const washers = makeTask({ number: 1, title: "Buy washers", tags: ["errand"] })
+  const letter = makeTask({ number: 2, title: "Post the letter", tags: ["Errand", "admin"] })
+  const radiators = makeTask({ number: 3, title: "Bleed the radiators" })
+  const waiting = makeTask({ number: 4, title: "Chase the plumber", status: TaskStatus.WAITING, tags: ["calls"] })
+  const tasks = [washers, letter, radiators, waiting]
+
+  it("offers only the tasks with the tag chosen, whatever its case", () => {
+    expect(suggestedTasks(tasks, [], "", "ERRAND")).toEqual([washers, letter])
+    expect(suggestedTasks(tasks, [letter.id], "", "errand")).toEqual([washers])
+    expect(suggestedTasks(tasks, [], "post", "errand")).toEqual([letter])
+  })
+
+  it("names the tags on the tasks that could be offered, each once, A to Z", () => {
+    expect(suggestionTags(tasks, [])).toEqual(["admin", "errand"])
+    expect(suggestionTags(tasks, [letter.id])).toEqual(["errand"])
   })
 })

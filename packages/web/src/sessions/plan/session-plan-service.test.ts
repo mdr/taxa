@@ -33,6 +33,14 @@ describe("SessionPlanService", () => {
     expect(plan.state.problem).toBeUndefined()
   })
 
+  it("narrows the suggestions to a tag, and lets them all back", () => {
+    const { plan } = setUp()
+    plan.filterByTag("errand")
+    expect(plan.state.tag).toBe("errand")
+    plan.filterByTag(undefined)
+    expect(plan.state.tag).toBeUndefined()
+  })
+
   it("plans tasks for their estimates, or half an hour, in the order wanted", () => {
     const { plan } = setUp()
     plan.add(tap)

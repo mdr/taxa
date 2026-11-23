@@ -48,6 +48,8 @@ import {
   SUGGESTIONS
 } from "./plan-drop.ts"
 import { Link } from "wouter"
+import { PlanCapture } from "./PlanCapture.tsx"
+import { TagFilter } from "./TagFilter.tsx"
 
 export interface PlanRow {
   task: Task
@@ -81,6 +83,10 @@ export interface PlanEditorProps {
   planTitle?: string
   /** Rows show their place in the plan, not a time: a narrow column for it. */
   numbered?: boolean
+  /** Given, a field under the plan adds a new task, which this puts in the plan. */
+  onCreated?: (task: Task) => void
+  /** Given, the suggestions can be narrowed to a tag: those to choose from, and the one chosen. */
+  tagFilter?: { tags: readonly string[]; tag: string | undefined; onChoose: (tag: string | undefined) => void }
 }
 
 /** Planned tasks make room for one moved among them; for a suggestion coming in, the plan opens a gap instead. */
@@ -242,7 +248,9 @@ export const PlanEditor = ({
   onEstimated,
   busy = false,
   planTitle = "Your plan",
-  numbered = false
+  numbered = false,
+  onCreated,
+  tagFilter
 }: PlanEditorProps) => {
   const [dragged, setDragged] = useState<UniqueIdentifier | undefined>(undefined)
   const [byKeyboard, setByKeyboard] = useState(false)
@@ -362,10 +370,11 @@ export const PlanEditor = ({
               data-testid={planEditorTestIds.search}
               data-track="PlanEditor.search"
             />
+            {tagFilter && (tagFilter.tags.length > 0 || tagFilter.tag !== undefined) && <TagFilter {...tagFilter} />}
           </div>
           {suggestions.length === 0 ? (
             <p className={styles.empty} data-testid={planEditorTestIds.noSuggestions}>
-              {search ? "No task matches." : "Every task you have is in the plan."}
+              {search || tagFilter?.tag !== undefined ? "No task matches." : "Every task you have is in the plan."}
             </p>
           ) : (
             <ul className={styles.list}>
@@ -404,6 +413,7 @@ export const PlanEditor = ({
               Drag tasks here, or add them from the suggestions, in the order you'll do them.
             </p>
           )}
+          {onCreated && <PlanCapture busy={busy} onCreated={onCreated} />}
         </PlanColumn>
       </div>
       <div ref={announceIn} data-testid={planEditorTestIds.announcer} />

@@ -4,6 +4,9 @@ import { expectHolds } from "./holds.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { planEditorTestIds } from "../../src/sessions/plan/PlanEditorTestIds.ts"
 import { estimatePropertyTestIds } from "../../src/tasks/detail/properties/EstimatePropertyTestIds.ts"
+import { planCaptureTestIds } from "../../src/sessions/plan/PlanCaptureTestIds.ts"
+import { tagFilterTestIds } from "../../src/sessions/plan/TagFilterTestIds.ts"
+import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
 
 interface Box {
   x: number
@@ -58,6 +61,20 @@ export class PlanEditor extends PageObject {
 
   async search(text: string): Promise<void> {
     await this.#byId(planEditorTestIds.search).fill(text)
+  }
+
+  /** Only suggestions with this tag, or with `undefined`, any. */
+  async filterByTag(tag: string | undefined): Promise<void> {
+    await this.#byId(tagFilterTestIds.filter).click()
+    await this.#page.locator(`[data-testid="${optionListTestIds.option}"][data-value="${tag ?? ""}"]`).click()
+  }
+
+  /** Adds a task that's new, under the plan: it goes last. */
+  async addNewTask(title: string): Promise<void> {
+    const field = this.#byId(planCaptureTestIds.title)
+    await field.fill(title)
+    await field.press("Enter")
+    await expect(field).toHaveValue("")
   }
 
   /** Adds a suggestion with its + button: it goes last. */

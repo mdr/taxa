@@ -6,7 +6,7 @@ import { sessionPageTestIds } from "../SessionPageTestIds.ts"
 import { PlanEditor } from "./PlanEditor.tsx"
 import { PlanStep, SessionPlanContext, type SessionPlanService } from "./session-plan-service.ts"
 import { endsAtFor, WINDOW_PRESETS, WindowType } from "./session-window.ts"
-import { suggestedTasks } from "./suggestions.ts"
+import { suggestedTasks, suggestionTags } from "./suggestions.ts"
 import { totalMinutes } from "./plan-edits.ts"
 import { draftSession, planRows } from "../session-rows.ts"
 import { durationText, minutesText, timeSpan } from "../session-text.ts"
@@ -112,14 +112,16 @@ const TaskChoice = ({ plan }: { plan: SessionPlanService }) => {
   const window = useServiceState(plan, (state) => state.window)
   const entries = useServiceState(plan, (state) => state.entries)
   const search = useServiceState(plan, (state) => state.search)
+  const tag = useServiceState(plan, (state) => state.tag)
   const starting = useServiceState(plan, (state) => state.starting)
   const problem = useServiceState(plan, (state) => state.problem)
   const tasks = useSessionCandidates()
   const now = useNow()
   const endsAt = endsAtFor(window, now) ?? now
   const timeline = sessionTimeline(draftSession(entries, now, endsAt), now)
-  const planned = totalMinutes(entries)
+  const plannedMinutes = totalMinutes(entries)
   const available = Math.max(1, Math.round((endsAt - now) / 60_000))
+  const planned = entries.map(({ taskId }) => taskId)
   return (
     <section className={styles.page} data-testid={sessionPageTestIds.page}>
       <header className={styles.header}>
@@ -159,7 +161,7 @@ const TaskChoice = ({ plan }: { plan: SessionPlanService }) => {
       <div className={styles.capacity}>
         <div className={styles.capacityText}>
           <span data-testid={sessionPageTestIds.planned}>
-            <strong>{minutesText(planned)}</strong> planned of {minutesText(available)}
+            <strong>{minutesText(plannedMinutes)}</strong> planned of {minutesText(available)}
           </span>
           <span className={timeline.spare >= 0 ? styles.spare : styles.over} data-testid={sessionPageTestIds.spare}>
             {timeline.spare >= 0 ? `${durationText(timeline.spare)} spare` : `${durationText(timeline.spare)} over`}
@@ -168,18 +170,16 @@ const TaskChoice = ({ plan }: { plan: SessionPlanService }) => {
         <div
           className={styles.bar}
           role="img"
-          aria-label={`${minutesText(planned)} planned of ${minutesText(available)}`}
+          aria-label={`${minutesText(plannedMinutes)} planned of ${minutesText(available)}`}
         >
-          <div className={styles.fill} style={{ width: `${Math.min(100, (planned / available) * 100)}%` }} />
+          <div className={styles.fill} style={{ width: `${Math.min(100, (plannedMinutes / available) * 100)}%` }} />
         </div>
       </div>
       <PlanEditor
         rows={planRows(timeline, false)}
-        suggestions={suggestedTasks(
-          tasks,
-          entries.map(({ taskId }) => taskId),
-          search
-        )}
+        suggestions={suggestedTasks(tasks, planned, search, tag)}
+        tagFilter={{ tags: suggestionTags(tasks, planned), tag, onChoose: plan.filterByTag }}
+        onCreated={(task) => plan.add(task)}
         search={search}
         onSearch={plan.search}
         onAdd={plan.add}

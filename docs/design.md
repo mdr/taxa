@@ -182,7 +182,9 @@ cleverness lives in views and suggestions.
 
 **Sessions** plan a one-off block of time: say how long you have (a length,
 or until a time), then drag tasks in from suggestions (in progress, due soon,
-high priority), in the order you'll do them. A task's time in the plan is its
+high priority), in the order you'll do them. The suggestions can be narrowed
+to a tag, and a task thought of while planning can be added from under the
+plan: it goes to the Inbox and the end of the plan. A task's time in the plan is its
 estimate, the same one as on its page: set or changed in the plan, it's saved
 to the task, and a task with none counts as half an hour until it has one.
 It's yours to read as a target or a timebox. Every task links to its page,
