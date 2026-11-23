@@ -47,6 +47,7 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
   const mode = useServiceState(draft, (state) => state.mode)
   const source = useServiceState(draft, (state) => state.source)
   const shown = useServiceState(draft, (state) => state.shown)
+  const writing = useServiceState(draft, (state) => state.writing)
   const sourceField = useAutoHeight(source)
   const [linking, setLinking] = useState<LinkDraft | undefined>()
   // The editor's key handler is set once, so it reaches the editor through this.
@@ -113,6 +114,10 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
     focusTaken()
   }, [focusWanted, focusTaken, mode, editor, sourceField])
   useEffect(() => draft.dispose, [draft])
+  // Spelling's marked while writing, not over notes that are only being read.
+  useEffect(() => {
+    editor.view.dom.spellcheck = writing
+  }, [editor, writing])
   useEffect(() => draft.receive(notes), [draft, notes])
   useEffect(() => {
     if (documentToNotes(editor.getJSON()) === shown.notes) return
@@ -161,6 +166,7 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
           onChange={(event) => draft.writeSource(event.target.value)}
           onFocus={draft.startWriting}
           onBlur={draft.finishWriting}
+          spellCheck={writing}
           onKeyDown={(event) => {
             if (event.key === "Escape" || (event.key === "Enter" && (event.metaKey || event.ctrlKey)))
               event.currentTarget.blur()

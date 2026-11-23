@@ -127,3 +127,15 @@ test("a link in notes that opens a file in VS Code, as agents write them", async
   await detail.clickNotesLink("the letter")
   await detail.expectLinkBar(letter, false)
 })
+
+test("spelling marked in notes only while writing them", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Write to HMRC", { domain: "H", notes: "Ask EduPay for the P60s" })
+  const detail = await (await taxa.openTab("Matt")).openTask("H-1")
+
+  await detail.expectNotesSpellChecked(false)
+  await detail.startTypingNotes(" first")
+  await detail.expectNotesSpellChecked(true)
+  await detail.leaveNotes()
+  await detail.expectNotesSpellChecked(false)
+})

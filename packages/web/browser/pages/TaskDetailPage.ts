@@ -255,6 +255,11 @@ export class TaskDetailPage extends PageObject {
     await this.#page.keyboard.type(text)
   }
 
+  /** Whether the browser marks misspellings in the notes. */
+  async expectNotesSpellChecked(checked: boolean): Promise<void> {
+    await expect(this.#page.getByTestId(notesEditorTestIds.editor)).toHaveAttribute("spellcheck", String(checked))
+  }
+
   async expectNotesText(text: string): Promise<void> {
     await expect(this.#page.getByTestId(notesEditorTestIds.editor)).toHaveText(text)
   }
