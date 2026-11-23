@@ -262,8 +262,13 @@ export const SessionNow = ({ session }: { session: Session }) => {
       keys: ["mod+z"],
       description: "Undo the last change",
       group: ShortcutGroup.GENERAL,
-      // Moving on is the last change here, while it's on offer to undo.
-      run: () => void (run.state.undoable ? run.undo(session) : history.undo())
+      run: () => void run.undoLast(session, history)
+    },
+    {
+      keys: ["mod+shift+z"],
+      description: "Redo what was undone",
+      group: ShortcutGroup.GENERAL,
+      run: () => void run.redoLast(session, history)
     }
   ])
 

@@ -5,6 +5,7 @@ import { describe, expect } from "vite-plus/test"
 import type { InProcessServer } from "../../../../server/src/test-support/in-process-server.ts"
 import { useInProcessServer } from "../../../../server/src/test-support/use-in-process-server.ts"
 import type { TestUser } from "../../../../server/src/test-support/test-user.ts"
+import { ChangeOrder } from "./change-order.ts"
 import type { TaskCache } from "./task-cache.ts"
 import type { Version } from "@taxa/shared/units"
 import { CONFLICT_NOTICE, TaskChangesService, TaskChangeType, type TaskChange } from "./task-changes-service.ts"
@@ -56,7 +57,14 @@ const makeTaskChangesService = async (server: InProcessServer): Promise<Setup> =
     cache,
     telemetry,
     recorded,
-    service: new TaskChangesService(matt.client, cache, telemetry.analytics, telemetry.logger, history)
+    service: new TaskChangesService(
+      matt.client,
+      cache,
+      telemetry.analytics,
+      telemetry.logger,
+      history,
+      new ChangeOrder()
+    )
   }
 }
 

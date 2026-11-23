@@ -21,7 +21,10 @@ export const queryTaskCache = (queryClient: QueryClient): TaskCache => ({
       .reduce<Task | undefined>((latest, task) => (latest && latest.version >= task.version ? latest : task), undefined)
   },
   show: async (task) => {
-    queryClient.setQueriesData<Task>({ queryKey: queryKeys.allTask }, (shown) => (shown?.id === task.id ? task : shown))
+    // Never an older version over a newer: answers can come back out of order.
+    queryClient.setQueriesData<Task>({ queryKey: queryKeys.allTask }, (shown) =>
+      shown?.id === task.id && shown.version <= task.version ? task : shown
+    )
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.allTasks }),
       queryClient.invalidateQueries({ queryKey: queryKeys.allActivity }),

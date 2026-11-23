@@ -56,8 +56,10 @@ export interface ListSessionActions {
   toggle: (task: Task) => Promise<void>
   /** Starts working on a task, or stops if it's in progress. */
   startOrStop: (task: Task) => Promise<void>
-  /** Undoes the tick or delete on offer, or else the tab's last change. */
+  /** Undoes the tab's last change, the tick or delete on offer if that's it. */
   undo: () => Promise<void>
+  /** Undoes the tick or delete on offer, whatever's changed since. */
+  undoOffered: () => Promise<void>
   /** Marks a task done, with a chance to undo it, as a tick does. */
   complete: (task: Task) => Promise<void>
   /** Deletes a task, with a chance to undo it; if it's highlighted, the highlight goes on to the task after it. */
@@ -155,8 +157,23 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   readonly undo = async (): Promise<void> => {
     const { undoable: task, undoes } = this.state
     this.dismissUndo()
-    // On offer only while it's the last change: after another, that's what undo takes back.
-    if (!task || !this.#history.isLatest(task)) return this.#history.undo()
+    // A tick that's the last change shows unticked at once; but a change still being made comes after it, and is what's undone.
+    const tick = task && undoes === Undo.TICK && this.#history.isLatest(task) ? task : undefined
+    if (tick) this.updateState((state) => ({ ...state, pending: { ...state.pending, [tick.id]: false } }))
+    const undone = await this.#history.undo()
+    if (!tick) return
+    const unticked = undone?.taskId === tick.id && undone.version === tick.version
+    this.updateState((state) => ({
+      ...state,
+      pending: { ...state.pending, [tick.id]: undefined },
+      ticked: unticked ? { ...state.ticked, [tick.id]: undefined } : state.ticked
+    }))
+  }
+
+  readonly undoOffered = async (): Promise<void> => {
+    const { undoable: task, undoes } = this.state
+    if (!task) return
+    this.dismissUndo()
     if (undoes === Undo.DELETE) {
       await this.#history.undoChange(task)
       return

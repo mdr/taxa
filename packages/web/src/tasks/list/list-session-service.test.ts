@@ -6,7 +6,7 @@ import { isCelebrated, isShownDone, ListSessionService, Step, Undo, UNDO_OFFERED
 import { FakeScheduler } from "../../test-support/fake-scheduler.ts"
 import { testTelemetry, type TestTelemetry } from "../../test-support/test-telemetry.ts"
 import { TaskChangeType, type TaskChange, type TaskChangesActions } from "../changes/task-changes-service.ts"
-import type { UndoActions } from "../../undo/undo-service.ts"
+import type { UndoActions, Undone } from "../../undo/undo-service.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 
 /** Task changes the test answers itself, one at a time, as the server would. */
@@ -38,19 +38,30 @@ class FakeHistory implements Pick<UndoActions, "undo" | "undoChange" | "isLatest
   readonly undone: Task[] = []
   undoneLast = 0
   refuse = false
-  /** Whether what's on offer is still the last change. */
-  latest = true
+  /** The task as the last change here left it, which undo takes back. */
+  last: Task | undefined
+  /** A change still being made when undo was asked for, which it takes back instead. */
+  stillBeingMade: Task | undefined
 
-  readonly isLatest = (): boolean => this.latest
+  readonly isLatest = (task: Task): boolean => this.last?.id === task.id && this.last.version === task.version
 
-  readonly undo = (): Promise<void> => {
+  readonly undo = (): Promise<Undone | undefined> => {
     this.undoneLast += 1
-    return Promise.resolve()
+    const last = this.stillBeingMade ?? this.last
+    if (!last) return Promise.resolve(undefined)
+    this.undone.push(last)
+    return Promise.resolve(
+      this.refuse ? undefined : { taskId: last.id, version: last.version, task: this.#reopened(last) }
+    )
   }
 
   readonly undoChange = (task: Task): Promise<Task | undefined> => {
     this.undone.push(task)
-    return Promise.resolve(this.refuse ? undefined : { ...task, status: TaskStatus.OPEN, version: task.version + 1 })
+    return Promise.resolve(this.refuse ? undefined : this.#reopened(task))
+  }
+
+  #reopened(task: Task): Task {
+    return { ...task, status: TaskStatus.OPEN, version: task.version + 1 }
   }
 }
 
@@ -84,7 +95,7 @@ describe("ListSessionService", () => {
     expect(changes.made.map(({ change }) => change.type)).toEqual([TaskChangeType.DELETE])
     expect(session.state.undoable?.id).toBe(task.id)
     expect(session.state.undoes).toBe(Undo.DELETE)
-    await session.undo()
+    await session.undoOffered()
     expect(history.undone.map(({ id, version }) => [id, version])).toEqual([[task.id, task.version + 1]])
     expect(session.state.undoable).toBeUndefined()
   })
@@ -152,6 +163,7 @@ describe("ListSessionService", () => {
     const ticking = session.toggle(task)
     await changes.answer()
     await ticking
+    history.last = session.state.undoable
 
     const undoing = session.undo()
     expect(session.state.undoable).toBeUndefined()
@@ -168,12 +180,27 @@ describe("ListSessionService", () => {
     const ticking = session.toggle(task)
     await changes.answer()
     await ticking
-    history.latest = false
+    const other = makeTask({ number: 2 })
+    history.last = other
 
     await session.undo()
-    expect(history.undone).toEqual([])
-    expect(history.undoneLast).toBe(1)
+    expect(history.undone.map(({ id }) => id)).toEqual([other.id])
     expect(session.state.undoable).toBeUndefined()
+    expect(isShownDone(session.state, task)).toBe(true)
+  })
+
+  it("shows a tick unticked at once, ticked again if a change still being made was undone instead", async () => {
+    const { changes, history, session } = makeListSessionService()
+    const task = makeTask()
+    const ticking = session.toggle(task)
+    await changes.answer()
+    await ticking
+    history.last = session.state.undoable
+    history.stillBeingMade = makeTask({ number: 2 })
+
+    const undoing = session.undo()
+    expect(isShownDone(session.state, task)).toBe(false)
+    await undoing
     expect(isShownDone(session.state, task)).toBe(true)
   })
 
@@ -183,6 +210,7 @@ describe("ListSessionService", () => {
     const ticking = session.toggle(task)
     await changes.answer()
     await ticking
+    history.last = session.state.undoable
     history.refuse = true
     await session.undo()
     expect(isShownDone(session.state, task)).toBe(true)

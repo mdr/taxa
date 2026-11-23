@@ -11,6 +11,8 @@ export class FakeSessionApi implements SessionApi {
   readonly created: CreateSessionRequest[] = []
   readonly updated: { id: SessionId; request: UpdateSessionRequest; ifMatch: Version | undefined }[] = []
   refuse = false
+  /** While set, answers wait for it: a slow network. */
+  held: Promise<void> | undefined
 
   readonly createSession = async (request: CreateSessionRequest): Promise<Session> => {
     this.created.push(request)
@@ -25,6 +27,7 @@ export class FakeSessionApi implements SessionApi {
     ifMatch?: Version
   ): Promise<Session> => {
     this.updated.push({ id, request, ifMatch })
+    await this.held
     if (this.refuse) throw new TaxaApiError(409, { type: ProblemType.VERSION_CONFLICT, message: "It changed." })
     return makeSession({ id, version: (ifMatch ?? 1) + 1 })
   }

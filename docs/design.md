@@ -194,9 +194,9 @@ and a plan being made survives a look there (not a reload). While the
 session runs, the task under way counts down, then counts up as "over" with
 the rest of the plan sliding later; nothing moves on by itself. Done ticks
 the task off, Stop here leaves it open, and either goes on to the next; Undo
-(or ⌘Z) takes that back until the next change. A task deleted while under
-way, as undoing its addition does, leaves the session, which waits to start
-the next. The plan can be changed at any point:
+(or ⌘Z) takes that back until the next change, and ⇧⌘Z redoes it. A task
+deleted while under way stops there, keeping its time, and the session waits
+to start the next; restored (an undo), it's back in its place in the plan. The plan can be changed at any point:
 the top of what's still to do is the task under way, so putting another
 above it starts that one, the other waiting next. Ending shows what got done,
 what was worked on and what wasn't reached, with planned against spent time
@@ -261,6 +261,10 @@ the Zod schemas in `shared`.
   undo something on a page (a tick, a deletion) stands only until another
   change is made, after which ⌘Z takes back that one. Whatever a page shows
   of tasks (a plan being made, a session) follows what an undo does to them.
+  However slow the network, ⌘Z takes back the last change asked for, waiting
+  for its answer if need be, and a change asked for after an undo waits for
+  it, so builds on it; an undo that can't reach the server keeps the change,
+  to try again.
 - **The CLI (`taxa`)** wraps the API. It prints readable output by default,
   `--json` for machines, takes JSON on stdin, has meaningful exit codes, and
   never prompts unless asked to. It gives each task's link in the web app

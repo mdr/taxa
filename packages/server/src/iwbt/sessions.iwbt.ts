@@ -120,9 +120,7 @@ describe("sessions", () => {
     expect((await matt.client.task(radiators.ref)).status).toBe(TaskStatus.OPEN)
   })
 
-  it("go on without a task under way that's been deleted, which stays out of the plan once restored", async ({
-    server
-  }) => {
+  it("stop a task deleted while under way, and keep its place for when it's restored", async ({ server }) => {
     const matt = await server.user("Matt")
     const tap = await matt.addTask("Fix the tap")
     const radiators = await matt.addTask("Bleed the radiators")
@@ -134,17 +132,22 @@ describe("sessions", () => {
       ],
       start: tap.id
     })
+    server.advance(5 * MINUTE)
     await matt.client.deleteTask(tap.ref)
     const shown = await matt.client.session(session.id)
     expect(shown.current).toBeUndefined()
     expect(shown.items.map(({ task }) => task.title)).toEqual(["Bleed the radiators"])
 
-    const replanned = await matt.client.updateSession(session.id, {
-      set: { items: [{ taskId: radiators.id, minutes: 45 }] }
-    })
-    expect(replanned.current).toBeUndefined()
+    // Replanned without it, as all that's shown.
+    server.advance(20 * MINUTE)
+    await matt.client.updateSession(session.id, { set: { items: [{ taskId: radiators.id, minutes: 45 }] } })
     await matt.client.restoreTask(tap.ref)
-    expect((await matt.client.session(session.id)).items.map(({ task }) => task.title)).toEqual(["Bleed the radiators"])
+    const restored = await matt.client.session(session.id)
+    expect(restored.current).toBeUndefined()
+    expect(restored.items.map(({ task, minutes, spentMs }) => [task.title, minutes, spentMs])).toEqual([
+      ["Fix the tap", 15, 5 * MINUTE],
+      ["Bleed the radiators", 45, 0]
+    ])
   })
 
   it("are logged, once per change, with what changed", async ({ server }) => {

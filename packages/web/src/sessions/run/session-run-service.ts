@@ -7,6 +7,7 @@ import { AbstractService } from "../../services/abstract-service.ts"
 import type { Analytics } from "../../telemetry/analytics.ts"
 import { ANALYTICS_CODES, type AnalyticsCode } from "../../telemetry/codes.ts"
 import type { PlanEntry } from "../plan/plan-edits.ts"
+import type { UndoActions } from "../../undo/undo-service.ts"
 import type { SessionApi } from "../session-api.ts"
 
 /** What's still to do in a session, in order: every task not finished, the one under way among them. */
@@ -28,6 +29,8 @@ export interface SessionRunState {
   problem: string | undefined
   /** Until the next change: the task just finished, to undo that. */
   undoable: Finished | undefined
+  /** Until the next change: the task whose finishing was just undone, to redo that. */
+  redoable: Finished | undefined
 }
 
 export interface SessionRunListener {
@@ -42,25 +45,42 @@ export class SessionRunService extends AbstractService<SessionRunState> {
   readonly #api: SessionApi
   readonly #analytics: Analytics
   readonly #listener: SessionRunListener
+  /** The change being sent, which undo and redo wait for. */
+  #sending: Promise<unknown> = Promise.resolve()
+  /** The session as the server last answered, perhaps newer than the page has shown yet. */
+  #latest: Session | undefined
 
   constructor(api: SessionApi, analytics: Analytics, listener: SessionRunListener) {
-    super({ busy: false, problem: undefined, undoable: undefined })
+    super({ busy: false, problem: undefined, undoable: undefined, redoable: undefined })
     this.#api = api
     this.#analytics = analytics
     this.#listener = listener
   }
 
-  async #send(
+  #send(
     session: Session,
     request: UpdateSessionRequest,
     code: AnalyticsCode,
     msg: string,
     fields: Record<string, string | number> = {}
   ): Promise<boolean> {
-    if (this.state.busy) return false
-    this.setState({ busy: true, problem: undefined, undoable: undefined })
+    if (this.state.busy) return Promise.resolve(false)
+    const sending = this.#sent(session, request, code, msg, fields)
+    this.#sending = sending
+    return sending
+  }
+
+  async #sent(
+    session: Session,
+    request: UpdateSessionRequest,
+    code: AnalyticsCode,
+    msg: string,
+    fields: Record<string, string | number>
+  ): Promise<boolean> {
+    this.setState({ busy: true, problem: undefined, undoable: undefined, redoable: undefined })
     try {
       const changed = await this.#api.updateSession(session.id, request, session.version)
+      this.#latest = changed
       this.#analytics.track(code, msg, { sessionId: session.id, ...fields })
       this.setState({ busy: false })
       this.#listener.changed(changed)
@@ -90,7 +110,7 @@ export class SessionRunService extends AbstractService<SessionRunState> {
   readonly undo = async (session: Session): Promise<void> => {
     const { undoable } = this.state
     if (!undoable) return
-    await this.#send(
+    const sent = await this.#send(
       session,
       { start: undoable.taskId },
       ANALYTICS_CODES.session.finishUndone,
@@ -99,6 +119,36 @@ export class SessionRunService extends AbstractService<SessionRunState> {
         outcome: undoable.outcome
       }
     )
+    if (sent) this.setState({ redoable: undoable })
+  }
+
+  /** Finishes again the task whose finishing was just undone, if it's still under way. */
+  readonly redo = async (session: Session): Promise<void> => {
+    const { redoable } = this.state
+    if (redoable && session.current?.taskId === redoable.taskId) await this.finish(session, redoable.outcome)
+  }
+
+  /**
+   * ⌘Z: once what's being sent is answered, takes back moving on if that's
+   * on offer, or else the tab's last change. Never the tab's while moving on
+   * is still being sent, as that's the last change.
+   */
+  readonly undoLast = async (session: Session, history: Pick<UndoActions, "undo">): Promise<void> => {
+    await this.#sending
+    if (this.state.undoable) await this.undo(this.#newest(session))
+    else await history.undo()
+  }
+
+  /** ⇧⌘Z: as undoLast, for redo. */
+  readonly redoLast = async (session: Session, history: Pick<UndoActions, "redo">): Promise<void> => {
+    await this.#sending
+    if (this.state.redoable) await this.redo(this.#newest(session))
+    else await history.redo()
+  }
+
+  #newest(session: Session): Session {
+    const latest = this.#latest
+    return latest?.id === session.id && latest.version > session.version ? latest : session
   }
 
   readonly startTask = async (session: Session, taskId: TaskId): Promise<void> => {

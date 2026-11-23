@@ -25,16 +25,14 @@ export const useActivity = (ref: string): UseQueryResult<Activity[]> =>
 
 export const useCreateTask = (): UseMutationResult<Task, Error, CreateTaskRequest> => {
   const queryClient = useQueryClient()
-  const { recordAdded } = useUndo()
+  const { add } = useUndo()
   return useMutation({
     // A fresh key per capture, so a retried request can't add it twice.
-    mutationFn: (request) => taxaApi.createTask(request, crypto.randomUUID()),
-    onSuccess: (task) => {
-      recordAdded(task)
-      return Promise.all([
+    mutationFn: (request) => add(() => taxaApi.createTask(request, crypto.randomUUID())),
+    onSuccess: () =>
+      Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.allTasks }),
         queryClient.invalidateQueries({ queryKey: queryKeys.tags })
       ])
-    }
   })
 }

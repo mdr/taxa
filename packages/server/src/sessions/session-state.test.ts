@@ -4,7 +4,7 @@ import { SessionOutcome } from "@taxa/shared/sessions/session"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { describe, expect, it } from "vite-plus/test"
 import { ProblemError } from "../http/problem-error.ts"
-import { newSession, statusMoves, updateSession, withoutGoneCurrent, type SessionState } from "./session-state.ts"
+import { newSession, statusMoves, stopTask, updateSession, type SessionState } from "./session-state.ts"
 
 const MINUTE = 60_000
 const START = Date.UTC(2026, 0, 5, 14, 0)
@@ -107,12 +107,34 @@ describe("sessions", () => {
     )
   })
 
-  it("stop the task under way once it's gone, keeping the time spent on it", () => {
+  it("stop a task deleted while under way, keeping the time spent on it", () => {
     const state = planned()
-    expect(withoutGoneCurrent(state, new Set([radiators, boilers]), at(10))).toBe(state)
-    const gone = withoutGoneCurrent(state, new Set([boilers]), at(10))
-    expect(gone.current).toBeUndefined()
-    expect(gone.items[0]).toEqual({ taskId: radiators, minutes: 30, spentMs: 10 * MINUTE })
+    expect(stopTask(state, boilers, at(10))).toBe(state)
+    const stopped = stopTask(state, radiators, at(10))
+    expect(stopped.current).toBeUndefined()
+    expect(stopped.items[0]).toEqual({ taskId: radiators, minutes: 30, spentMs: 10 * MINUTE })
+  })
+
+  it("replan keeping tasks the asker can't see (deleted since) in their places", () => {
+    const state = stopTask(planned(), radiators, at(10))
+    const replanned = updateSession(
+      state,
+      {
+        set: {
+          items: [
+            { taskId: boilers, minutes: 60 },
+            { taskId: tap, minutes: 15 }
+          ]
+        }
+      },
+      at(10),
+      new Set([boilers])
+    )
+    expect(replanned.items.map(({ taskId, minutes }) => [taskId, minutes])).toEqual([
+      [radiators, 30],
+      [boilers, 60],
+      [tap, 15]
+    ])
   })
 
   it("end by stopping the task under way, after which only the note can change", () => {

@@ -28,6 +28,7 @@ import { useDomains } from "../domains/domain-queries.ts"
 import { Onboarding } from "../onboarding/Onboarding.tsx"
 import { problemMessage } from "../api/problem-message.ts"
 import { taxaApi } from "../api/taxa-api.ts"
+import { ChangeOrder } from "../tasks/changes/change-order.ts"
 import { queryTaskCache } from "../tasks/changes/task-cache.ts"
 import { TaskChangesContext, TaskChangesService, useTaskChanges } from "../tasks/changes/task-changes-service.ts"
 import { realScheduler } from "../services/scheduler.ts"
@@ -144,9 +145,12 @@ const Layout = () => {
 }
 
 export const App = () => {
-  const [undo] = useState(() => new UndoService(taxaApi, queryTaskCache(queryClient), appAnalytics, realScheduler))
+  const [order] = useState(() => new ChangeOrder())
+  const [undo] = useState(
+    () => new UndoService(taxaApi, queryTaskCache(queryClient), appAnalytics, realScheduler, order)
+  )
   const [taskChanges] = useState(
-    () => new TaskChangesService(taxaApi, queryTaskCache(queryClient), appAnalytics, appLogger, undo)
+    () => new TaskChangesService(taxaApi, queryTaskCache(queryClient), appAnalytics, appLogger, undo, order)
   )
   const [shortcuts] = useState(() => new ShortcutService(realScheduler, localShortcutSettings, appAnalytics))
   // Here, not on the planner's page, so a plan being made survives a look at one of its tasks.

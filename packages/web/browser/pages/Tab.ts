@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import type { Instant } from "@taxa/shared/units"
+import type { Instant, Ms } from "@taxa/shared/units"
 import { OnboardingPage } from "./OnboardingPage.ts"
 import { PageObject } from "./steps.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
@@ -54,6 +54,19 @@ export class Tab extends PageObject {
 
   async setTime(now: Instant): Promise<void> {
     await this.#page.clock.setFixedTime(now)
+  }
+
+  /** From now on, each answer from the API takes this long to come back, as over a slow network. */
+  async slowNetwork(delay: Ms): Promise<void> {
+    const app = new URL(this.#baseUrl).origin
+    await this.#page.route(
+      (url) => url.origin !== app && (url.hostname === "localhost" || url.hostname === "127.0.0.1"),
+      async (route) => {
+        const response = await route.fetch()
+        await new Promise((resolve) => setTimeout(resolve, delay))
+        await route.fulfill({ response })
+      }
+    )
   }
 
   /** The page asked nothing of the network beyond localhost. */

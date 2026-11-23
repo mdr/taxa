@@ -4,6 +4,7 @@ import type { TaskId } from "@taxa/shared/ids"
 import type { ChangeStatusRequest, UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import { TaskSchema, type Task } from "@taxa/shared/tasks/task"
 import type { Version } from "@taxa/shared/units"
+import type { ChangeOrder } from "./change-order.ts"
 import type { TaskCache } from "./task-cache.ts"
 import { problemMessage } from "../../api/problem-message.ts"
 import { AbstractService } from "../../services/abstract-service.ts"
@@ -53,6 +54,7 @@ export interface TaskChangesApi {
   changeStatus: (ref: string, request: ChangeStatusRequest, ifMatch?: Version) => Promise<Task>
   deleteTask: (ref: string, ifMatch?: Version) => Promise<Task>
   restoreTask: (ref: string) => Promise<Task>
+  task: (ref: string) => Promise<Task>
 }
 
 /** Where each change made is noted, so it can be undone. */
@@ -82,18 +84,19 @@ export class TaskChangesService extends AbstractService<TaskChangesState> implem
   readonly #analytics: Analytics
   readonly #logger: Logger<WebLogCode>
   readonly #history: ChangeHistory
-  /** Each task's latest change, which its next one waits for. */
-  readonly #queues = new Map<TaskId, Promise<unknown>>()
+  readonly #order: ChangeOrder
 
   constructor(
     api: TaskChangesApi,
     cache: TaskCache,
     analytics: Analytics,
     logger: Logger<WebLogCode>,
-    history: ChangeHistory
+    history: ChangeHistory,
+    order: ChangeOrder
   ) {
     super({ problems: {} })
     this.#history = history
+    this.#order = order
     this.#api = api
     this.#cache = cache
     this.#analytics = analytics
@@ -102,9 +105,7 @@ export class TaskChangesService extends AbstractService<TaskChangesState> implem
 
   readonly change = (task: Task, change: TaskChange): Promise<Task | undefined> => {
     this.#setProblem(task.id, undefined)
-    const made = (this.#queues.get(task.id) ?? Promise.resolve()).then(() => this.#make(task, change))
-    this.#queues.set(task.id, made)
-    return made
+    return this.#order.change(task.id, () => this.#make(task, change))
   }
 
   readonly clearProblems = (): void => this.setState({ problems: {} })
@@ -141,7 +142,17 @@ export class TaskChangesService extends AbstractService<TaskChangesState> implem
         return undefined
       }
       this.#setProblem(task.id, problemMessage(error))
+      // No answer: it may have been made all the same, so look again, for the next change to build on.
+      if (!(error instanceof TaxaApiError)) await this.#refresh(task)
       return undefined
+    }
+  }
+
+  async #refresh(task: Task): Promise<void> {
+    try {
+      await this.#cache.show(await this.#api.task(task.id))
+    } catch {
+      // Still unreachable: the page shows what it last knew.
     }
   }
 

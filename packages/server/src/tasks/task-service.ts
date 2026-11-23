@@ -41,6 +41,7 @@ import {
 } from "./task-rows.ts"
 import { changeStatus, changesFromNothing, editTask, type Outcome, type TaskState } from "./task-state.ts"
 import { followsOnIdFor } from "./follow-ons.ts"
+import { logStopped, stopDeletedTask } from "../sessions/deleted-tasks.ts"
 import { findTask, findTasks, findTasksWithIds, taskIdExists, type FoundTask } from "./task-store.ts"
 
 const lookupOf = (text: string): TaskLookup => {
@@ -257,7 +258,7 @@ export const changeTask = async (
   now: Instant,
   { type: changeType, code, apply }: Change
 ): Promise<Task> => {
-  const { task, changes } = await db.transaction(async (tx) => {
+  const { task, changes, stopped } = await db.transaction(async (tx) => {
     const found = await findTask(tx, caller.user.id, lookupOf(ref), true)
     const { row } = found
     if (ifMatch !== undefined && ifMatch !== row.version) {
@@ -268,7 +269,7 @@ export const changeTask = async (
       )
     }
     const { state, changes, deletion, type = changeType, undoesVersion } = await apply(stateOf(row), row, tx)
-    if (Object.keys(changes).length === 0) return { task: await taskFrom(tx, found), changes }
+    if (Object.keys(changes).length === 0) return { task: await taskFrom(tx, found), changes, stopped: [] }
     await tx
       .update(tasks)
       .set({
@@ -288,10 +289,15 @@ export const changeTask = async (
       ...(undoesVersion !== undefined && { undoesVersion }),
       changes
     })
-    return { task: await taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: row.id })), changes }
+    return {
+      task: await taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: row.id })),
+      changes,
+      stopped: deletion === Deletion.DELETE ? await stopDeletedTask(tx, row.id, now) : []
+    }
   })
   // Only changes that changed something: an edit that matches the task as it is has no effect to log.
   if (Object.keys(changes).length > 0) logChange(log, code, caller, task, changes)
+  for (const record of stopped) logStopped(log, caller, record, task.id)
   return task
 }
 

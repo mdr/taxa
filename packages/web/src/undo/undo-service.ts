@@ -1,10 +1,12 @@
 import type { TaskId } from "@taxa/shared/ids"
 import type { Task } from "@taxa/shared/tasks/task"
 import type { Ms, Version } from "@taxa/shared/units"
+import { TaxaApiError } from "@taxa/shared/api/taxa-client"
 import { problemMessage } from "../api/problem-message.ts"
 import { AbstractService } from "../services/abstract-service.ts"
 import type { Scheduler } from "../services/scheduler.ts"
 import { createServiceContext, useService, useServiceState } from "../services/service-hooks.ts"
+import type { ChangeOrder } from "../tasks/changes/change-order.ts"
 import type { TaskCache } from "../tasks/changes/task-cache.ts"
 import type { ChangeHistory, TaskChange } from "../tasks/changes/task-changes-service.ts"
 import { addedLabel, changedLabel, changeLabel } from "./change-label.ts"
@@ -47,11 +49,19 @@ export interface UndoState {
   notice: UndoNotice | undefined
 }
 
+/** A change undone or redone: the version it had brought its task to, and the task now. */
+export interface Undone {
+  taskId: TaskId
+  version: Version
+  task: Task
+}
+
 export interface UndoActions extends ChangeHistory {
-  /** Notes a task just added. */
-  recordAdded: (task: Task) => void
-  undo: () => Promise<void>
-  redo: () => Promise<void>
+  /** Adds a task, in turn with the tab's other changes, noting it to undo. */
+  add: (adding: () => Promise<Task>) => Promise<Task>
+  /** Undoes the last change asked for here, once it's been answered; what that was, unless there was none or it was refused. */
+  undo: () => Promise<Undone | undefined>
+  redo: () => Promise<Undone | undefined>
   /** Undoes the change that brought a task to a version, by default the one it's at, whether made here or not; the task then, or undefined if refused. */
   undoChange: (task: Task, version?: Version) => Promise<Task | undefined>
   dismiss: () => void
@@ -75,13 +85,13 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
   readonly #cache: TaskCache
   readonly #analytics: Analytics
   readonly #scheduler: Scheduler
+  readonly #order: ChangeOrder
   #cancelNotice: (() => void) | undefined
-  /** The last undo or redo asked for: each waits for the one before, so quick presses all count. */
-  #queue: Promise<unknown> = Promise.resolve()
 
-  constructor(api: UndoApi, cache: TaskCache, analytics: Analytics, scheduler: Scheduler) {
+  constructor(api: UndoApi, cache: TaskCache, analytics: Analytics, scheduler: Scheduler, order: ChangeOrder) {
     super({ undoable: [], redoable: [], notice: undefined })
     this.#api = api
+    this.#order = order
     this.#cache = cache
     this.#analytics = analytics
     this.#scheduler = scheduler
@@ -89,7 +99,12 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
 
   readonly recordChange = (task: Task, change: TaskChange): void => this.#record(task, changeLabel(change, task))
 
-  readonly recordAdded = (task: Task): void => this.#record(task, addedLabel(task))
+  readonly add = (adding: () => Promise<Task>): Promise<Task> =>
+    this.#order.add(async () => {
+      const task = await adding()
+      this.#record(task, addedLabel(task))
+      return task
+    })
 
   #record(task: Task, label: string): void {
     // What an undo did is old news once something else changes.
@@ -100,25 +115,27 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
     })
   }
 
-  readonly undo = async (): Promise<void> => {
-    await this.#queued(() => {
+  readonly undo = (): Promise<Undone | undefined> =>
+    this.#order.undo(async () => {
       const step = this.state.undoable.at(-1)
-      return step ? this.#take(step, true) : Promise.resolve(undefined)
+      return step && this.#undone(step, await this.#take(step, true))
     })
-  }
 
-  readonly redo = async (): Promise<void> => {
-    await this.#queued(() => {
+  readonly redo = (): Promise<Undone | undefined> =>
+    this.#order.undo(async () => {
       const step = this.state.redoable.at(-1)
-      return step ? this.#take(step, false) : Promise.resolve(undefined)
+      return step && this.#undone(step, await this.#take(step, false))
     })
-  }
 
   readonly undoChange = (task: Task, version: Version = task.version): Promise<Task | undefined> =>
-    this.#queued(() => {
+    this.#order.undo(() => {
       const step = this.state.undoable.find((other) => other.taskId === task.id && other.version === version)
       return this.#take(step ?? { taskId: task.id, version, label: changedLabel(task) }, true)
     })
+
+  #undone({ taskId, version }: Step, task: Task | undefined): Undone | undefined {
+    return task && { taskId, version, task }
+  }
 
   readonly dismiss = (): void => {
     this.#cancelNotice?.()
@@ -130,16 +147,15 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
 
   readonly dispose = (): void => this.#cancelNotice?.()
 
-  #queued(take: () => Promise<Task | undefined>): Promise<Task | undefined> {
-    const taken = this.#queue.then(take)
-    this.#queue = taken
-    return taken
-  }
-
-  /** Undoes a step, or redoes one: either way, the server undoes the change that brought its task to its version. Never rejects. */
+  /**
+   * Undoes a step, or redoes one: either way, the server undoes the change
+   * that brought its task to its version. Never rejects. If the server's never
+   * reached, the step stays where it was, to try again.
+   */
   async #take(step: Step, undoing: boolean): Promise<Task | undefined> {
     const without = (steps: readonly Step[]): Step[] => steps.filter((other) => other !== step)
-    this.setState({ undoable: without(this.state.undoable), redoable: without(this.state.redoable) })
+    const { undoable, redoable } = this.state
+    this.setState({ undoable: without(undoable), redoable: without(redoable) })
     try {
       const task = await this.#api.undoTask(step.taskId, step.version)
       await this.#cache.show(task)
@@ -159,6 +175,11 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
       )
       return task
     } catch (error) {
+      if (!(error instanceof TaxaApiError))
+        this.setState({
+          undoable: undoable.includes(step) ? [...undoable] : this.state.undoable,
+          redoable: redoable.includes(step) ? [...redoable] : this.state.redoable
+        })
       this.#notify({ type: NoticeType.REFUSED, text: problemMessage(error) })
       return undefined
     }

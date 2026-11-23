@@ -46,25 +46,35 @@ const leaveCurrent = (state: SessionState, now: Instant, outcome?: SessionOutcom
   }
 }
 
-/** The plan as asked for, keeping the time spent and outcome of tasks already in it. */
-const replan = (state: SessionState, items: readonly PlannedTask[]): SessionState => {
-  if (state.current && !items.some(({ taskId }) => taskId === state.current?.taskId))
+/**
+ * The plan as asked for, keeping the time spent and outcome of tasks already
+ * in it. Tasks not `visible` (deleted since) weren't shown to whoever asked,
+ * so keep their places, to be there again if they come back.
+ */
+const replan = (
+  state: SessionState,
+  items: readonly PlannedTask[],
+  visible: ReadonlySet<TaskId> | undefined
+): SessionState => {
+  const asked = new Set(items.map(({ taskId }) => taskId))
+  const hidden = state.items.filter(({ taskId }) => visible && !visible.has(taskId) && !asked.has(taskId))
+  const { current } = state
+  if (current && !asked.has(current.taskId) && !hidden.some(({ taskId }) => taskId === current.taskId))
     refuse("Finish or stop the task under way before taking it out of the plan.")
   const kept = new Map(state.items.map((item) => [item.taskId, item]))
+  const planned = items.map(({ taskId, minutes }) => ({ spentMs: 0, ...kept.get(taskId), taskId, minutes }))
   return {
     ...state,
-    items: items.map(({ taskId, minutes }) => ({
-      spentMs: 0,
-      ...kept.get(taskId),
-      taskId,
-      minutes
-    }))
+    items: hidden.reduce((plan, item) => {
+      const at = Math.min(state.items.indexOf(item), plan.length)
+      return [...plan.slice(0, at), item, ...plan.slice(at)]
+    }, planned)
   }
 }
 
-/** The task under way stopped, if it's gone (deleted since), so the session can go on without it. */
-export const withoutGoneCurrent = (state: SessionState, live: ReadonlySet<TaskId>, now: Instant): SessionState =>
-  state.current && !live.has(state.current.taskId) ? leaveCurrent(state, now) : state
+/** The task stopped, if it's the one under way: deleted, it waits if it comes back, its time spent kept. */
+export const stopTask = (state: SessionState, taskId: TaskId, now: Instant): SessionState =>
+  state.current?.taskId === taskId ? leaveCurrent(state, now) : state
 
 const startTask = (state: SessionState, taskId: TaskId, now: Instant): SessionState => {
   if (!state.items.some((item) => item.taskId === taskId)) refuse("Only a task in the session's plan can be started.")
@@ -104,8 +114,13 @@ export const newSession = (
   return start === undefined ? state : startTask(state, start, now)
 }
 
-/** A session after the update: finish, replan, start, end, in that order. */
-export const updateSession = (state: SessionState, update: SessionUpdate, now: Instant): SessionState => {
+/** A session after the update: finish, replan, start, end, in that order; `visible`, its tasks the asker can see. */
+export const updateSession = (
+  state: SessionState,
+  update: SessionUpdate,
+  now: Instant,
+  visible?: ReadonlySet<TaskId>
+): SessionState => {
   const { finish, set, start, end } = update
   if (state.endedAt !== undefined) {
     if (finish || start || end || set?.endsAt !== undefined || set?.items)
@@ -117,7 +132,7 @@ export const updateSession = (state: SessionState, update: SessionUpdate, now: I
     if (!next.current) refuse("There's no task under way to finish.")
     next = leaveCurrent(next, now, finish)
   }
-  if (set?.items) next = replan(next, set.items)
+  if (set?.items) next = replan(next, set.items, visible)
   if (set?.endsAt !== undefined) {
     endsAfterStart(next, set.endsAt)
     next = { ...next, endsAt: set.endsAt }

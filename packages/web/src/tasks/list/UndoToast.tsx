@@ -8,7 +8,7 @@ import { useIsLatestChange } from "../../undo/undo-service.ts"
 
 /** "Done: …, + Follow-on, Undo" or "Deleted: …, Undo", while the list's session offers to undo ticking it off or deleting it, and that's still the last change. */
 export const UndoToast = ({ task, undoes }: { task: Task; undoes: Undo }) => {
-  const { undo } = useListSession()
+  const { undoOffered } = useListSession()
   const { start } = useFollowOn()
   if (!useIsLatestChange(task)) return undefined
   return (
@@ -35,7 +35,7 @@ export const UndoToast = ({ task, undoes }: { task: Task; undoes: Undo }) => {
       <button
         type="button"
         className={styles.undo}
-        onClick={() => void undo()}
+        onClick={() => void undoOffered()}
         aria-keyshortcuts="Meta+Z Control+Z"
         data-testid={undoToastTestIds.undo}
         data-track="UndoToast.undo"

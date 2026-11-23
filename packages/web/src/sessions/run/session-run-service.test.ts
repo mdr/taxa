@@ -6,6 +6,7 @@ import { testTelemetry, type TestTelemetry } from "../../test-support/test-telem
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { FakeSessionApi } from "../../test-support/fake-session-api.ts"
 import { SessionRunService, toDoOf } from "./session-run-service.ts"
+import type { UndoActions } from "../../undo/undo-service.ts"
 
 const radiators = makeTask({ number: 2, title: "Bleed the radiators" })
 const boilers = makeTask({ number: 3, title: "Research boilers" })
@@ -20,6 +21,21 @@ const session = makeSession({
   ],
   current: { taskId: boilers.id, since: "2026-01-05T14:27:00.000Z" }
 })
+
+/** The tab's history: which it was asked to do. */
+class FakeHistory implements Pick<UndoActions, "undo" | "redo"> {
+  readonly asked: string[] = []
+
+  readonly undo = (): Promise<undefined> => {
+    this.asked.push("undo")
+    return Promise.resolve(undefined)
+  }
+
+  readonly redo = (): Promise<undefined> => {
+    this.asked.push("redo")
+    return Promise.resolve(undefined)
+  }
+}
 
 const setUp = (): {
   api: FakeSessionApi
@@ -91,6 +107,34 @@ describe("SessionRunService", () => {
     expect(run.state.undoable).toBeUndefined()
     await run.undo(session)
     expect(api.updated).toHaveLength(4)
+  })
+
+  it("⌘Z takes back moving on once that's answered, never the tab's last change, and ⇧⌘Z redoes it", async () => {
+    const { api, run } = setUp()
+    const history = new FakeHistory()
+    let letGo = (): void => undefined
+    api.held = new Promise((resolve) => (letGo = resolve))
+    const finishing = run.finish(session, SessionOutcome.DONE)
+    const undoing = run.undoLast(session, history)
+    letGo()
+    await Promise.all([finishing, undoing])
+    expect(history.asked).toEqual([])
+    expect(api.updated.map(({ request, ifMatch }) => [request, ifMatch])).toEqual([
+      [{ finish: SessionOutcome.DONE, start: passport.id }, 4],
+      [{ start: boilers.id }, 5]
+    ])
+
+    await run.redoLast({ ...session, version: 6 }, history)
+    expect(api.updated.at(-1)?.request).toEqual({ finish: SessionOutcome.DONE, start: passport.id })
+    expect(history.asked).toEqual([])
+  })
+
+  it("⌘Z and ⇧⌘Z go to the tab's history when there's no moving on to take back or redo", async () => {
+    const { run } = setUp()
+    const history = new FakeHistory()
+    await run.undoLast(session, history)
+    await run.redoLast(session, history)
+    expect(history.asked).toEqual(["undo", "redo"])
   })
 
   it("keeps finished tasks ahead of what's still to do, and starts a task put above the one under way", async () => {

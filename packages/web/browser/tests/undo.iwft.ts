@@ -134,3 +134,21 @@ test("undoing on a task's page: a change to its notes, or adding it", async ({ t
   await plumber.undoNotice.expectSays("Undid: Added IN-2")
   await plumber.expectDeleted()
 })
+
+test("on a slow network, ⌘Z just after a change takes back that change, not the one before", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap")
+  await taxa.matt.addTask("Pay the bill")
+  const tab = await taxa.openTab("Matt")
+  const inbox = await tab.openInbox()
+  await inbox.keyboard.press("j")
+  await inbox.keyboard.renameRow("Fix the kitchen tap")
+  await inbox.expectTasks(["IN-1 Fix the kitchen tap", "IN-2 Pay the bill"])
+
+  await tab.slowNetwork(500)
+  await inbox.complete("Pay the bill")
+  await inbox.keyboard.press("mod+z")
+  await inbox.undoNotice.expectSays("Undid: Marked IN-2 done")
+  await taxa.expectTask("IN-2", { status: TaskStatus.OPEN })
+  await taxa.expectTask("IN-1", { title: "Fix the kitchen tap" })
+})
