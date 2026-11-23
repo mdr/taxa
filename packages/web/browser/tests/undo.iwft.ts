@@ -107,6 +107,7 @@ test("⌘Z takes back the last change, though ticking off one before it is still
   await inbox.expectUndoOffered("Fix the tap")
   await inbox.keyboard.press("j")
   await inbox.keyboard.renameRow("Pay the gas bill")
+  await inbox.expectTasks(["✓ IN-1 Fix the tap", "IN-2 Pay the gas bill"])
 
   await inbox.keyboard.press("mod+z")
   await inbox.undoNotice.expectSays("Undid: Renamed IN-2")

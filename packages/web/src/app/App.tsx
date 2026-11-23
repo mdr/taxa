@@ -1,6 +1,6 @@
-import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { QueryClientProvider } from "@tanstack/react-query"
+import { queryClient } from "./query-client.ts"
 import { tagFromPath } from "../tags/tag-paths.ts"
-import { TaxaApiError } from "@taxa/shared/api/taxa-client"
 import { useEffect, useState } from "react"
 import { Route, Switch, useLocation } from "wouter"
 import styles from "./App.module.css"
@@ -33,7 +33,7 @@ import { TaskChangesContext, TaskChangesService, useTaskChanges } from "../tasks
 import { realScheduler } from "../services/scheduler.ts"
 import { appAnalytics, appLogger } from "../telemetry/app-telemetry.ts"
 import { useUiTracking } from "../telemetry/ui-tracking.ts"
-import { ANALYTICS_CODES, LOG_CODES } from "../telemetry/codes.ts"
+import { ANALYTICS_CODES } from "../telemetry/codes.ts"
 import { pageOpened } from "../telemetry/page-opened.ts"
 import { appShortcuts } from "../shortcuts/app-shortcuts.ts"
 import { ShortcutsHelp } from "../shortcuts/ShortcutsHelp.tsx"
@@ -55,17 +55,6 @@ import {
   useShortcutActions,
   useShortcuts
 } from "../shortcuts/shortcut-service.ts"
-
-const requestFailed = (error: Error): void =>
-  appLogger.warn(LOG_CODES.api.requestFailed, "a request to the API failed", {
-    problem: error instanceof TaxaApiError ? error.problem.type : error instanceof Error ? error.name : typeof error
-  })
-
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1 } },
-  queryCache: new QueryCache({ onError: requestFailed }),
-  mutationCache: new MutationCache({ onError: requestFailed })
-})
 
 const NotFound = () => (
   <section data-testid={appTestIds.notFound}>
