@@ -39,6 +39,7 @@ import { pageOpened } from "../telemetry/page-opened.ts"
 import { appShortcuts } from "../shortcuts/app-shortcuts.ts"
 import { ShortcutsHelp } from "../shortcuts/ShortcutsHelp.tsx"
 import { CommandMenu } from "../shortcuts/CommandMenu.tsx"
+import { SequenceHint } from "../shortcuts/SequenceHint.tsx"
 import { localShortcutSettings } from "../shortcuts/shortcut-settings.ts"
 import { FollowOnDialog } from "../tasks/follow-ons/FollowOnDialog.tsx"
 import { UndoNotice } from "../undo/UndoNotice.tsx"
@@ -138,6 +139,7 @@ const Layout = () => {
       </main>
       {helpOpen && <ShortcutsHelp />}
       {menuOpen && <CommandMenu />}
+      <SequenceHint />
       {followingOn && <FollowOnDialog key={followingOn.id} from={followingOn} />}
       {undoNotice && <UndoNotice notice={undoNotice} />}
     </div>

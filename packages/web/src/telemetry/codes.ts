@@ -44,7 +44,8 @@ export const ANALYTICS_CODES = {
   },
   shortcut: {
     used: "shortcut.used",
-    singleKeysSet: "shortcut.singleKeysSet"
+    singleKeysSet: "shortcut.singleKeysSet",
+    sequenceCancelled: "shortcut.sequenceCancelled"
   },
   shortcutsHelp: {
     opened: "shortcutsHelp.opened"

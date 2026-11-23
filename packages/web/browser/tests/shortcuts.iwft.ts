@@ -15,6 +15,16 @@ test("adding tasks and moving between lists from the keyboard", async ({ taxa })
   await work.keyboard.addTask("Plan the quarter")
   await work.expectTasks(["WK-2 Plan the quarter"])
 
+  // G shows the keys that can come next; Escape or a click elsewhere cancels it.
+  const going = await work.keyboard.startGoingTo()
+  await going.expectOffered(["T Today", "S Soon", "I Inbox", "P In progress", "N Session", "M Someday", "X Trash"])
+  await going.expectAccessible()
+  await going.cancel()
+  await going.expectGone()
+  await (await work.keyboard.startGoingTo()).clickAway()
+  await going.expectGone()
+  await (await (await work.keyboard.startGoingTo()).choose("Soon")).expectHeading("Soon")
+
   // G then a letter goes to each list used every day.
   await (await work.keyboard.goTo("g t")).expectHeading("Today")
   await (await work.keyboard.goTo("g s")).expectHeading("Soon")

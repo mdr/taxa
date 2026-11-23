@@ -3,6 +3,7 @@ import { PageObject } from "./steps.ts"
 import { CommandMenu } from "./CommandMenu.ts"
 import { ShortcutsHelp } from "./ShortcutsHelp.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
+import { SequenceHint } from "./SequenceHint.ts"
 import { SessionSetupPage } from "./SessionSetupPage.ts"
 import { TrashPage } from "./TrashPage.ts"
 import { TaskListPage } from "./TaskListPage.ts"
@@ -45,6 +46,12 @@ export class Keyboard extends PageObject {
   async goTo(keys: string): Promise<TaskListPage> {
     await this.press(keys)
     return new TaskListPage(this.#page)
+  }
+
+  /** `G`, and what can come next. */
+  async startGoingTo(): Promise<SequenceHint> {
+    await this.press("g")
+    return new SequenceHint(this.#page)
   }
 
   async goToSession(): Promise<SessionSetupPage> {

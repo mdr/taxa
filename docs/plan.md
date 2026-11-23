@@ -36,7 +36,8 @@ normalising what the API receives from others is still to come.
 Also added after first use: keyboard shortcuts. `C` adds a task, `G` then a letter goes to a
 list used every day (`T` Today, `S` Soon, `I` Inbox, `P` In progress, `N` the
 session, `M` Someday, `X` Trash; domains, which people tend to stay in, are in
-the command menu instead), `⌘Z` undoes the tab's last change of any kind and `⇧⌘Z` redoes it, and `?` lists them, with
+the command menu instead; after `G` a panel shows what can come next, until
+the next key, `Esc` or a click elsewhere), `⌘Z` undoes the tab's last change of any kind and `⇧⌘Z` redoes it, and `?` lists them, with
 single-key ones able to be turned off. In a list, `J`/`K` or the arrows move
 through the tasks, `Enter` opens one and `X` ticks it off; on a task's page, a
 key opens each picker (`S`, `P`, `M`, `D`, `T`, `H`, `E`), `R` renames, `N`

@@ -8,7 +8,7 @@ import { createServiceContext, useService, useServiceState } from "../services/s
 import type { Analytics } from "../telemetry/analytics.ts"
 import { ANALYTICS_CODES } from "../telemetry/codes.ts"
 
-/** How long the app waits for the next key of a sequence like `G H`. */
+/** How long the app waits to see whether `G H` goes on to `G H O`, before taking `G H`. */
 export const SEQUENCE_MS: Ms = 1200
 
 export enum ShortcutGroup {
@@ -74,6 +74,8 @@ export interface ShortcutActions {
   openMenu: () => void
   closeMenu: () => void
   setSingleKeys: (on: boolean) => void
+  /** Forgets the keys pressed so far of a sequence. */
+  cancelSequence: () => void
   requestFocus: (target: FocusTarget) => void
   focusTaken: () => void
   dispose: () => void
@@ -86,6 +88,25 @@ const isSingleKey = (shortcut: Shortcut): boolean => (shortcut.keys[0] ?? "").le
 
 const startsWith = (keys: readonly string[], start: readonly string[]): boolean =>
   start.every((key, index) => keys[index] === key)
+
+/** A key that can come next in a sequence, and what the shortest through it does. */
+export interface NextKey {
+  key: string
+  description: string
+}
+
+/** The keys that can follow those pressed so far, each once. */
+export const nextKeys = (active: readonly Shortcut[], pending: readonly string[]): NextKey[] => {
+  const next = new Map<string, NextKey>()
+  const going = active
+    .filter((shortcut) => shortcut.keys.length > pending.length && startsWith(shortcut.keys, pending))
+    .sort((a, b) => a.keys.length - b.keys.length)
+  for (const { keys, description } of going) {
+    const key = keys[pending.length]
+    if (key !== undefined && !next.has(key)) next.set(key, { key, description })
+  }
+  return [...next.values()]
+}
 
 /** The keyboard shortcuts, wherever they're set, and the list of them. */
 export class ShortcutService extends AbstractService<ShortcutState> implements ShortcutActions {
@@ -150,6 +171,10 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
 
   readonly press = (key: string): boolean => {
     if (this.state.helpOpen || this.state.menuOpen) return false
+    if (key === "Escape" && this.state.pending.length > 0) {
+      this.cancelSequence()
+      return true
+    }
     this.#stopWaiting()
     const pending = this.state.pending
     const sequence = [...pending, key]
@@ -159,12 +184,13 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
     )
     if (active.some((shortcut) => shortcut.keys.length > sequence.length && startsWith(shortcut.keys, sequence))) {
       this.setState({ pending: sequence })
-      // `G H` could be the start of `G H O`: wait, then take the shorter.
-      this.#cancelWait = this.#scheduler.after(SEQUENCE_MS, () => {
-        this.#cancelWait = undefined
-        this.setState({ pending: [] })
-        if (exact) this.#run(exact)
-      })
+      // `G H` could be the start of `G H O`: wait, then take the shorter. With nothing shorter, wait for the next key.
+      if (exact)
+        this.#cancelWait = this.#scheduler.after(SEQUENCE_MS, () => {
+          this.#cancelWait = undefined
+          this.setState({ pending: [] })
+          this.#run(exact)
+        })
       return true
     }
     if (pending.length > 0) this.setState({ pending: [] })
@@ -191,6 +217,13 @@ export class ShortcutService extends AbstractService<ShortcutState> implements S
   }
 
   readonly closeMenu = (): void => this.setState({ menuOpen: false })
+
+  readonly cancelSequence = (): void => {
+    if (this.state.pending.length === 0) return
+    this.#stopWaiting()
+    this.setState({ pending: [] })
+    this.#analytics.track(ANALYTICS_CODES.shortcut.sequenceCancelled, "cancelled a sequence of keys")
+  }
 
   readonly setSingleKeys = (on: boolean): void => {
     this.setState({ singleKeys: on })
@@ -219,6 +252,9 @@ export const useShortcutActions = (): ShortcutActions => useService(ShortcutCont
 export const useHelpOpen = (): boolean => useServiceState(useService(ShortcutContext), (state) => state.helpOpen)
 
 export const useMenuOpen = (): boolean => useServiceState(useService(ShortcutContext), (state) => state.menuOpen)
+
+export const usePendingKeys = (): readonly string[] =>
+  useServiceState(useService(ShortcutContext), (state) => state.pending)
 
 export const useSingleKeys = (): boolean => useServiceState(useService(ShortcutContext), (state) => state.singleKeys)
 

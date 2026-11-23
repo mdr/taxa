@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test"
 import {
   FocusTarget,
+  nextKeys,
   SEQUENCE_MS,
   ShortcutGroup,
   ShortcutScope,
@@ -92,13 +93,40 @@ describe("ShortcutService", () => {
     expect(ran).toEqual(["inbox"])
   })
 
-  it("forgets the start of a sequence after a moment", () => {
-    const { shortcuts, shortcut, scheduler, ran } = makeShortcutService()
-    shortcuts.register(ShortcutScope.APP, () => [shortcut("g i", "inbox")])
+  it("waits for the next key of a sequence until it's cancelled with Escape or otherwise", () => {
+    const { shortcuts, shortcut, scheduler, ran, telemetry } = makeShortcutService()
+    shortcuts.register(ShortcutScope.APP, () => [shortcut("g i", "inbox"), shortcut("Escape", "back")])
     shortcuts.press("g")
-    scheduler.advance(SEQUENCE_MS)
+    scheduler.advance(SEQUENCE_MS * 10)
+    expect(shortcuts.state.pending).toEqual(["g"])
+    expect(shortcuts.press("Escape")).toBe(true)
+    expect(shortcuts.state.pending).toEqual([])
+    expect(shortcuts.press("i")).toBe(false)
+    shortcuts.press("g")
+    shortcuts.cancelSequence()
     expect(shortcuts.press("i")).toBe(false)
     expect(ran).toEqual([])
+    expect(telemetry.tracked()).toEqual([
+      [ANALYTICS_CODES.shortcut.sequenceCancelled, {}],
+      [ANALYTICS_CODES.shortcut.sequenceCancelled, {}]
+    ])
+    shortcuts.press("Escape")
+    expect(ran).toEqual(["back"])
+  })
+
+  it("lists the keys that can come next, each once, with what the shortest through it does", () => {
+    const { shortcut } = makeShortcutService()
+    const active = [
+      shortcut("c", "capture"),
+      shortcut("g h o", "hobbies"),
+      shortcut("g h", "home"),
+      shortcut("g i", "inbox")
+    ]
+    expect(nextKeys(active, ["g"])).toEqual([
+      { key: "h", description: "home" },
+      { key: "i", description: "inbox" }
+    ])
+    expect(nextKeys(active, ["g", "h"])).toEqual([{ key: "o", description: "hobbies" }])
   })
 
   it("starts afresh with a key that doesn't go on from the ones before", () => {
