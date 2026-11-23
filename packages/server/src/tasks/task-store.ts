@@ -24,7 +24,7 @@ const selectVisible = (db: Db, userId: UserId, where: SQL | undefined) =>
     .from(tasks)
     .leftJoin(domains, eq(domains.id, tasks.domainId))
     .leftJoin(domainMembers, and(eq(domainMembers.domainId, tasks.domainId), eq(domainMembers.userId, userId)))
-    .where(and(or(isNotNull(domainMembers.userId), eq(tasks.inboxUserId, userId)), where))
+    .where(and(or(isNotNull(domainMembers.userId), eq(tasks.inboxUserId, userId)), isNull(tasks.purgedAt), where))
 
 /**
  * A task this person can see, named by ref. `forUpdate` locks it until the

@@ -33,7 +33,11 @@ export const ANALYTICS_CODES = {
     redone: "task.redone",
     refCopied: "task.refCopied",
     followOnStarted: "task.followOnStarted",
-    followOnAdded: "task.followOnAdded"
+    followOnAdded: "task.followOnAdded",
+    purged: "task.purged"
+  },
+  bin: {
+    emptied: "bin.emptied"
   },
   tag: {
     renamed: "tag.renamed"

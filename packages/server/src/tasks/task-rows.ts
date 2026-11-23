@@ -3,6 +3,7 @@ import type { Actor } from "@taxa/shared/identity/actor"
 import { definedFields } from "@taxa/shared/objects"
 import { formatTaskRef } from "@taxa/shared/tasks/task-ref"
 import type { Task } from "@taxa/shared/tasks/task"
+import type { Instant } from "@taxa/shared/units"
 import type { ActorIds } from "../activity/actor-names.ts"
 import type { tasks } from "../database/schema.ts"
 import type { TaskState } from "./task-state.ts"
@@ -128,3 +129,17 @@ export const foundOf = ({ row, prefix }: { row: TaskRow; prefix: DomainPrefix | 
   row,
   prefix: prefix ?? undefined
 })
+
+/** A task deleted for good: what was written in it, gone. */
+export const purgedValues = (now: Instant): Partial<TaskValues> => ({
+  title: "",
+  notes: "",
+  tags: [],
+  waitingOn: null,
+  cancelledReason: null,
+  inProgressAgentContext: null,
+  purgedAt: new Date(now)
+})
+
+/** Its log, with nothing left of what each change wrote. */
+export const PURGED_ACTIVITY = { changes: {}, agentContext: null }

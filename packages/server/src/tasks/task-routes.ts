@@ -10,6 +10,7 @@ import {
   UpdateTaskRequestSchema
 } from "@taxa/shared/tasks/task-requests"
 import { TASKS_PATH, TaskSchema } from "@taxa/shared/tasks/task"
+import { BIN_PATH, PurgedSchema } from "@taxa/shared/tasks/bin"
 import type { Db } from "../database/database.ts"
 import { onceFor } from "../http/idempotency.ts"
 import { ifMatchVersion } from "../http/if-match.ts"
@@ -26,6 +27,7 @@ import {
   updateTask
 } from "./task-service.ts"
 import { undoTask } from "./task-undo.ts"
+import { emptyBin, purgeTask } from "./task-purge.ts"
 
 const TASK_PATH = `${TASKS_PATH}/{ref}`
 const RefSchema = z.object({
@@ -90,6 +92,23 @@ const routes = {
     request: { params: RefSchema },
     responses: { 200: json(TaskSchema, "The restored task"), ...PROBLEMS }
   }),
+  purge: createRoute({
+    method: "post",
+    path: `${TASK_PATH}/purge`,
+    summary: "Delete a task in the bin for good",
+    description:
+      "What was written in it, and in its log, is wiped, and it can't be restored. A task left in the bin for 30 days goes this way by itself.",
+    security: BEARER,
+    request: { params: RefSchema },
+    responses: { 200: json(PurgedSchema, "How many were deleted for good: 1"), ...PROBLEMS }
+  }),
+  emptyBin: createRoute({
+    method: "post",
+    path: `${BIN_PATH}/empty`,
+    summary: "Delete every task in the bin for good",
+    security: BEARER,
+    responses: { 200: json(PurgedSchema, "How many were deleted for good"), ...PROBLEMS }
+  }),
   undo: createRoute({
     method: "post",
     path: `${TASK_PATH}/undo`,
@@ -153,6 +172,13 @@ export const taskRoutes = (app: TaxaApp, db: Db, log: ServerLogger, clock: Clock
   })
   app.openapi(routes.restore, async (context) =>
     context.json(await restoreTask(db, log, context.var.caller, context.req.valid("param").ref, clock.now()), 200)
+  )
+  app.openapi(routes.purge, async (context) => {
+    await purgeTask(db, log, context.var.caller, context.req.valid("param").ref, clock.now())
+    return context.json({ purged: 1 }, 200)
+  })
+  app.openapi(routes.emptyBin, async (context) =>
+    context.json({ purged: await emptyBin(db, log, context.var.caller, clock.now()) }, 200)
   )
   app.openapi(routes.undo, async (context) => {
     const { ref } = context.req.valid("param")

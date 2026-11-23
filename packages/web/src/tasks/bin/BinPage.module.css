@@ -77,6 +77,36 @@
   background: var(--sidebar);
 }
 
+.emptyBin {
+  margin-left: auto;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--danger);
+  font-size: 0.85rem;
+  font-weight: 550;
+}
+
+.emptyBin:hover {
+  background: var(--danger-soft);
+}
+
+.purge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0.35rem;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+}
+
+.purge:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
 .empty {
   color: var(--muted);
 }

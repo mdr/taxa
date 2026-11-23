@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server"
 import { z } from "zod"
 import { realClock } from "@taxa/shared/clock"
 import { createApp } from "./app.ts"
+import { clearOldBin } from "./tasks/task-purge.ts"
 import { configFrom, type Config } from "./config.ts"
 import { connectPostgres } from "./database/postgres-database.ts"
 import { createLogger } from "@taxa/shared/telemetry/log"
@@ -35,3 +36,14 @@ serve({ fetch: app.fetch, port: config.PORT }, ({ port }) =>
     devLogin: config.TAXA_DEV_USER !== undefined
   })
 )
+
+/** How often tasks left in the bin too long are deleted for good. */
+const CLEAR_BIN_EVERY_MS = 60 * 60 * 1000
+
+const clearBin = (): void => {
+  clearOldBin(database.db, logger, realClock.now()).catch((error: unknown) =>
+    logger.error(LOG_CODES.bin.clearFailed, "couldn't clear old tasks out of the bin", { err: String(error) })
+  )
+}
+clearBin()
+setInterval(clearBin, CLEAR_BIN_EVERY_MS)

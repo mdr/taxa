@@ -35,7 +35,13 @@ export const LOG_CODES = {
     statusChanged: "task.statusChanged",
     deleted: "task.deleted",
     restored: "task.restored",
-    undone: "task.undone"
+    undone: "task.undone",
+    purged: "task.purged"
+  },
+  bin: {
+    emptied: "bin.emptied",
+    cleared: "bin.cleared",
+    clearFailed: "bin.clearFailed"
   }
 } as const
 

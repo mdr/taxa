@@ -3,5 +3,7 @@ export const binPageTestIds = {
   tasks: "BinPage.tasks",
   empty: "BinPage.empty",
   task: "BinPage.task",
-  restore: "BinPage.restore"
+  restore: "BinPage.restore",
+  purge: "BinPage.purge",
+  emptyBin: "BinPage.emptyBin"
 }

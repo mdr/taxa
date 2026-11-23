@@ -4,9 +4,10 @@ import { PageObject } from "./steps.ts"
 import { Sidebar } from "./Sidebar.ts"
 import { UndoNotice } from "./UndoNotice.ts"
 import { Keyboard } from "./Keyboard.ts"
+import { PurgeDialog } from "./PurgeDialog.ts"
 import { binPageTestIds } from "../../src/tasks/bin/BinPageTestIds.ts"
 
-/** Deleted tasks, to restore. */
+/** Deleted tasks, to restore or delete forever. */
 export class BinPage extends PageObject {
   readonly #page: Page
   readonly sidebar: Sidebar
@@ -46,6 +47,20 @@ export class BinPage extends PageObject {
       .filter({ hasText: title })
       .getByTestId(binPageTestIds.restore)
       .click()
+  }
+
+  async deleteForever(title: string): Promise<PurgeDialog> {
+    await this.#page
+      .getByTestId(binPageTestIds.task)
+      .filter({ hasText: title })
+      .getByTestId(binPageTestIds.purge)
+      .click()
+    return new PurgeDialog(this.#page)
+  }
+
+  async emptyBin(): Promise<PurgeDialog> {
+    await this.#page.getByTestId(binPageTestIds.emptyBin).click()
+    return new PurgeDialog(this.#page)
   }
 
   async expectAccessible(): Promise<void> {

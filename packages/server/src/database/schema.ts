@@ -141,6 +141,8 @@ export const tasks = pgTable(
     createdAt: instant("created_at").notNull(),
     updatedAt: instant("updated_at").notNull(),
     deletedAt: instant("deleted_at"),
+    /** When it was deleted for good: what was written in it is gone, and it's never shown again. */
+    purgedAt: instant("purged_at"),
     version: version()
   },
   (table) => [

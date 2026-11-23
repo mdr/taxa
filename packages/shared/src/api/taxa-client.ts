@@ -1,4 +1,5 @@
 import { DAY_PLANS_PATH, DayPlanSchema, type DayPlan, type SetDayPlanRequest } from "../days/day-plan.ts"
+import { BIN_PATH, PurgedSchema } from "../tasks/bin.ts"
 import type { IsoDate } from "../dates/plain-date.ts"
 import type { AgentId, ApiKeyId, SessionId } from "../ids.ts"
 import type { Version } from "../units.ts"
@@ -129,6 +130,16 @@ export class TaxaClient {
 
   restoreTask(ref: string): Promise<Task> {
     return this.#request(TaskSchema, `${taskPath(ref)}/restore`, { method: "POST" })
+  }
+
+  /** Deletes a task in the bin for good. */
+  async purgeTask(ref: string): Promise<void> {
+    await this.#request(PurgedSchema, `${taskPath(ref)}/purge`, { method: "POST" })
+  }
+
+  /** Deletes every task in the bin for good; how many. */
+  async emptyBin(): Promise<number> {
+    return (await this.#request(PurgedSchema, `${BIN_PATH}/empty`, { method: "POST" })).purged
   }
 
   /** Takes back the change that brought a task to `version`; undoing an undo redoes it. */

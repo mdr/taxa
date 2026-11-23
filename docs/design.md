@@ -309,7 +309,12 @@ offline editing from the start, even though it ships in stages.
   wins, the overwritten value is kept in the activity log, and the person
   sees a "changed while you were offline" notice with undo.
 - **Deletes are soft** (`deleted_at`), so they sync like any other change
-  and give us a bin.
+  and give us a bin. From the bin a task can be deleted forever, one at a
+  time or by emptying it, after asking; one left there 30 days goes by
+  itself (the server checks hourly). Deleted forever (`purged_at`), the row
+  stays so what pointed at it (a follow-on, a session, the log) still names
+  something, but its title, notes, tags and what its log entries recorded
+  are wiped, and nothing shows it or can restore it again.
 - If several people ever need to edit the same notes at once, Yjs could be
   used for notes alone.
 

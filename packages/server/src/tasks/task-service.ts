@@ -44,7 +44,7 @@ import { followsOnIdFor } from "./follow-ons.ts"
 import { logStopped, stopDeletedTask } from "../sessions/deleted-tasks.ts"
 import { findTask, findTasks, findTasksWithIds, taskIdExists, type FoundTask } from "./task-store.ts"
 
-const lookupOf = (text: string): TaskLookup => {
+export const lookupOf = (text: string): TaskLookup => {
   const ref = parseTaskLookup(text)
   if (!ref)
     throw new ProblemError(

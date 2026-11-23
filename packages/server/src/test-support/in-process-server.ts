@@ -10,6 +10,10 @@ import { FakeClock } from "@taxa/shared/test-support/fake-clock"
 import type { Instant, Ms } from "@taxa/shared/units"
 import { createKey } from "../agents/agent-store.ts"
 import { createApp, type DevLogin } from "../app.ts"
+import { eq } from "drizzle-orm"
+import type { TaskId } from "@taxa/shared/ids"
+import { activity, tasks } from "../database/schema.ts"
+import { clearOldBin } from "../tasks/task-purge.ts"
 import type { Database } from "../database/database.ts"
 import { createLogger, type LogRecord } from "@taxa/shared/telemetry/log"
 import type { ServerLogCode, ServerLogger } from "../telemetry/log.ts"
@@ -112,6 +116,24 @@ export class InProcessServer {
   /** Move the server's clock on, firing whatever falls due. */
   advance(time: Ms): void {
     this.clock.advance(time)
+  }
+
+  /** What the hourly clear-out of the bin does, now. */
+  clearOldBin(): Promise<number> {
+    return clearOldBin(this.#database.db, this.#logger, this.clock.now())
+  }
+
+  /** What's stored of a task and its log, seen or not: to check what deleting it for good left. */
+  async stored(id: TaskId): Promise<{ title: string; notes: string; tags: string[]; logged: unknown[] }> {
+    const db = this.#database.db
+    const [row] = await db.select().from(tasks).where(eq(tasks.id, id))
+    const log = await db.select({ changes: activity.changes }).from(activity).where(eq(activity.entityId, id))
+    return {
+      title: row?.title ?? "",
+      notes: row?.notes ?? "",
+      tags: row?.tags ?? [],
+      logged: log.map(({ changes }) => changes)
+    }
   }
 
   async health(): Promise<Health> {

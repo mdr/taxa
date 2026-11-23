@@ -1,0 +1,1 @@
+ALTER TABLE "tasks" ADD COLUMN "purged_at" timestamp with time zone;
