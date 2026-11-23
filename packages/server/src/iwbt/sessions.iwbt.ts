@@ -120,6 +120,33 @@ describe("sessions", () => {
     expect((await matt.client.task(radiators.ref)).status).toBe(TaskStatus.OPEN)
   })
 
+  it("go on without a task under way that's been deleted, which stays out of the plan once restored", async ({
+    server
+  }) => {
+    const matt = await server.user("Matt")
+    const tap = await matt.addTask("Fix the tap")
+    const radiators = await matt.addTask("Bleed the radiators")
+    const session = await matt.client.createSession({
+      endsAt: new Date(server.clock.now() + 60 * MINUTE).toISOString(),
+      items: [
+        { taskId: tap.id, minutes: 15 },
+        { taskId: radiators.id, minutes: 30 }
+      ],
+      start: tap.id
+    })
+    await matt.client.deleteTask(tap.ref)
+    const shown = await matt.client.session(session.id)
+    expect(shown.current).toBeUndefined()
+    expect(shown.items.map(({ task }) => task.title)).toEqual(["Bleed the radiators"])
+
+    const replanned = await matt.client.updateSession(session.id, {
+      set: { items: [{ taskId: radiators.id, minutes: 45 }] }
+    })
+    expect(replanned.current).toBeUndefined()
+    await matt.client.restoreTask(tap.ref)
+    expect((await matt.client.session(session.id)).items.map(({ task }) => task.title)).toEqual(["Bleed the radiators"])
+  })
+
   it("are logged, once per change, with what changed", async ({ server }) => {
     const matt = await server.user("Matt")
     const tap = await matt.addTask("Fix the tap")

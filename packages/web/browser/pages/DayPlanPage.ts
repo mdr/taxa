@@ -1,19 +1,25 @@
 import { expect, type Page } from "@playwright/test"
 import { PageObject } from "./steps.ts"
 import { expectAccessible } from "./accessibility.ts"
+import { Keyboard } from "./Keyboard.ts"
 import { PlanEditor } from "./PlanEditor.ts"
 import { TaskListPage } from "./TaskListPage.ts"
+import { UndoNotice } from "./UndoNotice.ts"
 import { dayPlanPageTestIds } from "../../src/days/DayPlanPageTestIds.ts"
 
 /** Plan today: choosing today's tasks, and their order. Each row's time is its place: `1 Fix the tap`. */
 export class DayPlanPage extends PageObject {
   readonly #page: Page
   readonly plan: PlanEditor
+  readonly keyboard: Keyboard
+  readonly undoNotice: UndoNotice
 
   constructor(page: Page) {
     super()
     this.#page = page
     this.plan = new PlanEditor(page)
+    this.keyboard = new Keyboard(page)
+    this.undoNotice = new UndoNotice(page)
   }
 
   async expectShown(): Promise<void> {

@@ -96,3 +96,27 @@ test("dragging into the plan shows where a task will go, and anywhere on its sid
     "6 Renew passport"
   ])
 })
+
+test("undoing putting a task in today's plan, or taking one out, changes the plan back", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H", scheduled: "2026-01-05" })
+  await taxa.matt.addTask("Pay the bill", { domain: "H", scheduled: "2026-01-05" })
+  await taxa.matt.addTask("Research boilers", { domain: "H", horizon: Horizon.SOON })
+  const today = await (await (await taxa.openTab("Matt")).openInbox()).sidebar.openList("Today")
+  const planning = await today.planToday()
+  await planning.plan.expectPlan(["1 Fix the tap", "2 Pay the bill"])
+
+  await planning.plan.add("Research boilers")
+  await planning.plan.expectPlan(["1 Fix the tap", "2 Pay the bill", "3 Research boilers"])
+  await planning.keyboard.press("mod+z")
+  await planning.undoNotice.expectSays("Undid: Changed H-3")
+  await planning.plan.expectPlan(["1 Fix the tap", "2 Pay the bill"])
+  await taxa.expectTask("H-3", { scheduled: undefined, horizon: Horizon.SOON })
+
+  await planning.plan.remove("Fix the tap")
+  await planning.plan.expectPlan(["1 Pay the bill"])
+  await planning.keyboard.press("mod+z")
+  await planning.plan.expectPlan(["1 Fix the tap", "2 Pay the bill"])
+  await taxa.expectTask("H-1", { scheduled: "2026-01-05" })
+  await (await planning.done()).expectTasks(["H-1 Fix the tap", "H-2 Pay the bill"])
+})

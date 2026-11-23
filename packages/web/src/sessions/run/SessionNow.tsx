@@ -21,6 +21,7 @@ import { ShortcutGroup, ShortcutScope, useShortcuts } from "../../shortcuts/shor
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { StatusIcon } from "../../tasks/StatusIcon.tsx"
 import { useSessionCandidates } from "../plan/use-candidates.ts"
+import { useUndo } from "../../undo/undo-service.ts"
 
 const MINUTE = 60_000
 
@@ -231,6 +232,7 @@ export const SessionNow = ({ session }: { session: Session }) => {
   const [replanning, setReplanning] = useState(false)
   const [search, setSearch] = useState("")
   const [, navigate] = useLocation()
+  const history = useUndo()
   const tasks = useSessionCandidates(replanning) ?? []
   const timeline = sessionTimeline(session, useNow())
   const { current } = timeline
@@ -255,6 +257,13 @@ export const SessionNow = ({ session }: { session: Session }) => {
       group: ShortcutGroup.TASKS,
       run: () => finish(SessionOutcome.STOPPED),
       available: underWay
+    },
+    {
+      keys: ["mod+z"],
+      description: "Undo the last change",
+      group: ShortcutGroup.GENERAL,
+      // Moving on is the last change here, while it's on offer to undo.
+      run: () => void (run.state.undoable ? run.undo(session) : history.undo())
     }
   ])
 

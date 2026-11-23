@@ -57,7 +57,9 @@ export const sessionOf = ({ id, version, state }: SessionRecord, tasks: Readonly
     const task = tasks.get(taskId)
     return task ? [{ task, minutes, spentMs, ...(outcome ? { outcome } : {}) }] : []
   }),
-  ...(state.current ? { current: { taskId: state.current.taskId, since: iso(state.current.since) } } : {}),
+  ...(state.current && tasks.has(state.current.taskId)
+    ? { current: { taskId: state.current.taskId, since: iso(state.current.since) } }
+    : {}),
   note: state.note,
   ...(state.endedAt === undefined ? {} : { endedAt: iso(state.endedAt) }),
   version

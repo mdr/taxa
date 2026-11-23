@@ -5,6 +5,7 @@ import { Keyboard } from "./Keyboard.ts"
 import { PlanEditor } from "./PlanEditor.ts"
 import { SessionSummaryPage } from "./SessionSummaryPage.ts"
 import { Sidebar } from "./Sidebar.ts"
+import { UndoNotice } from "./UndoNotice.ts"
 import { sessionPageTestIds } from "../../src/sessions/SessionPageTestIds.ts"
 
 /** A session under way: the task being worked on, and the rest of the plan. */
@@ -14,6 +15,7 @@ export class RunningSessionPage extends PageObject {
   readonly plan: PlanEditor
   readonly sidebar: Sidebar
   readonly keyboard: Keyboard
+  readonly undoNotice: UndoNotice
 
   constructor(page: Page) {
     super()
@@ -21,6 +23,7 @@ export class RunningSessionPage extends PageObject {
     this.plan = new PlanEditor(page)
     this.sidebar = new Sidebar(page)
     this.keyboard = new Keyboard(page)
+    this.undoNotice = new UndoNotice(page)
   }
 
   #byId(id: string): Locator {
@@ -68,6 +71,11 @@ export class RunningSessionPage extends PageObject {
   }
 
   /** +15 min for the task being worked on. */
+  /** Between tasks: starts the one up next. */
+  async startNext(): Promise<void> {
+    await this.#byId(sessionPageTestIds.startNext).click()
+  }
+
   async moreTime(): Promise<void> {
     await this.#byId(sessionPageTestIds.moreTime).click()
   }

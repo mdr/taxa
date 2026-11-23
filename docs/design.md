@@ -165,7 +165,9 @@ which aren't stored as comments.
   progress, soon, due this week, important) or any task found, and puts them
   in order. Putting one in schedules it for today; taking one out leaves it
   for soon. The order is a day plan, kept per person per date; Today lists
-  tasks in that order, those it doesn't place after.
+  tasks in that order, those it doesn't place after. The plan follows
+  today's tasks as they change elsewhere, by an undo or in another tab: a
+  task taken out and put back returns to its place.
 - Below Today, **Might want attention** offers what isn't planned for it but
   is due, overdue, or urgent and lined up for soon, with + Today on each. A
   task in Soon for four weeks says so, to ask whether it's still soon or
@@ -192,7 +194,9 @@ and a plan being made survives a look there (not a reload). While the
 session runs, the task under way counts down, then counts up as "over" with
 the rest of the plan sliding later; nothing moves on by itself. Done ticks
 the task off, Stop here leaves it open, and either goes on to the next; Undo
-takes that back until the next change. The plan can be changed at any point:
+(or ⌘Z) takes that back until the next change. A task deleted while under
+way, as undoing its addition does, leaves the session, which waits to start
+the next. The plan can be changed at any point:
 the top of what's still to do is the task under way, so putting another
 above it starts that one, the other waiting next. Ending shows what got done,
 what was worked on and what wasn't reached, with planned against spent time
@@ -252,7 +256,11 @@ the Zod schemas in `shared`.
   undone from the log: each entry records the version it brought the task
   to, and undoing it puts back each field it changed, unless one has been
   changed since. Undoing an addition deletes the task, undoing a deletion
-  restores it, and an undo is itself an entry, so undoing it redoes.
+  restores it, and an undo is itself an entry, so undoing it redoes. In the
+  web app, ⌘Z undoes the tab's last change and ⇧⌘Z redoes it; an offer to
+  undo something on a page (a tick, a deletion) stands only until another
+  change is made, after which ⌘Z takes back that one. Whatever a page shows
+  of tasks (a plan being made, a session) follows what an undo does to them.
 - **The CLI (`taxa`)** wraps the API. It prints readable output by default,
   `--json` for machines, takes JSON on stdin, has meaningful exit codes, and
   never prompts unless asked to. It gives each task's link in the web app

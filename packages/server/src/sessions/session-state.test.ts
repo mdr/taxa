@@ -4,7 +4,7 @@ import { SessionOutcome } from "@taxa/shared/sessions/session"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { describe, expect, it } from "vite-plus/test"
 import { ProblemError } from "../http/problem-error.ts"
-import { newSession, statusMoves, updateSession, type SessionState } from "./session-state.ts"
+import { newSession, statusMoves, updateSession, withoutGoneCurrent, type SessionState } from "./session-state.ts"
 
 const MINUTE = 60_000
 const START = Date.UTC(2026, 0, 5, 14, 0)
@@ -105,6 +105,14 @@ describe("sessions", () => {
     expect(refusal(() => updateSession(planned(), { set: { endsAt: START } }, at(5)))).toBe(
       "A session has to end after it starts."
     )
+  })
+
+  it("stop the task under way once it's gone, keeping the time spent on it", () => {
+    const state = planned()
+    expect(withoutGoneCurrent(state, new Set([radiators, boilers]), at(10))).toBe(state)
+    const gone = withoutGoneCurrent(state, new Set([boilers]), at(10))
+    expect(gone.current).toBeUndefined()
+    expect(gone.items[0]).toEqual({ taskId: radiators, minutes: 30, spentMs: 10 * MINUTE })
   })
 
   it("end by stopping the task under way, after which only the note can change", () => {

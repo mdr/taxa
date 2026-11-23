@@ -42,7 +42,8 @@ const setUp = (
   const undone: number[] = []
   const history = {
     undo: () => Promise.resolve(void undone.push(1)),
-    undoChange: () => Promise.resolve(undefined)
+    undoChange: () => Promise.resolve(undefined),
+    isLatest: () => true
   }
   const session = new ListSessionService(changes, history, new FakeScheduler(), testTelemetry().analytics)
   const opened: Task[] = []

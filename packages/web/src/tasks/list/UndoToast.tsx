@@ -4,11 +4,13 @@ import styles from "./UndoToast.module.css"
 import { undoToastTestIds } from "./UndoToastTestIds.ts"
 import { Undo, useListSession } from "./list-session-service.ts"
 import { useFollowOn } from "../follow-ons/follow-on-service.ts"
+import { useIsLatestChange } from "../../undo/undo-service.ts"
 
-/** "Done: …, + Follow-on, Undo" or "Deleted: …, Undo", while the list's session offers to undo ticking it off or deleting it. */
+/** "Done: …, + Follow-on, Undo" or "Deleted: …, Undo", while the list's session offers to undo ticking it off or deleting it, and that's still the last change. */
 export const UndoToast = ({ task, undoes }: { task: Task; undoes: Undo }) => {
   const { undo } = useListSession()
   const { start } = useFollowOn()
+  if (!useIsLatestChange(task)) return undefined
   return (
     <div className={styles.toast} role="status" data-testid={undoToastTestIds.toast}>
       {undoes === Undo.DELETE ? (

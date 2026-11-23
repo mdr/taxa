@@ -25,7 +25,9 @@ export const queryTaskCache = (queryClient: QueryClient): TaskCache => ({
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.allTasks }),
       queryClient.invalidateQueries({ queryKey: queryKeys.allActivity }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.tags })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags }),
+      // A session shows its tasks: one deleted leaves it.
+      queryClient.invalidateQueries({ queryKey: queryKeys.allSessions })
     ])
   }
 })

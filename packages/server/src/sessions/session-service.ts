@@ -12,7 +12,13 @@ import { changeTaskStatus, tasksWithIds } from "../tasks/task-service.ts"
 import { callerFields } from "../telemetry/change-fields.ts"
 import { LOG_CODES, type ServerLogCode, type ServerLogger } from "../telemetry/log.ts"
 import { recordOf, sessionOf, sessionValues, type SessionRecord } from "./session-rows.ts"
-import { newSession, statusMoves, updateSession as applyUpdate, type SessionState } from "./session-state.ts"
+import {
+  newSession,
+  statusMoves,
+  updateSession as applyUpdate,
+  withoutGoneCurrent,
+  type SessionState
+} from "./session-state.ts"
 
 const taskIdsOf = (state: SessionState): TaskId[] => state.items.map(({ taskId }) => taskId)
 
@@ -162,8 +168,9 @@ export const updateSession = async (
         `The session has changed since version ${ifMatch}: it's at version ${found.version} now.`,
         await shown(tx, caller, found)
       )
+    const live = new Set((await tasksWithIds(tx, caller, taskIdsOf(found.state))).keys())
     const state = applyUpdate(
-      found.state,
+      withoutGoneCurrent(found.state, live, now),
       {
         ...update,
         set: update.set && {

@@ -62,6 +62,10 @@ const replan = (state: SessionState, items: readonly PlannedTask[]): SessionStat
   }
 }
 
+/** The task under way stopped, if it's gone (deleted since), so the session can go on without it. */
+export const withoutGoneCurrent = (state: SessionState, live: ReadonlySet<TaskId>, now: Instant): SessionState =>
+  state.current && !live.has(state.current.taskId) ? leaveCurrent(state, now) : state
+
 const startTask = (state: SessionState, taskId: TaskId, now: Instant): SessionState => {
   if (!state.items.some((item) => item.taskId === taskId)) refuse("Only a task in the session's plan can be started.")
   if (state.current?.taskId === taskId) return state

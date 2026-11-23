@@ -55,6 +55,13 @@ export interface UndoActions extends ChangeHistory {
   /** Undoes the change that brought a task to a version, by default the one it's at, whether made here or not; the task then, or undefined if refused. */
   undoChange: (task: Task, version?: Version) => Promise<Task | undefined>
   dismiss: () => void
+  /** Whether the change that brought a task to its version is the last made here, which undo would take back. */
+  isLatest: (task: Task) => boolean
+}
+
+const isLatestIn = ({ undoable }: UndoState, task: Task): boolean => {
+  const last = undoable.at(-1)
+  return last?.taskId === task.id && last.version === task.version
 }
 
 /**
@@ -119,6 +126,8 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
     if (this.state.notice) this.setState({ notice: undefined })
   }
 
+  readonly isLatest = (task: Task): boolean => isLatestIn(this.state, task)
+
   readonly dispose = (): void => this.#cancelNotice?.()
 
   #queued(take: () => Promise<Task | undefined>): Promise<Task | undefined> {
@@ -168,6 +177,9 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
 export const UndoContext = createServiceContext<UndoService>()
 
 export const useUndo = (): UndoActions => useService(UndoContext)
+
+export const useIsLatestChange = (task: Task): boolean =>
+  useServiceState(useService(UndoContext), (state) => isLatestIn(state, task))
 
 export const useUndoNotice = (): UndoNotice | undefined =>
   useServiceState(useService(UndoContext), ({ notice }) => notice)

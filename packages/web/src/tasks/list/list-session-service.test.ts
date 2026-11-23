@@ -34,10 +34,14 @@ class FakeTaskChanges implements TaskChangesActions {
 }
 
 /** The tab's history, undoing what it's asked to as the server would, or refusing. */
-class FakeHistory implements Pick<UndoActions, "undo" | "undoChange"> {
+class FakeHistory implements Pick<UndoActions, "undo" | "undoChange" | "isLatest"> {
   readonly undone: Task[] = []
   undoneLast = 0
   refuse = false
+  /** Whether what's on offer is still the last change. */
+  latest = true
+
+  readonly isLatest = (): boolean => this.latest
 
   readonly undo = (): Promise<void> => {
     this.undoneLast += 1
@@ -156,6 +160,21 @@ describe("ListSessionService", () => {
     expect(history.undone.map(({ status }) => status)).toEqual([TaskStatus.DONE])
     expect(session.state.ticked[task.id]).toBeUndefined()
     expect(isShownDone(session.state, task)).toBe(false)
+  })
+
+  it("undoes the tab's last change instead of a tick on offer, once something else has changed", async () => {
+    const { changes, history, session } = makeListSessionService()
+    const task = makeTask()
+    const ticking = session.toggle(task)
+    await changes.answer()
+    await ticking
+    history.latest = false
+
+    await session.undo()
+    expect(history.undone).toEqual([])
+    expect(history.undoneLast).toBe(1)
+    expect(session.state.undoable).toBeUndefined()
+    expect(isShownDone(session.state, task)).toBe(true)
   })
 
   it("keeps the tick when undoing it is refused", async () => {

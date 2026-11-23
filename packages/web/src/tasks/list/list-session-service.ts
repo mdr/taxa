@@ -91,7 +91,7 @@ export const isCelebrated = (state: ListSessionState, id: TaskId): boolean =>
 /** One visit to a list: what's been ticked off on it, and the chance to take a tick back. */
 export class ListSessionService extends AbstractService<ListSessionState> implements ListSessionActions {
   readonly #changes: TaskChangesActions
-  readonly #history: Pick<UndoActions, "undo" | "undoChange">
+  readonly #history: Pick<UndoActions, "undo" | "undoChange" | "isLatest">
   readonly #scheduler: Scheduler
   readonly #analytics: Analytics
   #cancelUndoOffer: (() => void) | undefined
@@ -103,7 +103,7 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   /** With `opened`, the task last opened from the list starts highlighted, as you left it. */
   constructor(
     changes: TaskChangesActions,
-    history: Pick<UndoActions, "undo" | "undoChange">,
+    history: Pick<UndoActions, "undo" | "undoChange" | "isLatest">,
     scheduler: Scheduler,
     analytics: Analytics,
     opened?: OpenedMemory
@@ -154,8 +154,9 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
 
   readonly undo = async (): Promise<void> => {
     const { undoable: task, undoes } = this.state
-    if (!task) return this.#history.undo()
     this.dismissUndo()
+    // On offer only while it's the last change: after another, that's what undo takes back.
+    if (!task || !this.#history.isLatest(task)) return this.#history.undo()
     if (undoes === Undo.DELETE) {
       await this.#history.undoChange(task)
       return

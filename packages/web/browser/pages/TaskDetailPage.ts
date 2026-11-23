@@ -410,6 +410,10 @@ export class TaskDetailPage extends PageObject {
     await expect(this.#page.getByTestId(taskDetailPageTestIds.deleted)).toBeVisible()
   }
 
+  async expectDeleted(): Promise<void> {
+    await expect(this.#page.getByTestId(taskDetailPageTestIds.deleted)).toBeVisible()
+  }
+
   async restore(): Promise<void> {
     await this.#page.getByTestId(taskDetailPageTestIds.restore).click()
     await expect(this.#page.getByTestId(taskDetailPageTestIds.deleted)).toHaveCount(0)

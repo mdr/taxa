@@ -61,11 +61,50 @@ const setUp = (refuse = false): SetUp => {
 const titles = (plan: DayPlanService): string[] => (plan.state.entries ?? []).map(({ task }) => task.title)
 
 describe("DayPlanService", () => {
-  it("starts from today's tasks, in the order the server lists them", () => {
+  it("starts from today's tasks, in the order the server lists them, then follows them as they change", () => {
     const { plan } = setUp()
     expect(titles(plan)).toEqual(["Fix the tap", "Send the quote"])
-    plan.showToday([{ ...tap, title: "Fix the kitchen tap" }, quote, boilers])
-    expect(titles(plan)).toEqual(["Fix the kitchen tap", "Send the quote"])
+    plan.move(quote.id, 0)
+    plan.showToday([{ ...tap, title: "Fix the kitchen tap" }, quote])
+    expect(titles(plan)).toEqual(["Send the quote", "Fix the kitchen tap"])
+    // Changed elsewhere, or undone: one's no longer today, another is.
+    plan.showToday([tap, boilers])
+    expect(titles(plan)).toEqual(["Fix the tap", "Research boilers"])
+    // Back again, it's back where it was.
+    plan.showToday([quote, tap, boilers])
+    expect(titles(plan)).toEqual(["Send the quote", "Fix the tap", "Research boilers"])
+  })
+
+  it("puts a task taken out back where it was when that's undone, and saves the order", async () => {
+    const { api, plan } = setUp()
+    await plan.remove(tap.id)
+    plan.showToday([quote])
+    plan.showToday([tap, quote])
+    await plan.saved()
+    expect(titles(plan)).toEqual(["Fix the tap", "Send the quote"])
+    expect(api.saved.at(-1)).toEqual({ taskIds: [tap.id, quote.id] })
+  })
+
+  it("keeps a task being put in or taken out as it is here, whatever a list from before that says", async () => {
+    let finish: (task: Task | undefined) => void = () => undefined
+    const plan = new DayPlanService(
+      new FakeDayPlanApi(),
+      { change: () => new Promise<Task | undefined>((resolve) => (finish = resolve)) },
+      testTelemetry().analytics,
+      today,
+      () => Promise.resolve()
+    )
+    plan.showToday([tap, quote])
+    const adding = plan.add(boilers)
+    plan.showToday([tap, quote])
+    expect(titles(plan)).toEqual(["Fix the tap", "Send the quote", "Research boilers"])
+    finish(boilers)
+    await adding
+    const removing = plan.remove(tap.id)
+    plan.showToday([tap, quote, boilers])
+    expect(titles(plan)).toEqual(["Send the quote", "Research boilers"])
+    finish(tap)
+    await removing
   })
 
   it("plans a task put in for today, at its place, and saves the order", async () => {

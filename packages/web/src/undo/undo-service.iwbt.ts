@@ -49,8 +49,12 @@ describe("UndoService", () => {
     const { matt, undo, changes } = await makeUndoService(server)
     const tap = await matt.addTask("Fix the tap", { domain: "H" })
     const bins = await matt.addTask("Put the bins out", { domain: "H" })
-    await changes.change(tap, { type: TaskChangeType.UPDATE, request: { set: { priority: Priority.HIGH } } })
-    await changes.change(bins, { type: TaskChangeType.STATUS, request: { status: TaskStatus.DONE } })
+    const high = await changes.change(tap, {
+      type: TaskChangeType.UPDATE,
+      request: { set: { priority: Priority.HIGH } }
+    })
+    const done = await changes.change(bins, { type: TaskChangeType.STATUS, request: { status: TaskStatus.DONE } })
+    expect([undo.isLatest(done!), undo.isLatest(high!)]).toEqual([true, false])
 
     await undo.undo()
     expect((await matt.client.task(bins.id)).status).toBe(TaskStatus.OPEN)

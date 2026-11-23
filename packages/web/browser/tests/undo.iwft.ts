@@ -1,4 +1,4 @@
-import { Priority } from "@taxa/shared/tasks/task"
+import { Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
 test("undoing adding a task by mistake, and redoing it", async ({ taxa }) => {
@@ -96,4 +96,40 @@ test("restoring a deleted task from the trash", async ({ taxa }) => {
   await trash.keyboard.press("mod+z")
   await trash.undoNotice.expectSays("Undid: Restored H-2")
   await trash.expectTasks(["H-2 Put the bins out"])
+})
+
+test("⌘Z takes back the last change, though ticking off one before it is still on offer", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap")
+  await taxa.matt.addTask("Pay the bill")
+  const inbox = await (await taxa.openTab("Matt")).openInbox()
+  await inbox.complete("Fix the tap")
+  await inbox.expectUndoOffered("Fix the tap")
+  await inbox.keyboard.press("j")
+  await inbox.keyboard.renameRow("Pay the gas bill")
+
+  await inbox.keyboard.press("mod+z")
+  await inbox.undoNotice.expectSays("Undid: Renamed IN-2")
+  await inbox.expectTasks(["✓ IN-1 Fix the tap", "IN-2 Pay the bill"])
+  await taxa.expectTask("IN-1", { status: TaskStatus.DONE })
+})
+
+test("undoing on a task's page: a change to its notes, or adding it", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { notes: "Washer size" })
+  const tab = await taxa.openTab("Matt")
+  const detail = await tab.openTask("IN-1")
+  await detail.expectRef("IN-1")
+  await detail.keyboard.writeNotes(" 15mm")
+  await taxa.expectTask("IN-1", { notes: "Washer size 15mm" })
+  await detail.keyboard.press("mod+z")
+  await detail.undoNotice.expectSays("Undid: Changed IN-1")
+  await detail.expectNotesText("Washer size")
+
+  const inbox = await detail.keyboard.backToList()
+  await inbox.capture("Call the plumber")
+  const plumber = await inbox.openTask("Call the plumber")
+  await plumber.keyboard.press("mod+z")
+  await plumber.undoNotice.expectSays("Undid: Added IN-2")
+  await plumber.expectDeleted()
 })

@@ -228,3 +228,30 @@ test("a task added to a session's plan by mistake, undone, comes out of the plan
   const session = await planner.start()
   await session.expectCurrent("Fix the tap", "30:00")
 })
+
+test("⌘Z in a session takes back moving on; a task under way that's undone away leaves it", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap")
+  const setup = await (await (await taxa.openTab("Matt")).openInbox()).sidebar.openSession()
+  await setup.chooseLength("1 hour")
+  const planner = await setup.chooseTasks()
+  await planner.plan.addNewTask("Call the plumber")
+  await planner.plan.add("Fix the tap")
+  const session = await planner.start()
+  await session.expectCurrent("Call the plumber", "30:00")
+
+  await session.keyboard.press("x")
+  await session.expectCurrent("Fix the tap", "30:00")
+  await session.keyboard.press("mod+z")
+  await session.expectCurrent("Call the plumber", "30:00")
+  await taxa.expectTask("IN-2", { status: TaskStatus.IN_PROGRESS })
+
+  // Nothing left to take back in the session, so the tab's last change: adding the task under way.
+  await session.keyboard.press("mod+z")
+  await session.undoNotice.expectSays("Undid: Added IN-2")
+  await taxa.expectTaskCount(1)
+  await session.startNext()
+  await session.expectCurrent("Fix the tap", "30:00")
+  await session.replan()
+  await session.plan.expectPlan(["9:00 – 9:30 Fix the tap"])
+})
