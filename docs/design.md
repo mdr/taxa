@@ -120,7 +120,9 @@ or agent wrote it, so formatting doesn't churn and the activity log shows
 only real changes. Task references such as `H-142` become links.
 Links keep their own text: `⌘K` or the toolbar adds one, and with the cursor
 on a link a bar shows where it goes, to open, edit or remove it. Clicking a
-link places the cursor, to edit it; `⌘`-click follows it.
+link places the cursor, to edit it; `⌘`-click follows it. Links go to web
+pages, email, phone numbers, or a file in VS Code (`vscode://file/…`), since
+browsers won't open `file://` links from a web page.
 
 ### Threads
 

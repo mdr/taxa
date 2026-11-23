@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test"
-import { linkAddress } from "./link-address.ts"
+import { isWebAddress, linkAddress } from "./link-address.ts"
 
 describe("linkAddress", () => {
   it("keeps a full web address as it is", () => {
@@ -13,10 +13,24 @@ describe("linkAddress", () => {
     expect(linkAddress("tel:+441234567890")).toBe("tel:+441234567890")
   })
 
+  it("keeps a link that opens a file in VS Code", () => {
+    expect(linkAddress("vscode://file/Users/matt/repos/letter.md")).toBe("vscode://file/Users/matt/repos/letter.md")
+  })
+
   it("refuses nothing, spaces, and addresses that would run something", () => {
     expect(linkAddress("  ")).toBeUndefined()
     expect(linkAddress("not a link")).toBeUndefined()
     expect(linkAddress("javascript:alert(1)")).toBeUndefined()
     expect(linkAddress("data:text/html,hi")).toBeUndefined()
+    expect(linkAddress("file:///Users/matt/letter.md")).toBeUndefined()
+  })
+})
+
+describe("isWebAddress", () => {
+  it("tells web pages from apps", () => {
+    expect(isWebAddress("https://example.com")).toBe(true)
+    expect(isWebAddress("HTTP://example.com")).toBe(true)
+    expect(isWebAddress("vscode://file/Users/matt/letter.md")).toBe(false)
+    expect(isWebAddress("mailto:jo@example.com")).toBe(false)
   })
 })

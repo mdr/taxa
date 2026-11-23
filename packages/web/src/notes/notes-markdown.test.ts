@@ -11,6 +11,7 @@ describe("normaliseNotes", () => {
     ["images and strikethrough", "![a boiler](https://example.com/boiler.png)\n\n~~gone~~"],
     ["line breaks", "line one  \nline two"],
     ["bare addresses, and links with text", "See https://example.com/a_b?c=1 and [the docs](https://example.com/docs)"],
+    ["links that open a file in VS Code", "[the letter](vscode://file/Users/matt/repos/life/letter.md)"],
     ["ordinary punctuation", "snake_case, Fish & chips, 1 < 2, H-142, 50% off: ok? (yes) #hashtag 3.5"],
     ["an escaped heading", "\\# not a heading"],
     ["an escaped list", "\\- not a list"],

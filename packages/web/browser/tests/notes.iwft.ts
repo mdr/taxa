@@ -116,3 +116,14 @@ test("links in notes, with their own text, added, followed, changed and removed"
     "Read the [fitting guide](https://example.com/guide) first, then ask on https://forum.example.com or the shop"
   )
 })
+
+test("a link in notes that opens a file in VS Code, as agents write them", async ({ taxa }) => {
+  const letter = "vscode://file/Users/matt/repos/life/letter.md"
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Reply to the council", { domain: "H", notes: `Draft: [the letter](${letter})` })
+  const detail = await (await taxa.openTab("Matt")).openTask("H-1")
+
+  await detail.expectNotesLink("the letter", letter)
+  await detail.clickNotesLink("the letter")
+  await detail.expectLinkBar(letter, false)
+})

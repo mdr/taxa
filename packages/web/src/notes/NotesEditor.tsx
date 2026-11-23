@@ -6,6 +6,7 @@ import { notesEditorTestIds } from "./NotesEditorTestIds.ts"
 import { NotesToolbar } from "./NotesToolbar.tsx"
 import { LinkBar } from "./LinkBar.tsx"
 import { LinkForm } from "./LinkForm.tsx"
+import { isWebAddress } from "./link-address.ts"
 import { applyLink, linkDraftAt, removeLink, type LinkDraft } from "./notes-links.ts"
 import { NotesDraftService } from "./notes-draft-service.ts"
 import { documentToNotes, notesToDocument, NOTES_EXTENSIONS } from "./notes-markdown.ts"
@@ -80,7 +81,9 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
           .marks()
           .find((mark) => mark.type.name === "link")
         if (!link) return false
-        window.open(String(link.attrs["href"]), "_blank", "noopener,noreferrer")
+        const href = String(link.attrs["href"])
+        if (isWebAddress(href)) window.open(href, "_blank", "noopener,noreferrer")
+        else window.location.assign(href)
         draft.followedLink()
         return true
       }

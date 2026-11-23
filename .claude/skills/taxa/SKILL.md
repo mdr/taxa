@@ -98,7 +98,9 @@ echo '{"set": {"priority": "HIGH"}, "clear": ["due"]}' | taxa edit H-142 - --jso
   didn't create: it replaces them all.
 - **Say what happened.** As you go, and when you finish, append a short
   note: what you did, what you found, what's left. Don't mark something
-  done you haven't checked.
+  done you haven't checked. Link files on this Mac as
+  `[letter.md](vscode://file/Users/matt/…/letter.md)`, which opens them in
+  VS Code; `file://` links don't work.
 - **Blocked?** `taxa wait H-142 --on "..."` with a note saying why, rather
   than leaving it in progress. What's left over that's new work is a new
   task with `--follows-on`.

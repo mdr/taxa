@@ -5,6 +5,7 @@ import { TaskItem, TaskList } from "@tiptap/extension-list"
 import { TableKit } from "@tiptap/extension-table"
 import { MarkdownManager } from "@tiptap/markdown"
 import StarterKit from "@tiptap/starter-kit"
+import { APP_SCHEMES } from "./link-address.ts"
 
 /** A link whose text is its address, written as a bare address, as people and agents write them. */
 const BARE_URL = /^https?:\/\/[^\s<>]*[^\s<>.,:;"')\]!?*_~]$/
@@ -19,7 +20,13 @@ const NotesLink = Link.extend({
     const children = helpers.renderChildren(node)
     return isBareLink(href, context.meta?.["markText"]) ? children : `[${children}](${href})`
   }
-}).configure({ openOnClick: false, autolink: true, markdownLinks: true, defaultProtocol: "https" })
+}).configure({
+  openOnClick: false,
+  autolink: true,
+  markdownLinks: true,
+  defaultProtocol: "https",
+  protocols: APP_SCHEMES
+})
 
 /** What notes can hold: GitHub-flavoured Markdown, less raw HTML. Underline has no Markdown. */
 export const NOTES_EXTENSIONS: AnyExtension[] = [

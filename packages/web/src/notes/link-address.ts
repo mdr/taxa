@@ -1,5 +1,10 @@
 const SCHEME = /^[a-z][a-z\d+.-]*:/i
-const ALLOWED = new Set(["http:", "https:", "mailto:", "tel:"])
+
+/** Apps a note can link into: `vscode://file/…` opens a file in VS Code, as agents write them. */
+export const APP_SCHEMES = ["vscode"]
+
+const WEB = new Set(["http:", "https:"])
+const ALLOWED = new Set([...WEB, "mailto:", "tel:", ...APP_SCHEMES.map((scheme) => `${scheme}:`)])
 const EMAIL = /^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/
 
 /**
@@ -18,3 +23,6 @@ export const linkAddress = (typed: string): string | undefined => {
     return undefined
   }
 }
+
+/** Whether a link goes to a web page, for a new tab, rather than to an app, which opens without one. */
+export const isWebAddress = (href: string): boolean => WEB.has(SCHEME.exec(href)?.[0].toLowerCase() ?? "")

@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react"
 import styles from "./LinkBar.module.css"
 import { linkBarTestIds } from "./LinkBarTestIds.ts"
+import { isWebAddress } from "./link-address.ts"
 
 const keepFocus = (event: { preventDefault: () => void }): void => event.preventDefault()
 
@@ -10,7 +11,7 @@ export const LinkBar = ({ href, onEdit, onRemove }: { href: string; onEdit: () =
     <a
       className={styles.open}
       href={href}
-      target="_blank"
+      target={isWebAddress(href) ? "_blank" : undefined}
       rel="noopener noreferrer"
       onMouseDown={keepFocus}
       data-testid={linkBarTestIds.open}

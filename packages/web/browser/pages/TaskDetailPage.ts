@@ -334,11 +334,18 @@ export class TaskDetailPage extends PageObject {
     await this.#page.getByTestId(notesEditorTestIds.editor).getByRole("link", { name: text }).click()
   }
 
-  async expectLinkBar(href: string): Promise<void> {
+  async expectNotesLink(text: string, href: string): Promise<void> {
+    const link = this.#page.getByTestId(notesEditorTestIds.editor).getByRole("link", { name: text })
+    await expect(link).toHaveAttribute("href", href)
+  }
+
+  /** A web page opens in a new tab; an app, such as VS Code, without one. */
+  async expectLinkBar(href: string, inNewTab = true): Promise<void> {
     const open = this.#page.getByTestId(linkBarTestIds.open)
     await expect(open).toHaveText(href)
     await expect(open).toHaveAttribute("href", href)
-    await expect(open).toHaveAttribute("target", "_blank")
+    if (inNewTab) await expect(open).toHaveAttribute("target", "_blank")
+    else await expect(open).not.toHaveAttribute("target")
   }
 
   async editLinkFromBar(): Promise<void> {
