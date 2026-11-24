@@ -125,15 +125,28 @@ link places the cursor, to edit it; `⌘`-click follows it. Links go to web
 pages, email, phone numbers, or a file in VS Code (`vscode://file/…`), since
 browsers won't open `file://` links from a web page.
 
-### Threads
+### Comments
 
-Tasks and projects have a **thread**: Markdown entries from people or
-agents, recording what has happened ("called the garage, they'll ring back
-Thursday"). Notes say what the task is, and the thread says what has
-happened. Agents report their work here, appending rather than editing your
-notes. Authors can edit or delete their own entries, and that's logged. The
-task's timeline in the UI mixes thread entries with activity-log events,
-which aren't stored as comments.
+Tasks and projects have **comments**: dated Markdown entries from people or
+agents, saying what has happened ("rang the garage, they'll ring back
+Thursday"). Notes are the description: what the task is, what done looks
+like, and the details worth keeping, edited to stay current. Comments are
+the history, added to rather than rewritten. Agents report their work as
+comments (what they did, what they found, what's left) rather than editing
+your notes.
+
+- A comment records its author (a person, or an agent with its context)
+  and when. Comments are flat: no replies and no kinds. Authors can edit or
+  delete their own, which is logged and can be undone.
+- Adding a comment doesn't change the task's version, so it never conflicts
+  with someone editing the task. It counts as activity on a claim.
+- A task's page has a **timeline**: its comments and the activity-log events
+  that matter (added, status changes, claims), oldest first, with smaller
+  edits collapsed. Activity-log events aren't stored as comments.
+- In the CLI, `taxa comment H-142 "…"` adds one, `taxa comments H-142` lists
+  them, and `taxa show` shows the latest few.
+- Updates already appended to notes stay there; they aren't split into
+  comments.
 
 ## Dates, times and time zones
 
@@ -392,3 +405,5 @@ Not in v1, but the design shouldn't rule any of them out:
 - This Evening, headings within projects, richer saved views, a triage
   inbox, a command palette, an Eisenhower view, habits, a focus timer
 - Passkeys; a native mobile app if the PWA isn't enough
+- Questions from agents: a comment asking you something, showing in Needs
+  attention until answered. Folding a comment into the notes
