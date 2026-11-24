@@ -62,6 +62,11 @@
           '';
         });
 
+        # A NixOS VM test of `services.taxa`: Linux only, and it needs KVM.
+        checks = pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+          module = import ./nix/module-test.nix { inherit pkgs self; };
+        };
+
         # What the checks need and nothing else, all from cache.nixos.org.
         devShells.ci = pkgs.mkShell (corepack // {
           packages = [ nodejs pnpm pkgs.jq ];

@@ -30,3 +30,23 @@ jobs:
       # Fails with a hash mismatch when the lockfile changes the CLI's dependencies.
       - name: Build the taxa package
         run: nix build .#taxa
+
+  # The Nix packages, and a NixOS VM running services.taxa with Postgres, as
+  # the home server does. Each fails with a hash mismatch when the lockfile
+  # changes its dependencies: put the hash it got in nix/.
+  packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Let the Nix build user use KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: DeterminateSystems/nix-installer-action@v23
+        with:
+          extra-conf: system-features = nixos-test benchmark big-parallel kvm
+      - name: Build the server and the web app
+        run: nix build -L .#taxa-server
+      - name: Run the NixOS VM test
+        run: nix build -L .#checks.x86_64-linux.module
