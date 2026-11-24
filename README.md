@@ -74,6 +74,17 @@ built by `.#taxa-web`), and the NixOS module `services.taxa`
 (`nix/module.nix`) runs it. Their pnpm hashes, in `nix/taxa-server.nix`
 and `nix/taxa-web.nix`, need the same care as the CLI's.
 
+Releases are made by hand: Actions → Release → Run workflow on `main`,
+once CI has passed there, with a version `X.Y.Z`. It commits the version,
+tags `vX.Y.Z`, builds `taxa-server` and `taxa` for x86_64 Linux and `taxa`
+for Apple silicon, pushes them to the public Cachix cache `mdr-taxa`
+(`https://mdr-taxa.cachix.org`, key
+`mdr-taxa.cachix.org-1:tHW34mvFiWUUPwC1vjS+FQji6A7HvH9u/bOVbpW+OEI=`), and
+publishes a GitHub release saying whether it migrates the database or
+changes `services.taxa`. A machine adopts a release separately, by pinning
+`github:mdr/taxa/vX.Y.Z` and trusting the cache in `nix.settings`; the CLI
+and the server can be pinned to different releases.
+
 `task db:start` creates a Postgres cluster in `.data/postgres` the first time
 (port 5433, override with `DB_PORT`), and `task db:stop` stops it. `task
 --list` shows everything else.

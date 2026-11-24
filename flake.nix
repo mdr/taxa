@@ -36,7 +36,8 @@
         taxa-web = pkgs.callPackage ./nix/taxa-web.nix { inherit nodejs pnpm; };
         taxa-server = pkgs.callPackage ./nix/taxa-server.nix {
           inherit nodejs pnpm taxa-web;
-          build = self.shortRev or self.dirtyShortRev or "unknown";
+          # The release version and the commit, which the health check reports.
+          build = "${(pkgs.lib.importJSON ./packages/server/package.json).version}+${self.shortRev or self.dirtyShortRev or "unknown"}";
         };
       in
       {
