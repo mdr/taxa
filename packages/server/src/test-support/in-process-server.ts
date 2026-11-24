@@ -35,6 +35,8 @@ export interface InProcessOptions {
   corsOrigins?: string[]
   /** Callers without an API key are this person, as in development. */
   devLogin?: DevLogin
+  /** The built web app's folder, to serve beside the API. */
+  webRoot?: string
 }
 
 const listen = (server: ServerType): Promise<number> =>
@@ -70,7 +72,12 @@ export class InProcessServer {
     this.httpUrl = `http://127.0.0.1:${port}`
   }
 
-  static async start({ startAt = TEST_START, corsOrigins, devLogin }: InProcessOptions = {}): Promise<InProcessServer> {
+  static async start({
+    startAt = TEST_START,
+    corsOrigins,
+    devLogin,
+    webRoot
+  }: InProcessOptions = {}): Promise<InProcessServer> {
     const clock = new FakeClock(startAt)
     const database = await pgliteDatabase()
     const logs: LogRecord[] = []
@@ -81,6 +88,7 @@ export class InProcessServer {
       build: "test",
       corsOrigins,
       devLogin,
+      webRoot,
       logger
     })
     const server = serve({ fetch: app.fetch, port: 0, hostname: "127.0.0.1" })

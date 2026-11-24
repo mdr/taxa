@@ -12,6 +12,11 @@ describe("configFrom", () => {
     })
   })
 
+  it("takes the address to listen on and the web app's folder, when given", () => {
+    const config = configFrom({ DATABASE_URL: "postgres://x", HOST: "127.0.0.1", TAXA_WEB_ROOT: "/srv/taxa-web" })
+    expect(config).toMatchObject({ HOST: "127.0.0.1", TAXA_WEB_ROOT: "/srv/taxa-web" })
+  })
+
   it("reads the port as a number", () => {
     expect(configFrom({ DATABASE_URL: "postgres://localhost/taxa", PORT: "9000" }).PORT).toBe(9000)
   })

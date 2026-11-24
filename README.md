@@ -68,6 +68,12 @@ at `share/claude/skills/taxa/SKILL.md`, to link into `~/.claude/skills`.
 When the lockfile changes what the CLI depends on, its build fails with a
 hash mismatch: put the hash it got in `nix/taxa-cli.nix`.
 
+The server is packaged too: `nix build .#taxa-server` (the server, run
+from its source with its production dependencies, serving the web app
+built by `.#taxa-web`), and the NixOS module `services.taxa`
+(`nix/module.nix`) runs it. Their pnpm hashes, in `nix/taxa-server.nix`
+and `nix/taxa-web.nix`, need the same care as the CLI's.
+
 `task db:start` creates a Postgres cluster in `.data/postgres` the first time
 (port 5433, override with `DB_PORT`), and `task db:stop` stops it. `task
 --list` shows everything else.

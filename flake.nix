@@ -7,7 +7,11 @@
   };
 
   outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+    {
+      # `services.taxa`, for the machine that hosts it.
+      nixosModules.default = import ./nix/module.nix self;
+    }
+    // flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -29,10 +33,15 @@
           COREPACK_ENABLE_NETWORK = "0";
         };
         taxa = pkgs.callPackage ./nix/taxa-cli.nix { inherit nodejs pnpm; };
+        taxa-web = pkgs.callPackage ./nix/taxa-web.nix { inherit nodejs pnpm; };
+        taxa-server = pkgs.callPackage ./nix/taxa-server.nix {
+          inherit nodejs pnpm taxa-web;
+          build = self.shortRev or self.dirtyShortRev or "unknown";
+        };
       in
       {
         packages = {
-          inherit taxa;
+          inherit taxa taxa-web taxa-server;
           default = taxa;
         };
 

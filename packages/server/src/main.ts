@@ -26,12 +26,15 @@ const app = await createApp({
   clock: realClock,
   build: config.TAXA_BUILD,
   logger,
-  devLogin: config.TAXA_DEV_USER ? { name: config.TAXA_DEV_USER, timeZone: config.TAXA_TIME_ZONE } : undefined
+  devLogin: config.TAXA_DEV_USER ? { name: config.TAXA_DEV_USER, timeZone: config.TAXA_TIME_ZONE } : undefined,
+  webRoot: config.TAXA_WEB_ROOT
 })
 
-serve({ fetch: app.fetch, port: config.PORT }, ({ port }) =>
+serve({ fetch: app.fetch, port: config.PORT, hostname: config.HOST }, ({ address, port }) =>
   logger.info(LOG_CODES.server.started, "listening", {
+    address,
     port,
+    webApp: config.TAXA_WEB_ROOT !== undefined,
     build: config.TAXA_BUILD,
     devLogin: config.TAXA_DEV_USER !== undefined
   })

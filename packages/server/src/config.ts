@@ -3,8 +3,12 @@ import { timeZone, TimeZoneSchema } from "@taxa/shared/dates/plain-date"
 
 const ConfigSchema = z.object({
   PORT: z.coerce.number().int().default(8787),
+  /** The address to listen on: every interface if unset. */
+  HOST: z.string().optional(),
   DATABASE_URL: z.string(),
   TAXA_BUILD: z.string().default("dev"),
+  /** The built web app's folder, to serve beside the API; in development the web app's own server does. */
+  TAXA_WEB_ROOT: z.string().optional(),
   /** Development only: no sign-in, and everyone is the person of this name. */
   TAXA_DEV_USER: z.string().optional(),
   /** The development login's time zone, when they are first made. */

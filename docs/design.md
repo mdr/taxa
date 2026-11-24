@@ -320,9 +320,13 @@ offline editing from the start, even though it ships in stages.
 
 ## People and sign-in
 
-- People sign in with Google, checked against an allowlist of email
-  addresses. There's no sign-up. Sessions use secure, HTTP-only cookies.
-  Local development has a dev-mode login. Passkeys may come later.
+- People sign in through OpenID Connect, so any provider will do (Google
+  first), checked against the people Taxa knows by email. There's no
+  sign-up. Sessions use secure, HTTP-only cookies. Sign-in doesn't depend
+  on where Taxa is hosted or how it's reached. Passkeys may come later.
+- Until then, Taxa runs in single-person mode: no sign-in, and everyone
+  is one person (`TAXA_DEV_USER`). That's how local development works,
+  and the home server too while Matt is its only user.
 - Agents and the CLI use API keys (see above).
 
 ## Technology
@@ -342,7 +346,13 @@ offline editing from the start, even though it ships in stages.
 - Tooling and conventions follow mdr/whereabouts: Vite+ (Oxfmt and
   type-aware Oxlint), Knip, Stryker, Taskfile, lint for folder size and
   package boundaries, and a Nix flake for the development shell.
-- Hosting: local for now, probably Fly.io with managed Postgres later.
+- Hosting: Matt's home server (NixOS), reached only over his tailnet as
+  a Tailscale Service, `https://taxa.<tailnet>.ts.net`. The flake's
+  `taxa-server` package serves the built web app beside the API, and its
+  NixOS module, `services.taxa`, runs it, dumping the database before a
+  new build first starts (migrations only go forwards). The machine's own
+  config provides Postgres 17, the Tailscale Service and backups. Agents
+  must be on the tailnet to reach it.
 
 ## Testing
 

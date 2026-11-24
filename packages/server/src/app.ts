@@ -11,6 +11,7 @@ import { domainRoutes } from "./domains/domain-routes.ts"
 import { healthRoute } from "./health.ts"
 import { ProblemError } from "./http/problem-error.ts"
 import { taxaHono, type TaxaApp } from "./http/taxa-hono.ts"
+import { webAppRoutes } from "./http/web-app.ts"
 import { taskRoutes } from "./tasks/task-routes.ts"
 import { tagRoutes } from "./tags/tag-routes.ts"
 import { sessionRoutes } from "./sessions/session-routes.ts"
@@ -36,6 +37,8 @@ export interface AppOptions {
   corsOrigins?: string[]
   /** Development only: no sign-in, everyone is this person. */
   devLogin?: DevLogin
+  /** The built web app's folder, to serve beside the API. */
+  webRoot?: string
 }
 
 export const createApp = async ({
@@ -44,7 +47,8 @@ export const createApp = async ({
   build,
   logger,
   corsOrigins,
-  devLogin
+  devLogin,
+  webRoot
 }: AppOptions): Promise<TaxaApp> => {
   const { db } = database
   const devUserId = devLogin && (await ensureUserNamed(db, logger, devLogin.name, devLogin.timeZone, clock.now())).id
@@ -73,6 +77,7 @@ export const createApp = async ({
   tagRoutes(app, db, logger, clock)
   sessionRoutes(app, db, logger, clock)
   dayPlanRoutes(app, db, clock)
+  if (webRoot) webAppRoutes(app, webRoot)
 
   app.notFound((context) =>
     context.json<Problem>(

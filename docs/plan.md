@@ -76,9 +76,9 @@ with `X` and `I`, replanning, and a summary at the end. Not yet in the CLI.
 
 ## Stage 4: Sharing and going online
 
-- Google sign-in with the allowlist, settings
+- Sign-in through OpenID Connect, with the allowlist; settings
 - Domain membership, Home, assignees
-- Hosting and the first deployment. Jo joins
+- Hosting: the server package and NixOS module (done); the first deployment, to the home server over Tailscale. Jo joins once sign-in exists
 
 ## Stage 5: Mobile and offline (v1 complete)
 
