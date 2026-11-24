@@ -49,7 +49,7 @@ in
     singlePerson = mkOption {
       type = types.nullOr types.str;
       default = null;
-      example = "Matt";
+      example = "Sam";
       description = "No sign-in: every browser request is the person of this name, made the first time. Until sign-in exists; anyone who can reach Taxa acts as them.";
     };
 

@@ -1,6 +1,6 @@
 # Plan
 
-Each stage ends with something Matt can use and give feedback on. The data
+Each stage ends with something the owner can use and give feedback on. The data
 model includes the sync-ready pieces from the start (operations, versions,
 UUIDv7 IDs, soft deletes, an actor on every change), so later stages extend
 it rather than rework it. Each stage is a series of small commits that can
@@ -78,7 +78,7 @@ with `X` and `I`, replanning, and a summary at the end. Not yet in the CLI.
 
 - Sign-in through OpenID Connect, with the allowlist; settings
 - Domain membership, Home, assignees
-- Hosting: the server package and NixOS module (done); the first deployment, to the home server over Tailscale. Jo joins once sign-in exists
+- Hosting: the server package and NixOS module (done); the first deployment, to the home server over Tailscale. a second person joins once sign-in exists
 
 ## Stage 5: Mobile and offline (v1 complete)
 

@@ -1,9 +1,10 @@
 # Taxa design
 
-Taxa is a task manager for Matt, and later Jo, built so that AI agents can
-use it as easily as people can. At its core it's one well-structured
-database of tasks behind an API. The web app, the installable phone app
-(PWA), the `taxa` CLI and agents are all clients of that API.
+Taxa is a task manager for a household, its owner first and others
+later, built so that AI agents can use it as easily as people can. At its
+core it's one well-structured database of tasks behind an API. The web
+app, the installable phone app (PWA), the `taxa` CLI and agents are all
+clients of that API.
 
 This document records what we've decided and why. Where something is a
 starting point rather than settled, it says so. [plan.md](plan.md) says
@@ -20,8 +21,8 @@ Domain (Personal / Work / Home)   who can see it
 
 - **Domains** are the top level and the sharing boundary. Every project,
   and every task once it's filed, belongs to exactly one domain. A domain has **members**, and each
-  person sees only the domains they belong to: Matt has Personal and Work,
-  Jo has her own, and Home has both of them. Sharing is never set per task:
+  person sees only the domains they belong to: one person has Personal and Work,
+  another has their own, and Home has both of them. Sharing is never set per task:
   moving a task into Home is what shares it, and the UI asks first.
 - Members are equal, except that only a domain's creator can delete it or
   remove members.
@@ -326,7 +327,7 @@ offline editing from the start, even though it ships in stages.
   on where Taxa is hosted or how it's reached. Passkeys may come later.
 - Until then, Taxa runs in single-person mode: no sign-in, and everyone
   is one person (`TAXA_DEV_USER`). That's how local development works,
-  and the home server too while Matt is its only user.
+  and the home server too while it has one user.
 - Agents and the CLI use API keys (see above).
 
 ## Technology
@@ -346,7 +347,7 @@ offline editing from the start, even though it ships in stages.
 - Tooling and conventions follow mdr/whereabouts: Vite+ (Oxfmt and
   type-aware Oxlint), Knip, Stryker, Taskfile, lint for folder size and
   package boundaries, and a Nix flake for the development shell.
-- Hosting: Matt's home server (NixOS), reached only over his tailnet as
+- Hosting: a home server (NixOS), reached only over the owner's tailnet as
   a Tailscale Service, `https://taxa.<tailnet>.ts.net`. The flake's
   `taxa-server` package serves the built web app beside the API, and its
   NixOS module, `services.taxa`, runs it, dumping the database before a

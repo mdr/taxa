@@ -19,8 +19,8 @@ taxa health        # the CLI; the dev shell puts bin/ on the PATH
 ```
 
 There's no sign-in yet: `task dev` runs the server with a development
-login, so the web app, and `taxa` without an API key, act as Matt
-(`TAXA_DEV_USER` changes the name). The API is described at
+login, so the web app, and `taxa` without an API key, act as one
+person (`TAXA_DEV_USER` names them). The API is described at
 http://localhost:8787/api/openapi.json.
 
 `taxa --help` lists the commands. To act as an agent rather than as
@@ -50,7 +50,7 @@ key = taxa_…
 another identity; `TAXA_API_KEY` overrides the file. Set `TAXA_AS` in
 Claude Code's settings (`env`), so its sessions act as their agent while
 your own terminal acts as you. Against the dev server, `[default]` can be
-left out, since calls without a key act as Matt. To add an agent's key
+left out, since calls without a key act as that person. To add an agent's key
 straight into the file, without it showing on screen:
 
 ```sh

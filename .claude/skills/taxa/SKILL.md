@@ -1,38 +1,38 @@
 ---
 name: taxa
-description: Read and update Matt's tasks in Taxa with the `taxa` CLI. Use when asked to add, find, check, plan, claim, update or finish tasks or to-dos, when a task reference like H-142 comes up, when work you're doing should be recorded against a task, or when you finish or get blocked on work that came from one.
+description: Read and update your user's tasks in Taxa with the `taxa` CLI. Use when asked to add, find, check, plan, claim, update or finish tasks or to-dos, when a task reference like H-142 comes up, when work you're doing should be recorded against a task, or when you finish or get blocked on work that came from one.
 ---
 
 # Taxa
 
-Taxa is Matt's task manager. You use it through `taxa`, which wraps its
+Taxa is your user's task manager. You use it through `taxa`, which wraps its
 HTTP API. Run `taxa --help` and `taxa <command> --help` for the details;
 this page is how to use it well.
 
 ## Who you are
 
-You act as your own agent, never as Matt: every change you make is
-recorded as that agent, acting for Matt. `taxa` takes the key from an
+You act as your own agent, never as your user: every change you make is
+recorded as that agent, acting for them. `taxa` takes the key from an
 identity in `~/.config/taxa/credentials`; Claude Code sets `TAXA_AS` to
 yours, so you needn't pass `--as`. Never use `--as` or `TAXA_API_KEY`
 to act as anyone else. Set
 `TAXA_AGENT_CONTEXT` to what you're working on (a repo, a session) so
-Matt can tell your changes apart: `export TAXA_AGENT_CONTEXT="mdr/taxa"`.
+your user can tell your changes apart: `export TAXA_AGENT_CONTEXT="mdr/taxa"`.
 `taxa whoami` says who the server thinks you are: check it before your
-first change. If it names Matt rather than an agent, stop and tell him.
+first change. If it names your user rather than an agent, stop and tell them.
 
 Never print, log or echo a key, and never read the credentials file. If
-`taxa` says it has no valid key or no such identity, tell Matt; don't look
+`taxa` says it has no valid key or no such identity, tell your user; don't look
 for one.
 
 Against the local development server (`task dev`), calls without a key
-act as Matt himself. `TAXA_SERVER` says where the server is
+act as your user themselves. `TAXA_SERVER` says where the server is
 (`http://localhost:8787` by default).
 
 ## Reading
 
 Use `--json` whenever you'll act on the output: it prints exactly what
-the API answered, with each task's `url` in the web app added. Give Matt
+the API answered, with each task's `url` in the web app added. Give your user
 that link whenever you mention a task you added or changed; `taxa add`
 and `taxa show` print it too.
 
@@ -71,8 +71,8 @@ taxa undo H-142 --version 3         # takes back change 3 from taxa log (find yo
 ```
 
 Dates are `YYYY-MM-DD`, `today`, `tomorrow`, a weekday (`fri`), `+3d` or
-`+2w`. Without `--domain`, a new task goes into the Inbox of Matt's
-default domain.
+`+2w`. Without `--domain`, a new task goes into the Inbox of your
+user's default domain.
 
 For several fields at once, or text with awkward quoting, pipe JSON in
 with `-`. The shapes are the API's (`/api/openapi.json`):
@@ -92,20 +92,20 @@ echo '{"set": {"priority": "HIGH"}, "clear": ["due"]}' | taxa edit H-142 - --jso
 - **Retries:** `taxa add --idempotency-key KEY` never adds the same task
   twice, however often it's retried. Use one key per task you mean to add.
 - **Claim before you work.** `taxa start` marks a task as yours. If it's
-  already in progress by someone else, ask Matt before taking it over.
-- **Matt's notes are his.** Report progress with `--append-notes`, which
+  already in progress by someone else, ask your user before taking it over.
+- **Your user's notes are theirs.** Report progress with `--append-notes`, which
   adds to the end and keeps what's there. Never `--notes` on a task you
   didn't create: it replaces them all.
 - **Say what happened.** As you go, and when you finish, append a short
   note: what you did, what you found, what's left. Don't mark something
   done you haven't checked. Link files on this Mac as
-  `[letter.md](vscode://file/Users/matt/…/letter.md)`, which opens them in
+  `[letter.md](vscode://file/<absolute path>/letter.md)`, which opens them in
   VS Code; `file://` links don't work.
 - **Blocked?** `taxa wait H-142 --on "..."` with a note saying why, rather
   than leaving it in progress. What's left over that's new work is a new
   task with `--follows-on`.
 - **Ask before deleting or cancelling** anything you didn't create, or
-  changing the priority, dates or domain of Matt's tasks: suggest it in a
+  changing the priority, dates or domain of your user's tasks: suggest it in a
   note instead.
 
 Exit codes: 0 OK, 1 failed (including no key or no server), 2 bad usage,
