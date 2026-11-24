@@ -83,7 +83,8 @@ for Apple silicon, pushes them to the public Cachix cache `mdr-taxa`
 publishes a GitHub release saying whether it migrates the database or
 changes `services.taxa`. A machine adopts a release separately, by pinning
 `github:mdr/taxa/vX.Y.Z` and trusting the cache in `nix.settings`; the CLI
-and the server can be pinned to different releases.
+and the server can be pinned to different releases. `docs/releasing.md` has the
+whole process, including upgrading and rolling back.
 
 `task db:start` creates a Postgres cluster in `.data/postgres` the first time
 (port 5433, override with `DB_PORT`), and `task db:stop` stops it. `task
