@@ -108,6 +108,20 @@ describe("comments", () => {
     expect(await claude.client.editComment(its.id, { body: "Found the part: 15mm" })).toMatchObject({ version: 2 })
   })
 
+  it("finds a task by what its comments say, but not by a deleted one", async ({ server }) => {
+    const matt = await server.user("Matt")
+    const plumber = await matt.addTask("Call the plumber")
+    await matt.addTask("Fix the tap")
+    await matt.client.addComment(plumber.ref, { body: "He'll bring a new tap on Thursday" })
+    const deleted = await matt.client.addComment(plumber.ref, { body: "Quoted £80" })
+    await matt.client.deleteComment(deleted.id)
+    const titles = async (search: string): Promise<string[]> =>
+      (await matt.client.tasks({ search })).map(({ title }) => title)
+    expect(await titles("tap")).toEqual(["Fix the tap", "Call the plumber"])
+    expect(await titles("plumber thursday")).toEqual(["Call the plumber"])
+    expect(await titles("quoted")).toEqual([])
+  })
+
   it("is wiped when its task is deleted for good", async ({ server }) => {
     const matt = await server.user("Matt")
     const tap = await matt.addTask("Fix the tap")

@@ -8,11 +8,11 @@ const SHOWN_COMMENTS = 3
 
 const commentText = (comment: Comment, timeZone: TimeZone): string =>
   [
-    `${localTime(comment.createdAt, timeZone)}  ${actorText(comment.author)}${comment.editedAt ? " (edited)" : ""}`,
+    `${localTime(comment.createdAt, timeZone)}  ${actorText(comment.author)}${comment.editedAt ? " (edited)" : ""}  ${comment.id}`,
     ...comment.body.split("\n").map((line) => (line === "" ? "" : `  ${line}`))
   ].join("\n")
 
-/** Each comment, oldest first: when and who, then what it says, indented. */
+/** Each comment, oldest first: when, who and its id, then what it says, indented. */
 export const commentLines = (comments: readonly Comment[], timeZone: TimeZone): string =>
   comments.length === 0 ? "No comments." : comments.map((comment) => commentText(comment, timeZone)).join("\n\n")
 

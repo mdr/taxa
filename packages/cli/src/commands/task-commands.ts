@@ -94,7 +94,7 @@ const list: Command = {
   --domain PREFIX       Only this domain's
   --inbox               Only your Inbox
   --tag NAME            Only those with this tag, in any case
-  --search WORDS        Only those with every word in their title, notes or tags, best matches first
+  --search WORDS        Only those with every word in their title, notes, tags or comments, best matches first
   --follows-on TASK     Only those that follow on from this task
   --status LIST         Only these statuses, e.g. done or open,waiting (default: open, in progress, waiting)
   --when LIST           Only these, e.g. today or soon,someday (today, on a day, soon, any time, someday;

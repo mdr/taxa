@@ -41,7 +41,7 @@ taxa list --json                    # active tasks, most urgent first
 taxa list --domain H --json         # one domain's
 taxa list --inbox --json            # not yet organised
 taxa list --status done,cancelled --json
-taxa list --search "council tax" --json  # every word in the title, notes or tags
+taxa list --search "council tax" --json  # every word in the title, notes, tags or comments
 taxa list --tag "Life Admin" --json
 taxa list --follows-on H-142 --json  # what H-142 led to
 taxa show H-142 --json              # one task, everything about it
@@ -61,6 +61,8 @@ taxa add "Pay council tax" --domain H --due fri --priority high --estimate 30m
 taxa edit H-142 --due +3d --clear scheduled
 taxa comment H-142 "Rang the garage: they'll call back Thursday."
 taxa comment H-142 - < update.md    # longer Markdown, from a file or a heredoc
+taxa edit-comment <id> "..."        # fix a comment of yours; ids are in taxa comments
+taxa delete-comment <id>            # taxa restore-comment <id> brings it back
 taxa edit H-142 --tag "Life Admin" --untag errand
 taxa add "Dispose of the old disks" --domain H --follows-on H-142
 taxa start H-142                    # you're working on it: a claim others can see

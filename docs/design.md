@@ -151,7 +151,10 @@ your notes.
   stored as comments. Once timelines get long, smaller edits could be
   collapsed.
 - In the CLI, `taxa comment H-142 "…"` adds one, `taxa comments H-142` lists
-  them, and `taxa show` shows the latest three.
+  them with their ids, and `taxa show` shows the latest three. Their authors
+  change them with `taxa edit-comment`, `delete-comment` and
+  `restore-comment`, by id.
+- Searching finds a task by its comments, as by its notes.
 - Updates already appended to notes stay there; they aren't split into
   comments.
 
@@ -246,12 +249,13 @@ documented grammar, and a query string compiles to a JSON form that the API
 also accepts. Relative dates (`today`, `friday`, `+3d`) mean the same thing
 here as in CLI flags. A prefix (e.g. `cf.`) is reserved for custom fields.
 
-Plain words in a query, not `field:value`, find tasks by their title or
-notes: every word in one or the other, in any case, those still to do and
-found by title first. Until the language exists, the API's `?search=` does
-just that. In the app, each list has a search box (`/`) that narrows it as
-you type, its finished tasks included, and ⌘K finds any task, whatever its
-status, as well as commands.
+Plain words in a query, not `field:value`, find tasks by their title,
+notes, tags or comments: every word in one of them, in any case, those still
+to do and found by title first. Until the language exists, the API's
+`?search=` does just that. In the app, each list has a search box (`/`)
+that narrows it as you type, its finished tasks included, by what the list
+holds (not comments); and ⌘K asks the server, so finds any task, whatever
+its status, by its comments too, as well as commands.
 
 ## Agents and the API
 

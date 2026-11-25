@@ -90,6 +90,8 @@ export interface CommandMenuState {
   selected: number
   /** Tasks found by what was typed, as the server last answered. */
   found: readonly Task[]
+  /** What was typed when the server found them. */
+  foundFor: string
 }
 
 export interface TaskSearch {
@@ -111,7 +113,7 @@ export class CommandMenuService extends AbstractService<CommandMenuState> {
     analytics: Analytics,
     search?: TaskSearch
   ) {
-    super({ query: "", selected: 0, found: [] })
+    super({ query: "", selected: 0, found: [], foundFor: "" })
     this.#commands = commands
     this.#openTask = openTask
     this.#analytics = analytics
@@ -138,7 +140,8 @@ export class CommandMenuService extends AbstractService<CommandMenuState> {
   readonly matches = (query: string): Command[] => [
     ...matchCommands(this.#commands, query, this.#openTask),
     ...(query.trim().length < SEARCH_MIN_LENGTH ? [] : this.state.found)
-      .filter((task) => matchesSearch(task, query))
+      // The server's answer for this typing stands: it searches comments too, which the menu can't see.
+      .filter((task) => this.state.foundFor === query || matchesSearch(task, query))
       .map((task): Command => ({
         description: task.title,
         group: ShortcutGroup.GO,
@@ -160,7 +163,7 @@ export class CommandMenuService extends AbstractService<CommandMenuState> {
     const found = await find(query.trim()).catch((): Task[] => [])
     // Typing has gone on since: this answer's for something no longer asked.
     if (query !== this.state.query) return
-    this.setState({ found: found.slice(0, MOST_FOUND) })
+    this.setState({ found: found.slice(0, MOST_FOUND), foundFor: query })
   }
 
   readonly dispose = (): void => this.#cancelSearch?.()

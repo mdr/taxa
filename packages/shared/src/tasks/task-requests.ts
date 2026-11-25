@@ -97,7 +97,7 @@ export const ListTasksQuerySchema = z.object({
   tag: z.string().optional(),
   /** Only the tasks that follow on from this one, by ref or id. */
   followsOn: z.string().optional(),
-  /** Words to find in a task's title or notes: each must be in one or the other. Best matches first. */
+  /** Words to find in a task's title, notes, tags or comments: each must be in one of them. Best matches first. */
   search: z.string().max(200).optional(),
   /** true for the deleted tasks only, the last deleted first, whatever their status or when they're for. */
   deleted: z.enum(["true", "false"]).optional()

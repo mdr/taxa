@@ -7,16 +7,16 @@ const wordsOf = (search: string): string[] =>
     .split(/\s+/)
     .filter((word) => word !== "")
 
+/** What a search looks in: a task's title, notes and tags, and what its comments say where they're known. */
+export type Searched = Pick<Task, "title" | "notes"> & { tags?: readonly string[]; comments?: readonly string[] }
+
 /**
  * Whether a task is found by what's typed: every word in its title, its
- * notes or its tags, in any order, in any case, each word's in either. Nothing typed
- * finds everything.
+ * notes, its tags or its comments, in any order, in any case, each word's
+ * in any of them. Nothing typed finds everything.
  */
-export const matchesSearch = (
-  task: Pick<Task, "title" | "notes"> & { tags?: readonly string[] },
-  search: string
-): boolean => {
-  const text = `${task.title}\n${task.notes}\n${(task.tags ?? []).join("\n")}`.toLowerCase()
+export const matchesSearch = (task: Searched, search: string): boolean => {
+  const text = [task.title, task.notes, ...(task.tags ?? []), ...(task.comments ?? [])].join("\n").toLowerCase()
   return wordsOf(search).every((word) => text.includes(word))
 }
 
@@ -29,15 +29,17 @@ const inTitle = (task: Pick<Task, "title">, search: string): boolean => {
 /**
  * Tasks found by a search, best first: those still to do before those
  * finished, and among each, those found by their title before those found
- * only in their notes. Otherwise in the order given.
+ * only elsewhere. Otherwise in the order given. `commentsOf` gives what each
+ * task's comments say, to search those too.
  */
 export const searchResults = <T extends Pick<Task, "title" | "notes" | "status">>(
   tasks: readonly T[],
-  search: string
+  search: string,
+  commentsOf: (task: T) => readonly string[] = () => []
 ): T[] => {
   const rank = (task: T): number => (ACTIVE_STATUSES.includes(task.status) ? 0 : 2) + (inTitle(task, search) ? 0 : 1)
   return tasks
-    .filter((task) => matchesSearch(task, search))
+    .filter((task) => matchesSearch({ ...task, comments: commentsOf(task) }, search))
     .map((task, index) => ({ task, index }))
     .sort((a, b) => rank(a.task) - rank(b.task) || a.index - b.index)
     .map(({ task }) => task)

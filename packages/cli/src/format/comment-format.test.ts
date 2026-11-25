@@ -18,7 +18,7 @@ const makeComment = (fields: Partial<Comment> = {}): Comment => ({
 })
 
 describe("commentLines", () => {
-  it("says when and who, then what each says, indented", () => {
+  it("says when, who and its id, then what each says, indented", () => {
     const comments = [
       makeComment(),
       makeComment({
@@ -30,10 +30,10 @@ describe("commentLines", () => {
     ]
     expect(commentLines(comments, LONDON)).toBe(
       [
-        "2026-01-05 09:00  Matt",
+        "2026-01-05 09:00  Matt  0190a000-0000-7000-8000-000000000002",
         "  Rang the plumber",
         "",
-        "2026-07-01 15:30  Claude Code for Matt (edited)",
+        "2026-07-01 15:30  Claude Code for Matt (edited)  0190a000-0000-7000-8000-000000000002",
         "  Found the part.",
         "",
         "  - 15mm fitting"

@@ -49,19 +49,20 @@ describe("taxa comment", () => {
       await matt.client.addComment(tap.ref, { body })
       server.advance(MINUTE)
     }
+    const ids = (await matt.client.comments(tap.ref)).map(({ id }) => id)
     const listed = await taxaAs(server, matt.secret, ["comments", tap.ref])
     expect(listed.stdout).toBe(
       [
-        "2026-01-05 09:00  Matt",
+        `2026-01-05 09:00  Matt  ${ids[0]}`,
         "  Rang the plumber",
         "",
-        "2026-01-05 09:01  Matt",
+        `2026-01-05 09:01  Matt  ${ids[1]}`,
         "  He's coming Thursday",
         "",
-        "2026-01-05 09:02  Matt",
+        `2026-01-05 09:02  Matt  ${ids[2]}`,
         "  Bought washers",
         "",
-        "2026-01-05 09:03  Matt",
+        `2026-01-05 09:03  Matt  ${ids[3]}`,
         "  Fixed it",
         ""
       ].join("\n")
@@ -72,5 +73,34 @@ describe("taxa comment", () => {
     expect(shown).toContain("  Fixed it\n")
     const json = JSON.parse((await taxaAs(server, matt.secret, ["comments", tap.ref, "--json"])).stdout) as unknown[]
     expect(json).toHaveLength(4)
+  })
+
+  it("edits, deletes and restores a comment of the caller's own, by its id", async ({ server }) => {
+    const matt = await server.user("Matt")
+    const claude = await matt.agent("Claude Code")
+    const tap = await matt.addTask("Fix the tap")
+    const its = await claude.client.addComment(tap.ref, { body: "Found the prat" })
+    const mine = await matt.client.addComment(tap.ref, { body: "Thanks" })
+
+    expect(await taxaAs(server, claude.secret, ["edit-comment", its.id, "Found", "the", "part"])).toEqual({
+      exitCode: ExitCode.OK,
+      stdout: "Edited the comment.\n",
+      stderr: ""
+    })
+    expect((await taxaAs(server, claude.secret, ["edit-comment", its.id, "--if-version", "1", "Again"])).exitCode).toBe(
+      ExitCode.CONFLICT
+    )
+    await taxaAs(server, claude.secret, ["edit-comment", its.id, "-"], "Found the part:\n\n- 15mm\n")
+    expect((await taxaAs(server, claude.secret, ["edit-comment", mine.id, "Hacked"])).exitCode).toBe(ExitCode.FAILED)
+    expect((await taxaAs(server, claude.secret, ["edit-comment", "nonsense", "Hi"])).exitCode).toBe(ExitCode.USAGE)
+
+    const deleted = await taxaAs(server, claude.secret, ["delete-comment", its.id])
+    expect(deleted.stdout).toBe(`Deleted the comment. taxa restore-comment ${its.id} brings it back.\n`)
+    expect((await matt.client.comments(tap.ref)).map(({ body }) => body)).toEqual(["Thanks"])
+    await taxaAs(server, claude.secret, ["restore-comment", its.id])
+    expect((await matt.client.comments(tap.ref)).map(({ body }) => body)).toEqual([
+      "Found the part:\n\n- 15mm",
+      "Thanks"
+    ])
   })
 })

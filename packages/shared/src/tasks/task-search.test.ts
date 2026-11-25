@@ -18,6 +18,11 @@ describe("matchesSearch", () => {
     expect(matchesSearch(tap, "tap boiler")).toBe(false)
   })
 
+  it("finds it by what its comments say, as well", () => {
+    expect(matchesSearch({ ...tap, comments: ["Plumber's coming Thursday"] }, "tap thursday")).toBe(true)
+    expect(matchesSearch(tap, "thursday")).toBe(false)
+  })
+
   it("finds everything when nothing's typed", () => {
     expect(matchesSearch(tap, "  ")).toBe(true)
   })
@@ -34,5 +39,14 @@ describe("searchResults", () => {
       "Call the plumber",
       "Order a tap"
     ])
+  })
+
+  it("finds tasks by their comments, after those found by their title", () => {
+    const commented = makeTask({ title: "Call the plumber" })
+    const title = makeTask({ title: "Fix the tap" })
+    const comments = new Map([[commented, ["He'll bring a new tap"]]])
+    expect(
+      searchResults([commented, title], "tap", (task) => comments.get(task) ?? []).map(({ title }) => title)
+    ).toEqual(["Fix the tap", "Call the plumber"])
   })
 })

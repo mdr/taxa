@@ -193,6 +193,17 @@ describe("CommandMenuService", () => {
       expect(menu.state.found).toEqual([tap, washer])
     })
 
+    it("lists what the server found for what's typed, though it matched something the menu can't see", async () => {
+      const { menu, scheduler, answer } = setUp()
+      menu.type("thursday")
+      scheduler.advance(SEARCH_PAUSE_MS)
+      // Found by a comment on it.
+      await answer(0, [tap])
+      expect(descriptions(menu.matches(menu.state.query).filter(({ task }) => task))).toEqual(["Fix the kitchen tap"])
+      menu.type("thursday plumber")
+      expect(menu.matches(menu.state.query).filter(({ task }) => task)).toEqual([])
+    })
+
     it("lists only the first few found", async () => {
       const { menu, scheduler, answer } = setUp()
       menu.type("tap")
