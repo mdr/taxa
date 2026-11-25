@@ -6,6 +6,8 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ## Unreleased
 
+## 0.3.0 (2026-11-25)
+
 ### Changed
 
 - **The timeline shows what matters.** A task's timeline shows when it was
