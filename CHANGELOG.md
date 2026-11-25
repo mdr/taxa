@@ -6,6 +6,8 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ## Unreleased
 
+## 0.5.0 (2026-11-25)
+
 ### New
 
 - Checklist items can be put in order: drag one by its grip, or pick it up with the keyboard. In the CLI, `taxa move-item`.
