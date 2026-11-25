@@ -1,4 +1,4 @@
-import type { DomainId, TaskId } from "@taxa/shared/ids"
+import type { CommentId, DomainId, TaskId } from "@taxa/shared/ids"
 import { and, asc, eq } from "drizzle-orm"
 import type { Activity, ActivityType, FieldChange } from "@taxa/shared/activity/activity"
 import type { Instant, Version } from "@taxa/shared/units"
@@ -9,7 +9,7 @@ import { actorsNamed } from "./actor-names.ts"
 
 export interface ActivityRecord {
   type: ActivityType
-  entityId: TaskId | DomainId
+  entityId: TaskId | DomainId | CommentId
   domainId: DomainId | undefined
   /** The version the change brought it to. */
   version: Version

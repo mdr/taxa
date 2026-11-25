@@ -6,6 +6,7 @@ import { ExitCode } from "../cli-io.ts"
 import { linked, oneArgument, print, stringOption, UsageError, type Command, type CommandContext } from "../command.ts"
 import { activityLines } from "../format/activity-format.ts"
 import { taskDetail, taskLines } from "../format/task-format.ts"
+import { latestComments } from "../format/comment-format.ts"
 import { readStdinJson, STDIN } from "../input/stdin-json.ts"
 import { clearedFrom, fieldsFrom, repeatedOption, TASK_FIELD_HELP, TASK_FIELD_OPTIONS } from "../input/task-input.ts"
 import { ifVersion, VERSION_HELP, VERSION_OPTION } from "../input/version-option.ts"
@@ -15,7 +16,7 @@ const ALL_WHENS = Object.values(When).join(",")
 const NewTasksSchema = z.union([CreateTaskRequestSchema, z.array(CreateTaskRequestSchema).min(1)])
 
 const showTask = async (context: CommandContext, task: Task): Promise<void> => {
-  const [domains, followsOn, ledTo] = await Promise.all([
+  const [domains, followsOn, ledTo, comments] = await Promise.all([
     context.client.domains(),
     task.followsOnId === undefined ? undefined : context.client.task(task.followsOnId).catch(() => undefined),
     context.client.tasks({
@@ -23,17 +24,24 @@ const showTask = async (context: CommandContext, task: Task): Promise<void> => {
       status: Object.values(TaskStatus).join(","),
       when: ALL_WHENS,
       includeNotStarted: "true"
-    })
+    }),
+    context.client.comments(task.id)
   ])
   const shown = linked(context, task)
-  print(context, shown, () =>
-    taskDetail(
-      task,
-      domains.find(({ id }) => id === task.domainId),
-      context.today(),
-      shown.url,
-      { followsOn, ledTo }
-    )
+  print(
+    context,
+    shown,
+    () =>
+      taskDetail(
+        task,
+        domains.find(({ id }) => id === task.domainId),
+        context.today(),
+        shown.url,
+        {
+          followsOn,
+          ledTo
+        }
+      ) + latestComments(comments, task.ref, context.io.timeZone)
   )
 }
 
@@ -145,7 +153,7 @@ const edit: Command = {
   --title TEXT          A new title
 ${TASK_FIELD_HELP}
   --untag NAME          Take a tag off; again for more
-  --append-notes TEXT   Add to the end of the notes, keeping what's there: for progress notes
+  --append-notes TEXT   Add to the end of the notes, keeping what's there (for progress, taxa comment)
   --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, energy, horizon, follows-on)
 ${VERSION_HELP}
 With -, stdin holds {"set": {...}, "clear": [...], "addTags": [...], "removeTags": [...], "appendNotes": "..."},

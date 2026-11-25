@@ -19,7 +19,7 @@ import type { SessionOutcome } from "@taxa/shared/sessions/session"
 import type { ActivityType, FieldChange } from "@taxa/shared/activity/activity"
 import type { IsoDate, IsoTime, TimeZone } from "@taxa/shared/dates/plain-date"
 import type { DomainPrefix } from "@taxa/shared/domains/domain"
-import type { AgentId, ApiKeyId, DomainId, SessionId, TaskId, UserId } from "@taxa/shared/ids"
+import type { AgentId, ApiKeyId, CommentId, DomainId, SessionId, TaskId, UserId } from "@taxa/shared/ids"
 import type { Energy, Horizon, Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import type { ActivitySequence, Minutes, Ms, TaskNumber, Version } from "@taxa/shared/units"
 
@@ -163,8 +163,8 @@ export const activity = pgTable(
       .references(() => users.id),
     agentId: agentId("agent_id").references(() => agents.id),
     agentContext: text("agent_context"),
-    /** The task or domain changed. */
-    entityId: uuid("entity_id").$type<TaskId | DomainId>().notNull(),
+    /** The task, domain or comment changed. */
+    entityId: uuid("entity_id").$type<TaskId | DomainId | CommentId>().notNull(),
     /** Empty for a task in the Inbox. */
     domainId: domainId("domain_id").references(() => domains.id),
     type: text("type").$type<ActivityType>().notNull(),
@@ -175,6 +175,29 @@ export const activity = pgTable(
     changes: jsonb("changes").$type<Record<string, FieldChange>>().notNull()
   },
   (table) => [index("activity_entity").on(table.entityId, table.sequence)]
+)
+
+/** What's happened on a task, by people and agents; deleted ones are kept, to restore. */
+export const comments = pgTable(
+  "comments",
+  {
+    id: uuid("id").$type<CommentId>().primaryKey(),
+    taskId: uuid("task_id")
+      .$type<TaskId>()
+      .notNull()
+      .references(() => tasks.id),
+    userId: userId("user_id")
+      .notNull()
+      .references(() => users.id),
+    agentId: agentId("agent_id").references(() => agents.id),
+    agentContext: text("agent_context"),
+    body: text("body").notNull(),
+    createdAt: instant("created_at").notNull(),
+    editedAt: instant("edited_at"),
+    deletedAt: instant("deleted_at"),
+    version: version()
+  },
+  (table) => [index("comments_task").on(table.taskId, table.createdAt)]
 )
 
 /** Answers already given to requests that carried an Idempotency-Key, so a retry gets the same answer. */

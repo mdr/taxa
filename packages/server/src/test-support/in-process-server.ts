@@ -12,7 +12,7 @@ import { createKey } from "../agents/agent-store.ts"
 import { createApp, type DevLogin } from "../app.ts"
 import { eq } from "drizzle-orm"
 import type { TaskId } from "@taxa/shared/ids"
-import { activity, tasks } from "../database/schema.ts"
+import { activity, comments, tasks } from "../database/schema.ts"
 import { clearOldBin } from "../tasks/task-purge.ts"
 import type { Database } from "../database/database.ts"
 import { createLogger, type LogRecord } from "@taxa/shared/telemetry/log"
@@ -142,6 +142,20 @@ export class InProcessServer {
       tags: row?.tags ?? [],
       logged: log.map(({ changes }) => changes)
     }
+  }
+
+  /** What's stored of a task's comments and their log, deleted or not. */
+  async storedComments(taskId: TaskId): Promise<{ body: string; logged: unknown[] }[]> {
+    const db = this.#database.db
+    const rows = await db.select().from(comments).where(eq(comments.taskId, taskId))
+    return Promise.all(
+      rows.map(async ({ id, body }) => ({
+        body,
+        logged: (await db.select({ changes: activity.changes }).from(activity).where(eq(activity.entityId, id))).map(
+          ({ changes }) => changes
+        )
+      }))
+    )
   }
 
   async health(): Promise<Health> {

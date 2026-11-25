@@ -55,6 +55,16 @@ export class TestTaxa {
       .toEqual(expected)
   }
 
+  /** The task's comments, as the server has them, come to say these, oldest first. */
+  async expectComments(ref: string, bodies: string[]): Promise<void> {
+    await expect
+      .poll(
+        async () => (await this.matt.client.comments(ref)).map(({ body }) => body),
+        `comments on ${ref} on the server`
+      )
+      .toEqual(bodies)
+  }
+
   /** The server comes to hold this many of Matt's tasks. */
   async expectTaskCount(count: number): Promise<void> {
     await expect.poll(async () => (await this.matt.client.tasks()).length, "tasks on the server").toBe(count)

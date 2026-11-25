@@ -38,6 +38,12 @@ export const LOG_CODES = {
     undone: "task.undone",
     purged: "task.purged"
   },
+  comment: {
+    added: "comment.added",
+    edited: "comment.edited",
+    deleted: "comment.deleted",
+    restored: "comment.restored"
+  },
   bin: {
     emptied: "bin.emptied",
     cleared: "bin.cleared",

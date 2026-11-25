@@ -45,7 +45,8 @@ taxa list --search "council tax" --json  # every word in the title, notes or tag
 taxa list --tag "Life Admin" --json
 taxa list --follows-on H-142 --json  # what H-142 led to
 taxa show H-142 --json              # one task, everything about it
-taxa show H-142                     # readable, with what it came from and led to
+taxa show H-142                     # readable, with what it came from and led to, and the latest comments
+taxa comments H-142                 # what's happened on it, oldest first
 taxa log H-142                      # every change, with who made it
 taxa domains --json
 ```
@@ -58,7 +59,8 @@ its id. The number never changes, so `H-142` still works after it moves.
 ```sh
 taxa add "Pay council tax" --domain H --due fri --priority high --estimate 30m
 taxa edit H-142 --due +3d --clear scheduled
-taxa edit H-142 --append-notes "Rang the garage: they'll call back Thursday."
+taxa comment H-142 "Rang the garage: they'll call back Thursday."
+taxa comment H-142 - < update.md    # longer Markdown, from a file or a heredoc
 taxa edit H-142 --tag "Life Admin" --untag errand
 taxa add "Dispose of the old disks" --domain H --follows-on H-142
 taxa start H-142                    # you're working on it: a claim others can see
@@ -93,20 +95,21 @@ echo '{"set": {"priority": "HIGH"}, "clear": ["due"]}' | taxa edit H-142 - --jso
   twice, however often it's retried. Use one key per task you mean to add.
 - **Claim before you work.** `taxa start` marks a task as yours. If it's
   already in progress by someone else, ask your user before taking it over.
-- **Your user's notes are theirs.** Report progress with `--append-notes`, which
-  adds to the end and keeps what's there. Never `--notes` on a task you
-  didn't create: it replaces them all.
-- **Say what happened.** As you go, and when you finish, append a short
-  note: what you did, what you found, what's left. Don't mark something
+- **Notes say what the task is; comments say what's happened.** Your
+  user's notes are theirs: never `--notes` on a task you didn't create, as it
+  replaces them all. Report progress with `taxa comment`, which leaves the
+  task as it is.
+- **Say what happened.** As you go, and when you finish, add a short
+  comment: what you did, what you found, what's left. Don't mark something
   done you haven't checked. Link files on this Mac as
   `[letter.md](vscode://file/<absolute path>/letter.md)`, which opens them in
   VS Code; `file://` links don't work.
-- **Blocked?** `taxa wait H-142 --on "..."` with a note saying why, rather
+- **Blocked?** `taxa wait H-142 --on "..."` with a comment saying why, rather
   than leaving it in progress. What's left over that's new work is a new
   task with `--follows-on`.
 - **Ask before deleting or cancelling** anything you didn't create, or
   changing the priority, dates or domain of your user's tasks: suggest it in a
-  note instead.
+  comment instead.
 
 Exit codes: 0 OK, 1 failed (including no key or no server), 2 bad usage,
 3 the task changed since `--if-version`, 4 not found. Errors go to stderr;

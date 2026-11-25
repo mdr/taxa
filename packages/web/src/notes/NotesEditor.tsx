@@ -2,6 +2,7 @@ import { EditorContent, useEditor, useEditorState } from "@tiptap/react"
 import { Placeholder } from "@tiptap/extensions"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import styles from "./NotesEditor.module.css"
+import prose from "./prose.module.css"
 import { notesEditorTestIds } from "./NotesEditorTestIds.ts"
 import { NotesToolbar } from "./NotesToolbar.tsx"
 import { LinkBar } from "./LinkBar.tsx"
@@ -58,7 +59,7 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
     shouldRerenderOnTransaction: false,
     editorProps: {
       attributes: {
-        class: styles.prose,
+        class: `${prose.prose} ${styles.prose}`,
         role: "textbox",
         "aria-multiline": "true",
         "aria-label": "Notes",

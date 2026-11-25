@@ -36,6 +36,12 @@ export const ANALYTICS_CODES = {
     followOnAdded: "task.followOnAdded",
     purged: "task.purged"
   },
+  comment: {
+    added: "comment.added",
+    edited: "comment.edited",
+    deleted: "comment.deleted",
+    restored: "comment.restored"
+  },
   bin: {
     emptied: "bin.emptied"
   },

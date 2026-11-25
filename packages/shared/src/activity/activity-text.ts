@@ -116,6 +116,14 @@ const actionOf = ({ type, changes }: Activity, context: ActivityContext): string
       return "restored this"
     case ActivityType.DOMAIN_CREATED:
       return "created the domain"
+    case ActivityType.COMMENT_ADDED:
+      return "commented"
+    case ActivityType.COMMENT_EDITED:
+      return "edited a comment"
+    case ActivityType.COMMENT_DELETED:
+      return "deleted a comment"
+    case ActivityType.COMMENT_RESTORED:
+      return "restored a comment"
     case ActivityType.TASK_STATUS_CHANGED:
       return statusAction(changes)
     case ActivityType.TASK_UPDATED: {

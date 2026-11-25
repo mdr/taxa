@@ -1,7 +1,14 @@
 import { DAY_PLANS_PATH, DayPlanSchema, type DayPlan, type SetDayPlanRequest } from "../days/day-plan.ts"
 import { BIN_PATH, PurgedSchema } from "../tasks/bin.ts"
 import type { IsoDate } from "../dates/plain-date.ts"
-import type { AgentId, ApiKeyId, SessionId } from "../ids.ts"
+import type { AgentId, ApiKeyId, CommentId, SessionId } from "../ids.ts"
+import {
+  COMMENTS_PATH,
+  CommentSchema,
+  type AddCommentRequest,
+  type Comment,
+  type EditCommentRequest
+} from "../comments/comment.ts"
 import type { Version } from "../units.ts"
 import { z } from "zod"
 import { ActivitySchema, type Activity } from "../activity/activity.ts"
@@ -151,6 +158,28 @@ export class TaxaClient {
     return (await this.#request(ListSchema(ActivitySchema), `${taskPath(ref)}/activity`)).items
   }
 
+  /** A task's comments, oldest first. */
+  async comments(ref: string): Promise<Comment[]> {
+    return (await this.#request(ListSchema(CommentSchema), `${taskPath(ref)}/comments`)).items
+  }
+
+  /** Adds a comment to a task, leaving the task itself as it is. */
+  addComment(ref: string, request: AddCommentRequest, idempotencyKey?: string): Promise<Comment> {
+    return this.#request(CommentSchema, `${taskPath(ref)}/comments`, { method: "POST", body: request, idempotencyKey })
+  }
+
+  editComment(id: CommentId, request: EditCommentRequest, ifMatch?: Version): Promise<Comment> {
+    return this.#request(CommentSchema, commentPath(id), { method: "PATCH", body: request, ifMatch })
+  }
+
+  deleteComment(id: CommentId, ifMatch?: Version): Promise<Comment> {
+    return this.#request(CommentSchema, commentPath(id), { method: "DELETE", ifMatch })
+  }
+
+  restoreComment(id: CommentId): Promise<Comment> {
+    return this.#request(CommentSchema, `${commentPath(id)}/restore`, { method: "POST" })
+  }
+
   /** The tags on tasks you can see, by name. */
   async tags(): Promise<TagSummary[]> {
     return (await this.#request(ListSchema(TagSummarySchema), TAGS_PATH)).items
@@ -238,6 +267,7 @@ export class TaxaClient {
 }
 
 const taskPath = (ref: string): string => `${TASKS_PATH}/${encodeURIComponent(ref)}`
+const commentPath = (id: CommentId): string => `${COMMENTS_PATH}/${encodeURIComponent(id)}`
 const dayPlanPath = (date: IsoDate): string => `${DAY_PLANS_PATH}/${date}`
 
 const sessionPath = (id: SessionId): string => `${SESSIONS_PATH}/${encodeURIComponent(id)}`

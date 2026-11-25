@@ -8,7 +8,11 @@ export enum ActivityType {
   TASK_UPDATED = "TASK_UPDATED",
   TASK_STATUS_CHANGED = "TASK_STATUS_CHANGED",
   TASK_DELETED = "TASK_DELETED",
-  TASK_RESTORED = "TASK_RESTORED"
+  TASK_RESTORED = "TASK_RESTORED",
+  COMMENT_ADDED = "COMMENT_ADDED",
+  COMMENT_EDITED = "COMMENT_EDITED",
+  COMMENT_DELETED = "COMMENT_DELETED",
+  COMMENT_RESTORED = "COMMENT_RESTORED"
 }
 
 const FieldChangeSchema = z.object({ from: z.unknown().optional(), to: z.unknown().optional() })

@@ -6,7 +6,8 @@ import { TaskStatus } from "@taxa/shared/tasks/task"
 import type { Instant } from "@taxa/shared/units"
 import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
-import { activity, idempotencyKeys, tasks } from "../database/schema.ts"
+import { activity, comments, idempotencyKeys, tasks } from "../database/schema.ts"
+import { PURGED_COMMENT } from "../comments/comment-rows.ts"
 import { ProblemError } from "../http/problem-error.ts"
 import { callerFields } from "../telemetry/change-fields.ts"
 import { LOG_CODES, type ServerLogger } from "../telemetry/log.ts"
@@ -17,7 +18,7 @@ import { findTask, findTasks } from "./task-store.ts"
 /**
  * Deletes tasks for good. Their rows stay, so what pointed at them (a
  * follow-on, a session, the log) still names something, but everything
- * written in them, or about them in their log, is wiped, and nothing
+ * written in them, in their comments, or about them in their log, is wiped, and nothing
  * shows them again.
  */
 const purge = async (tx: Db, ids: readonly TaskId[], now: Instant): Promise<void> => {
@@ -26,12 +27,19 @@ const purge = async (tx: Db, ids: readonly TaskId[], now: Instant): Promise<void
     .update(tasks)
     .set(purgedValues(now))
     .where(inArray(tasks.id, [...ids]))
+  const commented = await tx
+    .update(comments)
+    .set(PURGED_COMMENT)
+    .where(inArray(comments.taskId, [...ids]))
+    .returning({ id: comments.id })
   await tx
     .update(activity)
     .set(PURGED_ACTIVITY)
-    .where(inArray(activity.entityId, [...ids]))
-  // The answers kept for retried requests hold the task as it was made.
-  await tx.delete(idempotencyKeys).where(inArray(sql`${idempotencyKeys.body}->>'id'`, [...ids]))
+    .where(inArray(activity.entityId, [...ids, ...commented.map(({ id }) => id)]))
+  // The answers kept for retried requests hold the task, and its comments, as they were made.
+  await tx
+    .delete(idempotencyKeys)
+    .where(inArray(sql`${idempotencyKeys.body}->>'id'`, [...ids, ...commented.map(({ id }) => id)]))
 }
 
 /** Deletes a task in the bin for good. */

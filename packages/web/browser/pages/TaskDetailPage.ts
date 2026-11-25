@@ -9,6 +9,7 @@ import { Sidebar } from "./Sidebar.ts"
 import { FollowOnLinks } from "./FollowOnLinks.ts"
 import { UndoToast } from "./UndoToast.ts"
 import { TaskTags } from "./TaskTags.ts"
+import { TaskComments } from "./TaskComments.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
 import { activityListTestIds } from "../../src/tasks/detail/ActivityListTestIds.ts"
 import { notesEditorTestIds } from "../../src/notes/NotesEditorTestIds.ts"
@@ -33,6 +34,7 @@ export class TaskDetailPage extends PageObject {
   readonly undoNotice: UndoNotice
   readonly followOns: FollowOnLinks
   readonly tags: TaskTags
+  readonly comments: TaskComments
   /** Shown once it's marked done here. */
   readonly toast: UndoToast
 
@@ -44,6 +46,7 @@ export class TaskDetailPage extends PageObject {
     this.undoNotice = new UndoNotice(page)
     this.followOns = new FollowOnLinks(page)
     this.tags = new TaskTags(page)
+    this.comments = new TaskComments(page)
     this.toast = new UndoToast(page)
   }
 
@@ -379,7 +382,6 @@ export class TaskDetailPage extends PageObject {
       .click()
   }
 
-  /** The activity log, oldest first, without times. */
   /** Undoes a change from the activity, by what it says: `set priority to high`. */
   async undoFromActivity(entry: string): Promise<void> {
     const row = this.#page.getByTestId(activityListTestIds.entry).filter({ hasText: entry })
@@ -387,6 +389,7 @@ export class TaskDetailPage extends PageObject {
     await row.getByTestId(activityListTestIds.undo).click()
   }
 
+  /** The activity log, oldest first, without times. */
   async expectActivity(entries: string[]): Promise<void> {
     await expect(this.#page.getByTestId(activityListTestIds.text)).toHaveText(entries)
   }

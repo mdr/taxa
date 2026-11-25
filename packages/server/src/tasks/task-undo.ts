@@ -61,6 +61,10 @@ const undone = (
       return reverted.outcome
     }
     case ActivityType.DOMAIN_CREATED:
+    case ActivityType.COMMENT_ADDED:
+    case ActivityType.COMMENT_EDITED:
+    case ActivityType.COMMENT_DELETED:
+    case ActivityType.COMMENT_RESTORED:
       throw new ProblemError(ProblemType.INVALID_REQUEST, "That change isn't to a task.")
   }
 }

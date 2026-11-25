@@ -69,7 +69,7 @@ with `X` and `I`, replanning, and a summary at the end. Not yet in the CLI.
 ## Stage 3: Agents as collaborators
 
 - Key scopes enforced everywhere. Delegating to agents, claims, stale claims
-- Comments, and the timeline
+- Comments, and the timeline: done (comments in the API, `taxa comment` and `taxa comments`, and a task's timeline of changes and comments, with editing, deleting and restoring your own)
 - The change feed and live updates over SSE
 - Undo and bin: done (undo in the API and `taxa undo`, `⌘Z`/`⇧⌘Z`, undo from a task's activity, the Bin page and `taxa list --deleted`; deleting forever from the bin, emptying it, and clearing out tasks left there 30 days)
 - The attention list in the API and CLI

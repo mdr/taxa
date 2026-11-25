@@ -136,15 +136,18 @@ comments (what they did, what they found, what's left) rather than editing
 your notes.
 
 - A comment records its author (a person, or an agent with its context)
-  and when. Comments are flat: no replies and no kinds. Authors can edit or
-  delete their own, which is logged and can be undone.
+  and when. Comments are flat: no replies and no kinds. Only its author can
+  edit or delete one (an agent's are its own, not its person's), and each
+  change is logged with the comment, not the task. A deleted comment can be
+  restored; deleting a task for good wipes its comments too.
 - Adding a comment doesn't change the task's version, so it never conflicts
   with someone editing the task. It counts as activity on a claim.
-- A task's page has a **timeline**: its comments and the activity-log events
-  that matter (added, status changes, claims), oldest first, with smaller
-  edits collapsed. Activity-log events aren't stored as comments.
+- A task's page has a **timeline**: its changes and its comments, oldest
+  first, and a box for adding one (`⌘↵` posts it). Activity-log events aren't
+  stored as comments. Once timelines get long, smaller edits could be
+  collapsed.
 - In the CLI, `taxa comment H-142 "…"` adds one, `taxa comments H-142` lists
-  them, and `taxa show` shows the latest few.
+  them, and `taxa show` shows the latest three.
 - Updates already appended to notes stay there; they aren't split into
   comments.
 

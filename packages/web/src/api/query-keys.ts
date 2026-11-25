@@ -11,6 +11,7 @@ export const queryKeys = {
   task: (ref: string): unknown[] => ["task", ref],
   tags: ["tags"],
   allActivity: ["activity"],
+  comments: (taskId: string): unknown[] => ["comments", taskId],
   activity: (ref: string): unknown[] => ["activity", ref],
   /** Every session, the current one included. */
   allSessions: ["session"],

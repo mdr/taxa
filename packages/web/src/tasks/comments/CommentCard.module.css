@@ -1,0 +1,136 @@
+.comment {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.avatar {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.55rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--background);
+  color: var(--text);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.card {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.75rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.5rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.author {
+  color: var(--text);
+  font-weight: 550;
+  font-size: 0.875rem;
+}
+
+.edited {
+  font-style: italic;
+}
+
+.actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.15rem;
+  opacity: 0;
+}
+
+.comment:hover .actions,
+.actions:focus-within {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .actions {
+    opacity: 1;
+  }
+}
+
+.action {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 6px;
+  color: var(--muted);
+}
+
+.action:hover {
+  background: var(--sidebar);
+  color: var(--text);
+}
+
+.body {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.editor {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.buttons {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.save,
+.cancel {
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.save {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.cancel {
+  color: var(--muted);
+}
+
+.cancel:hover {
+  background: var(--hover);
+}
+
+.when {
+  flex: none;
+}
