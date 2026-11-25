@@ -173,8 +173,8 @@ your notes.
   stored as comments. It shows what mostly matters: made, started, waiting,
   done, cancelled, deleted, restored, moved, set to repeat, and the
   comments. Other changes (notes, title, dates, priority, tags, and each
-  time a repeating task is done or skipped) fold, each run of them into a
-  line such as "3 other changes" where they happened, opened with a click.
+  time a repeating task is done or skipped) are left out, until "Show all
+  changes" at the top of the timeline brings them back in place.
 - The timeline has no undo of its own: undo is ⌘Z, for what you've just
   done. Taking back a change from days ago is rarely what's wanted; setting
   the field again is clearer. The exception is notes, which an edit can

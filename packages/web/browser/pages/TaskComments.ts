@@ -51,13 +51,11 @@ export class TaskComments extends PageObject {
     await expect(this.#page.getByTestId(commentCardTestIds.body)).toHaveText(comments.map(({ body }) => body))
   }
 
-  /** Changes and comments together, in the order the timeline shows them, each by what it says, the folds too. */
+  /** Changes and comments together, in the order the timeline shows them, each by what it says. */
   async expectTimeline(entries: string[]): Promise<void> {
     await expect(
       this.#page.locator(
-        [activityListTestIds.text, activityListTestIds.fold, commentCardTestIds.body]
-          .map((testId) => `[data-testid="${testId}"]`)
-          .join(", ")
+        [activityListTestIds.text, commentCardTestIds.body].map((testId) => `[data-testid="${testId}"]`).join(", ")
       )
     ).toHaveText(entries)
   }

@@ -422,19 +422,15 @@ export class TaskDetailPage extends PageObject {
       .click()
   }
 
-  /**
-   * Opens the timeline's folds, as a click would, but leaving focus where it
-   * is, so notes being edited stay so.
-   */
-  async #openFolds(): Promise<void> {
-    const folds = this.#page.locator(`[data-testid="${activityListTestIds.fold}"][aria-expanded="false"]`)
-    // One at a time: once open, a fold no longer matches.
-    while ((await folds.count()) > 0) await folds.first().dispatchEvent("click")
+  /** Clicks "Show all changes", unless shown already, leaving focus where it is, so notes being edited stay so. */
+  async showAllChanges(): Promise<void> {
+    const showAll = this.#page.locator(`[data-testid="${activityListTestIds.showAll}"][aria-pressed="false"]`)
+    if ((await showAll.count()) > 0) await showAll.dispatchEvent("click")
   }
 
-  /** A change in the timeline, by what it says, its fold opened. */
+  /** A change in the timeline, by what it says, every change shown. */
   async #entry(entry: string): Promise<Locator> {
-    await this.#openFolds()
+    await this.showAllChanges()
     return this.#page.getByTestId(activityListTestIds.entry).filter({ hasText: entry })
   }
 
@@ -456,20 +452,23 @@ export class TaskDetailPage extends PageObject {
     await expect((await this.#notesBefore(entry)).getByTestId(activityListTestIds.notesBeforeText)).toHaveText(text)
   }
 
-  /** Every change in the timeline, oldest first, without times: the folded ones opened. */
+  /** Every change in the timeline, oldest first, without times: all of them shown. */
   async expectActivity(entries: string[]): Promise<void> {
     const texts = this.#page.getByTestId(activityListTestIds.text)
     await expect(async () => {
-      await this.#openFolds()
+      await this.showAllChanges()
       await expect(texts).toHaveText(entries, { timeout: 1000 })
     }).toPass()
   }
 
-  /** The timeline as it first shows: the changes that matter, and a line for each run of the rest. */
+  /** The changes the timeline shows, oldest first, without times. */
   async expectTimelineShown(entries: string[]): Promise<void> {
-    await expect(
-      this.#page.locator(`[data-testid="${activityListTestIds.text}"], [data-testid="${activityListTestIds.fold}"]`)
-    ).toHaveText(entries)
+    await expect(this.#page.getByTestId(activityListTestIds.text)).toHaveText(entries)
+  }
+
+  /** What "Show all changes" says, such as "Show all changes (3 more)". */
+  async expectShowAllSays(text: string): Promise<void> {
+    await expect(this.#page.getByTestId(activityListTestIds.showAll)).toHaveText(text)
   }
 
   async expectConflictNotice(): Promise<void> {

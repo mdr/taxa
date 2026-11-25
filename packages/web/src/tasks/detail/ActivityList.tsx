@@ -5,7 +5,7 @@ import type { Domain } from "@taxa/shared/domains/domain"
 import { realClock } from "@taxa/shared/clock"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import type { Task } from "@taxa/shared/tasks/task"
-import { Bot, ChevronDown, ChevronRight } from "lucide-react"
+import { Bot } from "lucide-react"
 import styles from "./ActivityList.module.css"
 import { activityListTestIds } from "./ActivityListTestIds.ts"
 import { relativeTime } from "../../dates/relative-time.ts"
@@ -22,7 +22,7 @@ import { CommentComposer } from "../comments/CommentComposer.tsx"
 import { CommentsContext, CommentsService } from "../comments/comments-service.ts"
 import { MarkdownView } from "../../notes/MarkdownView.tsx"
 import { TaskChangeType, type TaskChange } from "../changes/task-changes-service.ts"
-import { timeline, TimelineEntryType } from "./timeline.ts"
+import { hiddenCount, timeline, TimelineEntryType } from "./timeline.ts"
 
 interface RowContext {
   today: IsoDate
@@ -75,35 +75,10 @@ const ChangeRow = ({ entry, context }: { entry: Activity; context: RowContext })
   )
 }
 
-/** Changes that go without saying, as one line, opened to show them where they happened. */
-const Fold = ({ changes, context }: { changes: Activity[]; context: RowContext }) => {
-  const [open, setOpen] = useState(false)
-  const count = changes.length === 1 ? "1 other change" : `${changes.length} other changes`
-  const Chevron = open ? ChevronDown : ChevronRight
-  return (
-    <>
-      <li className={styles.fold}>
-        <button
-          type="button"
-          className={styles.foldButton}
-          aria-expanded={open}
-          onClick={() => setOpen(!open)}
-          data-testid={activityListTestIds.fold}
-          data-track="ActivityList.fold"
-        >
-          <Chevron size={14} aria-hidden />
-          {open ? `Hide ${changes.length === 1 ? "it" : "them"}` : count}
-        </button>
-      </li>
-      {open && changes.map((change) => <ChangeRow key={change.sequence} entry={change} context={context} />)}
-    </>
-  )
-}
-
 /**
  * The task's timeline, oldest first: what mostly matters (made, started,
- * done, moved) and its comments, with the other changes folded where they
- * happened, and a place to add a comment. Taking a change back is ⌘Z's job,
+ * done, moved) and its comments, every change when asked for, and a place to
+ * add a comment. Taking a change back is ⌘Z's job,
  * for what you've just done; a notes change can put back the notes it replaced.
  */
 export const ActivityList = ({
@@ -130,6 +105,8 @@ export const ActivityList = ({
         appAnalytics
       )
   )
+  const [all, setAll] = useState(false)
+  const hidden = hiddenCount(activity.data ?? [])
   const context: RowContext = {
     today: useToday(),
     domainName: (id) => domains.find((domain) => domain.id === id)?.name,
@@ -138,11 +115,25 @@ export const ActivityList = ({
   return (
     <CommentsContext.Provider value={commenting}>
       <section className={styles.activity} aria-labelledby="activity-heading">
-        <h2 id="activity-heading" className={styles.heading}>
-          Timeline
-        </h2>
+        <div className={styles.top}>
+          <h2 id="activity-heading" className={styles.heading}>
+            Timeline
+          </h2>
+          {hidden > 0 && (
+            <button
+              type="button"
+              className={styles.showAll}
+              aria-pressed={all}
+              onClick={() => setAll(!all)}
+              data-testid={activityListTestIds.showAll}
+              data-track="ActivityList.showAll"
+            >
+              {all ? "Show fewer changes" : `Show all changes (${hidden} more)`}
+            </button>
+          )}
+        </div>
         <ol className={styles.entries}>
-          {timeline(activity.data ?? [], comments.data ?? []).map((item) => {
+          {timeline(activity.data ?? [], comments.data ?? [], all).map((item) => {
             switch (item.type) {
               case TimelineEntryType.COMMENT:
                 return (
@@ -155,8 +146,6 @@ export const ActivityList = ({
                 )
               case TimelineEntryType.CHANGE:
                 return <ChangeRow key={item.change.sequence} entry={item.change} context={context} />
-              case TimelineEntryType.FOLD:
-                return <Fold key={`fold-${item.changes[0]?.sequence}`} changes={item.changes} context={context} />
             }
           })}
         </ol>

@@ -3,9 +3,7 @@ import type { Comment } from "@taxa/shared/comments/comment"
 
 export enum TimelineEntryType {
   CHANGE = "CHANGE",
-  COMMENT = "COMMENT",
-  /** Changes that go without saying, folded into one line until asked for. */
-  FOLD = "FOLD"
+  COMMENT = "COMMENT"
 }
 
 interface ChangeEntry {
@@ -20,13 +18,7 @@ interface CommentEntry {
   comment: Comment
 }
 
-interface FoldEntry {
-  type: TimelineEntryType.FOLD
-  at: string
-  changes: Activity[]
-}
-
-export type TimelineEntry = ChangeEntry | CommentEntry | FoldEntry
+export type TimelineEntry = ChangeEntry | CommentEntry
 
 /** Changes worth showing whatever they changed. */
 const NOTABLE_TYPES: ReadonlySet<ActivityType> = new Set([
@@ -51,20 +43,17 @@ const isNotable = (change: Activity): boolean =>
 
 /**
  * A task's changes and comments, oldest first; a change made at the same
- * moment as a comment comes first. Changes that go without saying are folded,
- * each run of them into one entry, where they happened.
+ * moment as a comment comes first. Unless all are asked for, only the
+ * changes that matter.
  */
-export const timeline = (changes: readonly Activity[], comments: readonly Comment[]): TimelineEntry[] => {
-  const all: (ChangeEntry | CommentEntry)[] = [
-    ...changes.map((change): ChangeEntry => ({ type: TimelineEntryType.CHANGE, at: change.at, change })),
-    ...comments.map((comment): CommentEntry => ({ type: TimelineEntryType.COMMENT, at: comment.createdAt, comment }))
+export const timeline = (changes: readonly Activity[], comments: readonly Comment[], all: boolean): TimelineEntry[] =>
+  [
+    ...changes
+      .filter((change) => all || isNotable(change))
+      .map((change): TimelineEntry => ({ type: TimelineEntryType.CHANGE, at: change.at, change })),
+    ...comments.map((comment): TimelineEntry => ({ type: TimelineEntryType.COMMENT, at: comment.createdAt, comment }))
   ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
-  const entries: TimelineEntry[] = []
-  for (const entry of all) {
-    const last = entries.at(-1)
-    if (entry.type === TimelineEntryType.COMMENT || isNotable(entry.change)) entries.push(entry)
-    else if (last?.type === TimelineEntryType.FOLD) last.changes.push(entry.change)
-    else entries.push({ type: TimelineEntryType.FOLD, at: entry.at, changes: [entry.change] })
-  }
-  return entries
-}
+
+/** How many changes go without saying, hidden unless all are asked for. */
+export const hiddenCount = (changes: readonly Activity[]): number =>
+  changes.filter((change) => !isNotable(change)).length

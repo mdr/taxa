@@ -22,7 +22,6 @@ test("commenting on a task adds to its timeline and leaves the task as it is", a
   await detail.comments.expectTimeline([
     "Matt created this",
     "Rang the plumber: he'll come Thursday",
-    "1 other change",
     "Bought the washers"
   ])
   await detail.expectAccessible()

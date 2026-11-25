@@ -11,8 +11,8 @@ them at the top of its release notes. See `docs/releasing.md`.
 - **The timeline shows what matters.** A task's timeline shows when it was
   made, started, finished, moved or set to repeat, and its comments. Other
   changes (notes, title, dates, priority, tags, a repeating task done or
-  skipped) fold into a line such as "› 3 other changes", which opens where
-  they happened.
+  skipped) are hidden until you click **Show all changes** at the top of
+  the timeline.
 - **No undo button on the timeline.** Undo is ⌘Z, for what you've just
   done. A notes change in the timeline instead shows the notes before it,
   with **Restore these notes**.

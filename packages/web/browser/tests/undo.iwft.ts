@@ -55,7 +55,9 @@ test("saying why a change can't be undone, when it's been changed since", async 
   await inbox.undoNotice.expectSays("undo the later change first")
 })
 
-test("the timeline shows what matters, folds the rest, and can put back notes a change replaced", async ({ taxa }) => {
+test("the timeline shows what matters, all changes when asked, and can put back notes a change replaced", async ({
+  taxa
+}) => {
   await taxa.matt.addDomain("Home", "H")
   const tap = await taxa.matt.addTask("Fix the tap", { domain: "H", notes: "Washer size **15mm**" })
   await taxa.matt.client.updateTask(tap.ref, { set: { priority: Priority.HIGH } })
@@ -63,7 +65,17 @@ test("the timeline shows what matters, folds the rest, and can put back notes a 
   await taxa.matt.client.changeStatus(tap.ref, { status: TaskStatus.IN_PROGRESS })
   await taxa.matt.client.updateTask(tap.ref, { set: { title: "Fix the kitchen tap" } })
   const detail = await (await taxa.openTab("Matt")).openTask("H-1")
-  await detail.expectTimelineShown(["Matt created this", "2 other changes", "Matt started it", "1 other change"])
+  await detail.expectTimelineShown(["Matt created this", "Matt started it"])
+  await detail.expectShowAllSays("Show all changes (3 more)")
+  await detail.showAllChanges()
+  await detail.expectShowAllSays("Show fewer changes")
+  await detail.expectTimelineShown([
+    "Matt created this",
+    "Matt set priority to high",
+    "Matt edited the notes",
+    "Matt started it",
+    "Matt renamed it “Fix the kitchen tap”"
+  ])
 
   await detail.expectNotesBefore("edited the notes", "Washer size 15mm")
   await detail.restoreNotesFrom("edited the notes")
