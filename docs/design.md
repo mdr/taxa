@@ -31,6 +31,20 @@ Domain (Personal / Work / Home)   who can see it
   belong to no project and sit directly in a domain.
 - **Subtasks** are tasks with a parent. Projects stay a separate type from
   tasks: they have a different lifecycle and appear in different places.
+- **Checklists** hold a task's steps when its parts are known up front:
+  accounts to move, passwords to change, things to pack. An item is a line
+  of text and a tick, with no ref, dates or status of its own, so a task with
+  eight steps stays one task. Lists show how far through it is (`3/8`), and
+  its page a bar. Each item added, ticked, reworded or removed is a change to
+  the task, in its timeline (among the changes shown with **Show all
+  changes**) and undone with ⌘Z. A pasted list adds a line each. When every
+  item's ticked, its page offers to mark the task done. When a repeating
+  task comes round again, its ticks come off.
+- An item that grows into work of its own (a date, a wait, a reply to
+  chase) can be **made a task**: a new task, following on from this one, in
+  the same domain. The item stays on the checklist, linked to it, and is
+  ticked when that task is done; it can't be ticked by hand. Making items
+  tasks may cover most of what subtasks were for.
 - **Follow-ons** link a task to the one it came out of: it _follows on
   from_ that task, which shows what it _led to_. A task follows on from one
   task at most and can lead to any number, so the history is a trail, not a
@@ -184,7 +198,8 @@ your notes.
   them with their ids, and `taxa show` shows the latest three. Their authors
   change them with `taxa edit-comment`, `delete-comment` and
   `restore-comment`, by id.
-- Searching finds a task by its comments, as by its notes.
+- Searching finds a task by its comments, as by its notes, and by its
+  checklist's items.
 - Updates already appended to notes stay there; they aren't split into
   comments.
 

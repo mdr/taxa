@@ -1,4 +1,5 @@
 import { OccurrenceStrip } from "./OccurrenceStrip.tsx"
+import { Checklist } from "../checklist/Checklist.tsx"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { ChevronRight, Inbox, RotateCcw } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -140,6 +141,7 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
           </p>
         )}
         <NotesEditor key={task.id} notes={task.notes} change={change} />
+        <Checklist key={`${task.id}-checklist`} task={task} change={change} />
         <ActivityList key={`${task.id}-timeline`} task={task} domains={domains.data ?? []} change={change} />
         {undoable && <UndoToast task={undoable} undoes={undoes} />}
       </article>

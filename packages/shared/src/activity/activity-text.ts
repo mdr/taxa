@@ -7,6 +7,7 @@ import { formatEstimate } from "../tasks/estimate.ts"
 import { Energy, Horizon, Priority, TaskStatus } from "../tasks/task.ts"
 import { ENERGY_TEXT, HORIZON_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "../tasks/task-text.ts"
 import { ActivityType, type Activity, type FieldChange } from "./activity.ts"
+import { checklistPhrase } from "./checklist-phrase.ts"
 
 export interface ActivityContext {
   today: IsoDate
@@ -103,6 +104,7 @@ const PHRASES: Record<string, Phrase> = {
   followsOnId: ({ to }) =>
     typeof to === "string" ? "linked it as a follow-on" : "unlinked it from the task it followed on from",
   tags: tagsPhrase,
+  checklist: checklistPhrase,
   repeat: ({ from, to }) => {
     const before = RepeatSchema.safeParse(from)
     const after = RepeatSchema.safeParse(to)

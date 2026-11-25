@@ -23,6 +23,10 @@ describe("matchesSearch", () => {
     expect(matchesSearch(tap, "thursday")).toBe(false)
   })
 
+  it("finds it by its checklist's items", () => {
+    expect(matchesSearch({ ...tap, checklist: [{ text: "Buy PTFE tape" }] }, "tap ptfe")).toBe(true)
+  })
+
   it("finds everything when nothing's typed", () => {
     expect(matchesSearch(tap, "  ")).toBe(true)
   })

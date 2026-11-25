@@ -90,6 +90,25 @@ taxa edit H-142 --missed carry-over # or skip: what becomes of days that go by u
 taxa edit H-142 --repeat none       # stop it repeating; taxa done H-142 --stop-repeating ends it
 ```
 
+A task can have a **checklist**: steps, ticked off one at a time, for work
+whose parts are known up front (accounts to move, passwords to change).
+Lists show how far through it is (`checklist 3/8`). An item is named by its
+number in `taxa checklist`, or by its text (or enough of it to tell). When
+you work through one, tick each item as it's done, and comment on anything
+worth saying about it. An item that turns into real work of its own (a
+date, a wait, a reply to chase) can become a task with `taxa item-to-task`:
+the item stays, ticked when that task is done.
+
+```sh
+taxa add "Move charitable giving" --item Oxfam --item Shelter
+taxa add-item H-142 RSPB Crisis             # each argument an item; or - for a line each from stdin
+taxa checklist H-142                        # numbered, ticked ones [x]
+taxa check H-142 1 rspb                     # tick by number or text; taxa uncheck unticks
+taxa edit-item H-142 3 "RSPB (monthly)"
+taxa remove-item H-142 crisis
+taxa item-to-task H-142 oxfam               # a task of its own, following on from H-142
+```
+
 Dates are `YYYY-MM-DD`, `today`, `tomorrow`, a weekday (`fri`), `+3d` or
 `+2w`. Without `--domain`, a new task goes into the Inbox of your
 user's default domain.

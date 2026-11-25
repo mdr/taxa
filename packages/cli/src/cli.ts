@@ -8,12 +8,14 @@ import { STATUS_COMMANDS } from "./commands/status-commands.ts"
 import { TASK_COMMANDS } from "./commands/task-commands.ts"
 import { TAG_COMMANDS } from "./commands/tag-commands.ts"
 import { COMMENT_COMMANDS } from "./commands/comment-commands.ts"
+import { CHECKLIST_COMMANDS } from "./commands/checklist-commands.ts"
 import { UsageError, type Command } from "./command.ts"
 import { healthCommand } from "./health-command.ts"
 import { connectionFrom, CredentialsError, parseCredentials, type Connection } from "./credentials/credentials.ts"
 
 const COMMANDS: Command[] = [
   ...TASK_COMMANDS,
+  ...CHECKLIST_COMMANDS,
   ...COMMENT_COMMANDS,
   ...TAG_COMMANDS,
   ...STATUS_COMMANDS,

@@ -1,7 +1,9 @@
 import type { DomainPrefix } from "@taxa/shared/domains/domain"
 import type { Actor } from "@taxa/shared/identity/actor"
 import { definedFields } from "@taxa/shared/objects"
-import { formatTaskRef } from "@taxa/shared/tasks/task-ref"
+import { formatTaskRef, type TaskRef } from "@taxa/shared/tasks/task-ref"
+import type { ChecklistItem } from "@taxa/shared/tasks/checklist"
+import type { TaskId } from "@taxa/shared/ids"
 import type { Task } from "@taxa/shared/tasks/task"
 import type { Instant } from "@taxa/shared/units"
 import type { ActorIds } from "../activity/actor-names.ts"
@@ -51,6 +53,7 @@ export const stateOf = (row: TaskRow): TaskState => ({
   energy: row.energy ?? undefined,
   horizon: row.horizon ?? undefined,
   tags: row.tags,
+  checklist: row.checklist,
   repeat: row.repeat ?? undefined,
   followsOnId: row.followsOnId ?? undefined,
   inProgressBy: inProgressIdsOf(row),
@@ -76,6 +79,7 @@ export const valuesOf = (state: TaskState): Omit<TaskValues, "updatedAt" | "vers
   energy: state.energy ?? null,
   horizon: state.horizon ?? null,
   tags: [...state.tags],
+  checklist: [...state.checklist],
   repeat: state.repeat ?? null,
   followsOnId: state.followsOnId ?? null,
   inProgressUserId: state.inProgressBy?.userId ?? null,
@@ -88,8 +92,26 @@ export const valuesOf = (state: TaskState): Omit<TaskValues, "updatedAt" | "vers
   cancelledReason: state.cancelledReason ?? null
 })
 
+/** A task an item was made into, as its checklist shows it. */
+export interface ItemTask {
+  ref: TaskRef
+  done: boolean
+}
+
+/** A checklist as the API shows it: an item made a task ticked when that task is done. */
+const checklistOf = (row: TaskRow, itemTask: (id: TaskId) => ItemTask | undefined): ChecklistItem[] =>
+  row.checklist.map(({ id, text, done, taskId }) => {
+    const task = taskId && itemTask(taskId)
+    return task ? { id, text, done: task.done, task: { id: taskId, ref: task.ref } } : { id, text, done }
+  })
+
 /** A task as the API shows it. */
-export const taskOf = (row: TaskRow, prefix: DomainPrefix | undefined, actorOf: (ids: ActorIds) => Actor): Task => {
+export const taskOf = (
+  row: TaskRow,
+  prefix: DomainPrefix | undefined,
+  actorOf: (ids: ActorIds) => Actor,
+  itemTask: (id: TaskId) => ItemTask | undefined
+): Task => {
   const inProgressBy = inProgressIdsOf(row)
   const task: Task = {
     id: row.id,
@@ -112,6 +134,7 @@ export const taskOf = (row: TaskRow, prefix: DomainPrefix | undefined, actorOf: 
     tags: row.tags,
     repeat: row.repeat ?? undefined,
     followsOnId: row.followsOnId ?? undefined,
+    checklist: checklistOf(row, itemTask),
     inProgressBy: inProgressBy && actorOf(inProgressBy),
     waitingOn: row.waitingOn ?? undefined,
     followUp: row.followUp ?? undefined,
@@ -138,6 +161,7 @@ export const purgedValues = (now: Instant): Partial<TaskValues> => ({
   title: "",
   notes: "",
   tags: [],
+  checklist: [],
   repeat: null,
   waitingOn: null,
   cancelledReason: null,

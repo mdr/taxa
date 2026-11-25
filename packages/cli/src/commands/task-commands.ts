@@ -79,9 +79,10 @@ const add: Command = {
   summary: "Add a task",
   usage: `<title> [options]   or   taxa add - < task.json
 ${TASK_FIELD_HELP}
+  --item TEXT           A checklist item; again for more, e.g. --item Oxfam --item Shelter
   --idempotency-key KEY  Retrying with the same key never adds it twice
 With -, stdin holds one task or an array of them, as the API's CreateTaskRequest.`,
-  options: { ...TASK_FIELD_OPTIONS, "idempotency-key": { type: "string" } },
+  options: { ...TASK_FIELD_OPTIONS, item: { type: "string", multiple: true }, "idempotency-key": { type: "string" } },
   run: async (context, values, positionals) => {
     const key = stringOption(values, "idempotency-key")
     if (positionals.length === 1 && positionals[0] === STDIN) {
@@ -102,7 +103,12 @@ With -, stdin holds one task or an array of them, as the API's CreateTaskRequest
     if (missedOption(values) && stringOption(values, "repeat") === undefined)
       throw new UsageError("--missed goes with --repeat: say how it repeats.")
     const task = await context.client.createTask(
-      { title, ...fieldsFrom(values, context.today()), tags: repeatedOption(values, "tag") },
+      {
+        title,
+        ...fieldsFrom(values, context.today()),
+        tags: repeatedOption(values, "tag"),
+        checklist: repeatedOption(values, "item")
+      },
       key
     )
     printAdded(context, [task])
@@ -117,7 +123,7 @@ const list: Command = {
   --domain PREFIX       Only this domain's
   --inbox               Only your Inbox
   --tag NAME            Only those with this tag, in any case
-  --search WORDS        Only those with every word in their title, notes, tags or comments, best matches first
+  --search WORDS        Only those with every word in their title, notes, tags, checklist or comments, best matches first
   --follows-on TASK     Only those that follow on from this task
   --status LIST         Only these statuses, e.g. done or open,waiting (default: open, in progress, waiting)
   --when LIST           Only these, e.g. today or soon,someday (today, on a day, soon, any time, someday;

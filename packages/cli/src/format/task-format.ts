@@ -6,6 +6,7 @@ import { actorText } from "@taxa/shared/identity/actor-text"
 import { formatEstimate } from "@taxa/shared/tasks/estimate"
 import type { Task } from "@taxa/shared/tasks/task"
 import { taskHighlights } from "@taxa/shared/tasks/task-highlights"
+import { checklistText } from "./checklist-format.ts"
 import { ENERGY_TEXT, HORIZON_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 
 /** One line per task, references lined up. */
@@ -71,5 +72,6 @@ export const taskDetail = (
     ...row("Why", task.cancelledReason),
     ...row("Deleted", task.deletedAt && "yes (taxa restore brings it back)"),
     ...row("Version", String(task.version)),
+    ...(task.checklist.length > 0 ? ["", checklistText(task.ref, task.checklist)] : []),
     ...(task.notes ? ["", task.notes.trimEnd()] : [])
   ].join("\n")

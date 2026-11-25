@@ -23,24 +23,16 @@ import type { Instant, Version } from "@taxa/shared/units"
 import { activityOf, recordActivity } from "../activity/activity-store.ts"
 import { OccurrenceOutcome } from "@taxa/shared/tasks/repeat"
 import { missedCaughtUp, occurrenceRecorded, refuseCancelling, repeating } from "./repeating.ts"
-import { actorsNamed, type ActorIds } from "../activity/actor-names.ts"
+import type { ActorIds } from "../activity/actor-names.ts"
 import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
 import { tasks } from "../database/schema.ts"
+import { newItems } from "./checklist-changes.ts"
 import { findDomain } from "../domains/domain-store.ts"
 import { ProblemError } from "../http/problem-error.ts"
 import { callerFields } from "../telemetry/change-fields.ts"
 import { LOG_CODES, type ServerLogCode, type ServerLogger } from "../telemetry/log.ts"
-import {
-  Deletion,
-  deletedAtFor,
-  horizonSetAtFor,
-  inProgressIdsOf,
-  stateOf,
-  taskOf,
-  valuesOf,
-  type TaskRow
-} from "./task-rows.ts"
+import { Deletion, deletedAtFor, horizonSetAtFor, stateOf, valuesOf, type TaskRow } from "./task-rows.ts"
 import {
   changesAcross,
   changeStatus,
@@ -52,7 +44,8 @@ import {
 } from "./task-state.ts"
 import { followsOnIdFor } from "./follow-ons.ts"
 import { logStopped, stopDeletedTask } from "../sessions/deleted-tasks.ts"
-import { findTask, findTasks, findTasksWithIds, taskIdExists, type FoundTask } from "./task-store.ts"
+import { findTask, findTasks, findTasksWithIds, taskIdExists } from "./task-store.ts"
+import { taskFrom, tasksOf } from "./tasks-shown.ts"
 import { commentBodiesOf } from "../comments/comment-store.ts"
 
 export const lookupOf = (text: string): TaskLookup => {
@@ -70,16 +63,6 @@ const idsOf = (caller: Caller): ActorIds => ({
   agentId: caller.agent?.id,
   agentContext: caller.agentContext
 })
-
-const tasksOf = async (db: Db, found: readonly FoundTask[]): Promise<Task[]> => {
-  const actorOf = await actorsNamed(
-    db,
-    found.flatMap(({ row }) => inProgressIdsOf(row) ?? [])
-  )
-  return found.map(({ row, prefix }) => taskOf(row, prefix, actorOf))
-}
-
-const taskFrom = async (db: Db, found: FoundTask): Promise<Task> => (await tasksOf(db, [found]))[0]!
 
 const parseStatuses = (text: string | undefined): TaskStatus[] => {
   if (text === undefined) return [...ACTIVE_STATUSES]
@@ -181,46 +164,60 @@ export const createTask = async (
   db: Db,
   log: ServerLogger,
   caller: Caller,
-  { id, domain, title, followsOn, tags, repeat, ...fields }: z.infer<typeof CreateTaskRequestSchema>,
+  request: z.infer<typeof CreateTaskRequestSchema>,
   now: Instant
 ): Promise<Task> => {
-  const { task, changes } = await db.transaction(async (tx) => {
-    const taskId = id ?? newTaskId(uuidv7(now))
-    if (await taskIdExists(tx, taskId))
-      throw new ProblemError(ProblemType.INVALID_REQUEST, `A task with id ${taskId} already exists.`)
-    const domainId = domain === undefined ? undefined : (await findDomain(tx, caller.user.id, domain)).id
-    const inboxUserId = domainId === undefined ? caller.user.id : undefined
-    const followsOnId = followsOn === undefined ? undefined : await followsOnIdFor(tx, caller, followsOn, taskId)
-    const blank = blankState(domainId, inboxUserId, title)
-    const edited = editTask(blank, {
-      set: { ...fields, tags: withTags([], tags ?? []), ...(followsOnId && { followsOnId }) },
-      clear: []
-    }).state
-    const state = repeating(blank, edited, repeat, dateIn(caller.user.timeZone, now))
-    const at = new Date(now)
-    await tx.insert(tasks).values({
-      id: taskId,
-      ...valuesOf(state),
-      horizonSetAt: horizonSetAtFor(state, now),
-      createdAt: at,
-      updatedAt: at,
-      version: 1
-    })
-    const created = changesFromNothing(state)
-    await recordActivity(tx, caller, now, {
-      type: ActivityType.TASK_CREATED,
-      entityId: taskId,
-      domainId,
-      version: 1,
-      changes: created
-    })
-    return {
-      task: await taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: taskId })),
-      changes: created
-    }
-  })
-  logChange(log, LOG_CODES.task.created, caller, task, changes)
+  const { task, changes } = await db.transaction((tx) => insertTask(tx, caller, request, now))
+  logCreated(log, caller, task, changes)
   return task
+}
+
+export const logCreated = (log: ServerLogger, caller: Caller, task: Task, changes: Record<string, FieldChange>): void =>
+  logChange(log, LOG_CODES.task.created, caller, task, changes)
+
+/** Adds a task, in a transaction already begun, logging it in its activity: what it is, and what it started with. */
+export const insertTask = async (
+  tx: Db,
+  caller: Caller,
+  { id, domain, title, followsOn, tags, repeat, checklist, ...fields }: z.infer<typeof CreateTaskRequestSchema>,
+  now: Instant
+): Promise<{ task: Task; changes: Record<string, FieldChange> }> => {
+  const taskId = id ?? newTaskId(uuidv7(now))
+  if (await taskIdExists(tx, taskId))
+    throw new ProblemError(ProblemType.INVALID_REQUEST, `A task with id ${taskId} already exists.`)
+  const domainId = domain === undefined ? undefined : (await findDomain(tx, caller.user.id, domain)).id
+  const inboxUserId = domainId === undefined ? caller.user.id : undefined
+  const followsOnId = followsOn === undefined ? undefined : await followsOnIdFor(tx, caller, followsOn, taskId)
+  const blank = blankState(domainId, inboxUserId, title)
+  const edited = editTask(blank, {
+    set: { ...fields, tags: withTags([], tags ?? []), ...(followsOnId && { followsOnId }) },
+    clear: []
+  }).state
+  const state = {
+    ...repeating(blank, edited, repeat, dateIn(caller.user.timeZone, now)),
+    checklist: newItems(checklist ?? [], now)
+  }
+  const at = new Date(now)
+  await tx.insert(tasks).values({
+    id: taskId,
+    ...valuesOf(state),
+    horizonSetAt: horizonSetAtFor(state, now),
+    createdAt: at,
+    updatedAt: at,
+    version: 1
+  })
+  const created = changesFromNothing(state)
+  await recordActivity(tx, caller, now, {
+    type: ActivityType.TASK_CREATED,
+    entityId: taskId,
+    domainId,
+    version: 1,
+    changes: created
+  })
+  return {
+    task: await taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: taskId })),
+    changes: created
+  }
 }
 
 const blankState = (domainId: DomainId | undefined, inboxUserId: UserId | undefined, title: string): TaskState => ({
@@ -238,6 +235,7 @@ const blankState = (domainId: DomainId | undefined, inboxUserId: UserId | undefi
   energy: undefined,
   horizon: undefined,
   tags: [],
+  checklist: [],
   repeat: undefined,
   followsOnId: undefined,
   inProgressBy: undefined,

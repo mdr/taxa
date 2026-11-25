@@ -1,8 +1,8 @@
 import { expect, type Locator, type Page } from "@playwright/test"
-import { PageObject } from "./steps.ts"
-import { activityListTestIds } from "../../src/tasks/detail/ActivityListTestIds.ts"
-import { commentCardTestIds } from "../../src/tasks/comments/CommentCardTestIds.ts"
-import { commentComposerTestIds } from "../../src/tasks/comments/CommentComposerTestIds.ts"
+import { PageObject } from "../steps.ts"
+import { activityListTestIds } from "../../../src/tasks/detail/ActivityListTestIds.ts"
+import { commentCardTestIds } from "../../../src/tasks/comments/CommentCardTestIds.ts"
+import { commentComposerTestIds } from "../../../src/tasks/comments/CommentComposerTestIds.ts"
 
 /** A comment as the page shows it: who wrote it, and what it says. */
 export interface ShownComment {

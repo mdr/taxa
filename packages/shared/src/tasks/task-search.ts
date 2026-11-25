@@ -7,8 +7,12 @@ const wordsOf = (search: string): string[] =>
     .split(/\s+/)
     .filter((word) => word !== "")
 
-/** What a search looks in: a task's title, notes and tags, and what its comments say where they're known. */
-export type Searched = Pick<Task, "title" | "notes"> & { tags?: readonly string[]; comments?: readonly string[] }
+/** What a search looks in: a task's title, notes, tags and checklist, and what its comments say where they're known. */
+export type Searched = Pick<Task, "title" | "notes"> & {
+  tags?: readonly string[]
+  checklist?: readonly { text: string }[]
+  comments?: readonly string[]
+}
 
 /**
  * Whether a task is found by what's typed: every word in its title, its
@@ -16,7 +20,15 @@ export type Searched = Pick<Task, "title" | "notes"> & { tags?: readonly string[
  * in any of them. Nothing typed finds everything.
  */
 export const matchesSearch = (task: Searched, search: string): boolean => {
-  const text = [task.title, task.notes, ...(task.tags ?? []), ...(task.comments ?? [])].join("\n").toLowerCase()
+  const text = [
+    task.title,
+    task.notes,
+    ...(task.tags ?? []),
+    ...(task.checklist ?? []).map((item) => item.text),
+    ...(task.comments ?? [])
+  ]
+    .join("\n")
+    .toLowerCase()
   return wordsOf(search).every((word) => text.includes(word))
 }
 

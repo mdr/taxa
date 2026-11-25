@@ -6,6 +6,7 @@ import { VersionSchema } from "../domains/domain.ts"
 import { DomainIdSchema, TaskIdSchema } from "../ids.ts"
 import { flavoured, type Minutes, type TaskNumber } from "../units.ts"
 import { TaskRefSchema } from "./task-ref.ts"
+import { ChecklistItemSchema } from "./checklist.ts"
 
 export const TASKS_PATH = "/api/tasks"
 
@@ -74,6 +75,8 @@ export const TaskSchema = z.object({
   repeat: RepeatSchema.optional(),
   /** The task it follows on from: what it came out of, done or not. */
   followsOnId: TaskIdSchema.optional(),
+  /** Its steps, ticked off as they're done. */
+  checklist: z.array(ChecklistItemSchema),
   /** While IN_PROGRESS: who is working on it. */
   inProgressBy: ActorSchema.optional(),
   /** While WAITING: what on, and when to follow it up. */

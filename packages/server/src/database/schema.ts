@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm"
+import type { StoredChecklistItem } from "@taxa/shared/tasks/checklist"
 import {
   bigserial,
   date,
@@ -129,6 +130,11 @@ export const tasks = pgTable(
       .default(sql`'{}'::text[]`),
     /** How it repeats, if it does: every field filled in, always in the same order. */
     repeat: jsonb("repeat").$type<Repeat>(),
+    /** Its steps, in order, ticked off as they're done. */
+    checklist: jsonb("checklist")
+      .$type<StoredChecklistItem[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     /** The task it follows on from. */
     followsOnId: uuid("follows_on_id")
       .$type<TaskId>()

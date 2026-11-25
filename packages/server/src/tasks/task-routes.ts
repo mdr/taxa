@@ -12,6 +12,8 @@ import {
 } from "@taxa/shared/tasks/task-requests"
 import { TASKS_PATH, TaskSchema } from "@taxa/shared/tasks/task"
 import { OccurrenceSchema } from "@taxa/shared/tasks/occurrence"
+import { ChecklistRequestSchema } from "@taxa/shared/tasks/checklist"
+import { changeChecklist } from "./checklist-service.ts"
 import { listOccurrences, recordOccurrence } from "./occurrence-service.ts"
 import { BIN_PATH, PurgedSchema } from "@taxa/shared/tasks/bin"
 import type { Db } from "../database/database.ts"
@@ -88,6 +90,16 @@ const routes = {
     security: BEARER,
     request: { params: RefSchema, ...jsonBody(RecordOccurrenceRequestSchema) },
     responses: { 200: json(TaskSchema, "The task, at its next date"), ...PROBLEMS }
+  }),
+  checklist: createRoute({
+    method: "post",
+    path: `${TASK_PATH}/checklist`,
+    summary: "Add, tick, reword or remove an item on a task's checklist, or make one a task of its own",
+    description:
+      "Items are named by id, as the task shows them. ADD adds lines (after an item, or at the end), TICK ticks or unticks one, RENAME rewords one, REMOVE takes one off, and MAKE_TASK makes one a task of its own, following on from this one, in the same domain: the item stays, ticked when that task is done.",
+    security: BEARER,
+    request: { params: RefSchema, ...jsonBody(ChecklistRequestSchema) },
+    responses: { 200: json(TaskSchema, "The task as it is now"), ...PROBLEMS }
   }),
   occurrences: createRoute({
     method: "get",
@@ -205,6 +217,11 @@ export const taskRoutes = (app: TaxaApp, db: Db, log: ServerLogger, clock: Clock
     const { ref } = context.req.valid("param")
     const { outcome, date } = context.req.valid("json")
     const task = await recordOccurrence(db, log, context.var.caller, ref, { outcome, date }, clock.now())
+    return context.json(task, 200, { etag: `"${task.version}"` })
+  })
+  app.openapi(routes.checklist, async (context) => {
+    const { ref } = context.req.valid("param")
+    const task = await changeChecklist(db, log, context.var.caller, ref, context.req.valid("json"), clock.now())
     return context.json(task, 200, { etag: `"${task.version}"` })
   })
   app.openapi(routes.occurrences, async (context) =>

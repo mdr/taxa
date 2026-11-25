@@ -20,6 +20,7 @@ export const makeTask = (fields: Partial<Task> = {}): Task => {
     priority: Priority.NORMAL,
     inbox: false,
     tags: [],
+    checklist: [],
     createdAt: "2026-01-05T09:00:00.000Z",
     updatedAt: "2026-01-05T09:00:00.000Z",
     version: 1,

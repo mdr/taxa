@@ -3,6 +3,7 @@ import { TaxaApiError } from "@taxa/shared/api/taxa-client"
 import type { TaskId } from "@taxa/shared/ids"
 import type { ChangeStatusRequest, RecordOccurrenceRequest, UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import { TaskSchema, type Task } from "@taxa/shared/tasks/task"
+import type { ChecklistRequest } from "@taxa/shared/tasks/checklist"
 import type { Version } from "@taxa/shared/units"
 import type { ChangeOrder } from "./change-order.ts"
 import type { TaskCache } from "./task-cache.ts"
@@ -22,7 +23,9 @@ export enum TaskChangeType {
   DELETE = "DELETE",
   RESTORE = "RESTORE",
   /** A repeating task done or skipped this time, for the date it's at. */
-  OCCURRENCE = "OCCURRENCE"
+  OCCURRENCE = "OCCURRENCE",
+  /** An item on its checklist added, ticked, reworded, removed or made a task. */
+  CHECKLIST = "CHECKLIST"
 }
 
 export type TaskChange =
@@ -31,6 +34,7 @@ export type TaskChange =
   | { type: TaskChangeType.DELETE }
   | { type: TaskChangeType.RESTORE }
   | { type: TaskChangeType.OCCURRENCE; request: RecordOccurrenceRequest }
+  | { type: TaskChangeType.CHECKLIST; request: ChecklistRequest }
 
 /** What a change touched, for analytics: the fields it set or cleared, or the status it moved to. */
 const changeFields = (change: TaskChange): LogFields => {
@@ -47,6 +51,8 @@ const changeFields = (change: TaskChange): LogFields => {
       return { status: change.request.status }
     case TaskChangeType.OCCURRENCE:
       return { outcome: change.request.outcome }
+    case TaskChangeType.CHECKLIST:
+      return { checklist: change.request.type }
     case TaskChangeType.DELETE:
     case TaskChangeType.RESTORE:
       return {}
@@ -60,6 +66,7 @@ export interface TaskChangesApi {
   deleteTask: (ref: string, ifMatch?: Version) => Promise<Task>
   restoreTask: (ref: string) => Promise<Task>
   recordOccurrence: (ref: string, request: RecordOccurrenceRequest) => Promise<Task>
+  changeChecklist: (ref: string, request: ChecklistRequest) => Promise<Task>
   task: (ref: string) => Promise<Task>
 }
 
@@ -175,6 +182,9 @@ export class TaskChangesService extends AbstractService<TaskChangesState> implem
       case TaskChangeType.OCCURRENCE:
         // For the date it's at as this tab saw it, so it's never done twice.
         return this.#api.recordOccurrence(task.id, { ...change.request, date: change.request.date ?? task.scheduled })
+      case TaskChangeType.CHECKLIST:
+        // Says which item, so it needs no version: it doesn't overwrite what it hasn't seen.
+        return this.#api.changeChecklist(task.id, change.request)
     }
   }
 }

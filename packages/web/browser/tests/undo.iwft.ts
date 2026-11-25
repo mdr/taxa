@@ -65,17 +65,18 @@ test("the timeline shows what matters, all changes when asked, and can put back 
   await taxa.matt.client.changeStatus(tap.ref, { status: TaskStatus.IN_PROGRESS })
   await taxa.matt.client.updateTask(tap.ref, { set: { title: "Fix the kitchen tap" } })
   const detail = await (await taxa.openTab("Matt")).openTask("H-1")
-  await detail.expectTimelineShown(["Matt created this", "Matt started it"])
-  await detail.expectShowAllSays("Show all changes (3 more)")
+  await detail.expectTimelineShown(["Matt created this", "Matt started it"], "Show all changes (3 more)")
   await detail.showAllChanges()
-  await detail.expectShowAllSays("Show fewer changes")
-  await detail.expectTimelineShown([
-    "Matt created this",
-    "Matt set priority to high",
-    "Matt edited the notes",
-    "Matt started it",
-    "Matt renamed it “Fix the kitchen tap”"
-  ])
+  await detail.expectTimelineShown(
+    [
+      "Matt created this",
+      "Matt set priority to high",
+      "Matt edited the notes",
+      "Matt started it",
+      "Matt renamed it “Fix the kitchen tap”"
+    ],
+    "Show fewer changes"
+  )
 
   await detail.expectNotesBefore("edited the notes", "Washer size 15mm")
   await detail.restoreNotesFrom("edited the notes")

@@ -1,9 +1,9 @@
 import { expect, type Locator, type Page } from "@playwright/test"
-import { PageObject } from "./steps.ts"
-import { tagChipTestIds } from "../../src/tags/TagChipTestIds.ts"
-import { tagPickerTestIds } from "../../src/tags/TagPickerTestIds.ts"
-import { tagsPropertyTestIds } from "../../src/tags/TagsPropertyTestIds.ts"
-import { tagSuggestionListTestIds } from "../../src/tags/TagSuggestionListTestIds.ts"
+import { PageObject } from "../steps.ts"
+import { tagChipTestIds } from "../../../src/tags/TagChipTestIds.ts"
+import { tagPickerTestIds } from "../../../src/tags/TagPickerTestIds.ts"
+import { tagsPropertyTestIds } from "../../../src/tags/TagsPropertyTestIds.ts"
+import { tagSuggestionListTestIds } from "../../../src/tags/TagSuggestionListTestIds.ts"
 
 /** On a task's page: its tags. */
 export class TaskTags extends PageObject {

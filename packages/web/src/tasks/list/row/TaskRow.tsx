@@ -7,7 +7,8 @@ import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
-import { CalendarClock, Repeat } from "lucide-react"
+import { CalendarClock, ListChecks, Repeat } from "lucide-react"
+import { checklistProgress, progressText } from "@taxa/shared/tasks/checklist"
 import { repeatText } from "@taxa/shared/tasks/repeat"
 import { useEffect, useRef } from "react"
 import { Link } from "wouter"
@@ -142,6 +143,12 @@ export const TaskRow = ({
           <span className={styles.meta}>
             <StatusIcon status={task.status} size={14} />
             {task.waitingOn ? `Waiting on ${task.waitingOn}` : capitalised(STATUS_TEXT[task.status])}
+          </span>
+        )}
+        {task.checklist.length > 0 && (
+          <span className={styles.meta} title="Checklist" data-testid={taskRowTestIds.checklist}>
+            <ListChecks size={14} aria-hidden />
+            {progressText(checklistProgress(task.checklist))}
           </span>
         )}
         {task.priority !== Priority.NORMAL && (

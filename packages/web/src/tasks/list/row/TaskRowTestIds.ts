@@ -8,5 +8,6 @@ export const taskRowTestIds = {
   repeat: "TaskRow.repeat",
   problem: "TaskRow.problem",
   menu: "TaskRow.menu",
-  menuBack: "TaskRow.menuBack"
+  menuBack: "TaskRow.menuBack",
+  checklist: "TaskRow.checklist"
 }

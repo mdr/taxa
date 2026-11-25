@@ -6,6 +6,7 @@ import type { ClearableField, ChangeStatusRequest } from "@taxa/shared/tasks/tas
 import { DEFAULT_FOLLOW_UP_DAYS, TaskStatus, type Energy, type Horizon, type Priority } from "@taxa/shared/tasks/task"
 import type { Instant } from "@taxa/shared/units"
 import type { Repeat } from "@taxa/shared/tasks/repeat"
+import type { StoredChecklistItem } from "@taxa/shared/tasks/checklist"
 import { definedFields } from "@taxa/shared/objects"
 import type { ActorIds } from "../activity/actor-names.ts"
 
@@ -26,6 +27,7 @@ export interface TaskState {
   energy: Energy | undefined
   horizon: Horizon | undefined
   tags: readonly string[]
+  checklist: readonly StoredChecklistItem[]
   repeat: Repeat | undefined
   followsOnId: TaskId | undefined
   inProgressBy: ActorIds | undefined
@@ -40,7 +42,14 @@ export interface Edit {
   set: Partial<
     Omit<
       TaskState,
-      "status" | "inProgressBy" | "waitingOn" | "followUp" | "completedAt" | "cancelledAt" | "cancelledReason"
+      | "status"
+      | "inProgressBy"
+      | "waitingOn"
+      | "followUp"
+      | "completedAt"
+      | "cancelledAt"
+      | "cancelledReason"
+      | "checklist"
     >
   >
   clear: readonly ClearableField[]
@@ -164,9 +173,14 @@ export const changeStatus = (
   return { state: after, changes: changesBetween(before, after) }
 }
 
+/** A checklist with its ticks taken off, for doing again; items made tasks follow their tasks. */
+const unticked = (checklist: readonly StoredChecklistItem[]): readonly StoredChecklistItem[] =>
+  checklist.some(({ done }) => done) ? checklist.map((item) => ({ ...item, done: false })) : checklist
+
 /**
  * A repeating task once an occurrence is done or skipped: open, at its next
- * date, its due and start dates moved by as much.
+ * date, its due and start dates moved by as much, and its checklist to do
+ * again.
  */
 export const movedOn = (before: TaskState, next: IsoDate): Outcome => {
   const shift = before.scheduled === undefined ? 0 : daysBetween(before.scheduled, next)
@@ -176,7 +190,8 @@ export const movedOn = (before: TaskState, next: IsoDate): Outcome => {
     status: TaskStatus.OPEN,
     scheduled: next,
     due: shifted(before.due),
-    start: shifted(before.start)
+    start: shifted(before.start),
+    checklist: unticked(before.checklist)
   }
   return { state: after, changes: changesBetween(before, after) }
 }

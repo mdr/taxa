@@ -8,10 +8,11 @@ import { PageObject } from "./steps.ts"
 import { expectAccessible } from "./accessibility.ts"
 import { Keyboard } from "./Keyboard.ts"
 import { Sidebar } from "./Sidebar.ts"
-import { FollowOnLinks } from "./FollowOnLinks.ts"
+import { FollowOnLinks } from "./task-parts/FollowOnLinks.ts"
 import { UndoToast } from "./UndoToast.ts"
-import { TaskTags } from "./TaskTags.ts"
-import { TaskComments } from "./TaskComments.ts"
+import { TaskTags } from "./task-parts/TaskTags.ts"
+import { TaskComments } from "./task-parts/TaskComments.ts"
+import { TaskChecklist } from "./task-parts/TaskChecklist.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
 import { activityListTestIds } from "../../src/tasks/detail/ActivityListTestIds.ts"
 import { notesEditorTestIds } from "../../src/notes/NotesEditorTestIds.ts"
@@ -37,6 +38,7 @@ export class TaskDetailPage extends PageObject {
   readonly followOns: FollowOnLinks
   readonly tags: TaskTags
   readonly comments: TaskComments
+  readonly checklist: TaskChecklist
   /** Shown once it's marked done here. */
   readonly toast: UndoToast
 
@@ -49,6 +51,7 @@ export class TaskDetailPage extends PageObject {
     this.followOns = new FollowOnLinks(page)
     this.tags = new TaskTags(page)
     this.comments = new TaskComments(page)
+    this.checklist = new TaskChecklist(page)
     this.toast = new UndoToast(page)
   }
 
@@ -149,14 +152,9 @@ export class TaskDetailPage extends PageObject {
 
   /** Types the date into the due date's picker, as someone would; "" clears it. */
   async setDue(date: IsoDate | ""): Promise<void> {
+    if (date !== "") return this.#typeDate(taskPropertiesTestIds.due, date)
     await this.#page.getByTestId(taskPropertiesTestIds.due).click()
-    if (date === "") {
-      await this.#page.getByTestId(datePickerTestIds.clear).click()
-      return
-    }
-    const typed = this.#page.getByTestId(datePickerTestIds.typed)
-    await typed.fill(date)
-    await typed.press("Enter")
+    await this.#page.getByTestId(datePickerTestIds.clear).click()
   }
 
   /** Picks the due date from the picker's calendar, moving on through the months to it. */
@@ -461,14 +459,10 @@ export class TaskDetailPage extends PageObject {
     }).toPass()
   }
 
-  /** The changes the timeline shows, oldest first, without times. */
-  async expectTimelineShown(entries: string[]): Promise<void> {
+  /** The changes the timeline shows, oldest first, without times, and what its "Show all changes" says. */
+  async expectTimelineShown(entries: string[], showAll: string): Promise<void> {
+    await expect(this.#page.getByTestId(activityListTestIds.showAll)).toHaveText(showAll)
     await expect(this.#page.getByTestId(activityListTestIds.text)).toHaveText(entries)
-  }
-
-  /** What "Show all changes" says, such as "Show all changes (3 more)". */
-  async expectShowAllSays(text: string): Promise<void> {
-    await expect(this.#page.getByTestId(activityListTestIds.showAll)).toHaveText(text)
   }
 
   async expectConflictNotice(): Promise<void> {

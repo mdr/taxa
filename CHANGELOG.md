@@ -8,6 +8,19 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ### New
 
+- **Checklists.** A task can hold a checklist of steps to tick off, for
+  work whose parts you know up front: accounts to move, passwords to
+  change. On a task's page, **Add a checklist**, then type items (Enter
+  adds each) or paste a list. Lists show how far through it is, such as
+  "3/8", and once every item's ticked, the page offers to mark the task
+  done. A repeating task's ticks come off each time it comes round.
+- **Make an item a task.** An item that grows into work of its own can
+  become a task, following on from the first; the item stays, and is
+  ticked when that task is done.
+- **Checklists in the CLI:** `taxa add --item`, `taxa checklist`,
+  `taxa check` and `uncheck` (by number or text), `taxa add-item`,
+  `edit-item`, `remove-item` and `item-to-task`. Search finds tasks by
+  their checklist items too.
 - **A logo.** Taxa's mark is a specimen tag, ticked, hanging on its string,
   in moss green. It's the favicon in your browser's tabs, the icon when you
   add Taxa to a phone's home screen, and beside the name in the sidebar.

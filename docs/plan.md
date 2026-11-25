@@ -60,6 +60,7 @@ with `X` and `I`, replanning, and a summary at the end. Not yet in the CLI.
 ## Stage 2: Organising and deciding
 
 - Projects, subtasks, tags, manual ordering
+- Checklists: a task's steps, ticked off, with their progress in lists; an item can become a task of its own (done)
 - The query language (string and JSON forms) in the API and CLI. Saved filters and the filter builder
 - Today (Planned, Needs attention, carried over), Upcoming, Someday, per-project views
 - Being in a domain: the whole app follows the one you're in, like switching accounts (once there's a second domain). Deleting an empty domain (done)

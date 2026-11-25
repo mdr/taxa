@@ -1,3 +1,4 @@
+import type { ChecklistRequest } from "@taxa/shared/tasks/checklist"
 import type { TaxaClient } from "@taxa/shared/api/taxa-client"
 import type { TaskId } from "@taxa/shared/ids"
 import type { ChangeStatusRequest, RecordOccurrenceRequest, UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
@@ -75,6 +76,8 @@ class SlowServer implements TaskChangesApi, UndoApi, CommentsApi {
   readonly restoreTask = (ref: string): Promise<Task> => this.#answer(() => this.#client.restoreTask(ref))
   readonly recordOccurrence = (ref: string, request: RecordOccurrenceRequest): Promise<Task> =>
     this.#answer(() => this.#client.recordOccurrence(ref, request))
+  readonly changeChecklist = (ref: string, request: ChecklistRequest): Promise<Task> =>
+    this.#answer(() => this.#client.changeChecklist(ref, request))
   readonly undoTask = (ref: string, version: Version): Promise<Task> =>
     this.#answer(() => this.#client.undoTask(ref, version))
   readonly undoComment = (id: CommentId, version: Version): Promise<Comment> =>

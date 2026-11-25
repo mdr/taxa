@@ -5,6 +5,7 @@ import { TaskIdSchema } from "../ids.ts"
 import { OccurrenceOutcome, RepeatRequestSchema } from "./repeat.ts"
 import { flavoured, type Minutes } from "../units.ts"
 import { MAX_TAGS, TagSchema } from "./tags.ts"
+import { ChecklistTextSchema, MAX_CHECKLIST_ITEMS } from "./checklist.ts"
 
 const TitleSchema = z.string().trim().min(1).max(500)
 
@@ -51,7 +52,9 @@ export const CreateTaskRequestSchema = EditableFieldsSchema.omit({ inbox: true }
     /** Chosen by the client (a UUIDv7), so a task made offline is real at once. */
     id: TaskIdSchema.optional(),
     title: TitleSchema,
-    tags: z.array(TagSchema).max(MAX_TAGS).optional()
+    tags: z.array(TagSchema).max(MAX_TAGS).optional(),
+    /** Its checklist's items, none ticked. */
+    checklist: z.array(ChecklistTextSchema).max(MAX_CHECKLIST_ITEMS).optional()
   })
 
 export type CreateTaskRequest = z.input<typeof CreateTaskRequestSchema>

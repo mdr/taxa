@@ -62,6 +62,10 @@ export const CommentIdSchema = z.uuid().brand<"CommentId">()
 export type CommentId = z.infer<typeof CommentIdSchema>
 export const commentId = (text: string): CommentId => CommentIdSchema.parse(text)
 
+export const ChecklistItemIdSchema = z.uuid().brand<"ChecklistItemId">()
+export type ChecklistItemId = z.infer<typeof ChecklistItemIdSchema>
+export const checklistItemId = (text: string): ChecklistItemId => ChecklistItemIdSchema.parse(text)
+
 export const OccurrenceIdSchema = z.uuid().brand<"OccurrenceId">()
 export type OccurrenceId = z.infer<typeof OccurrenceIdSchema>
 export const occurrenceId = (text: string): OccurrenceId => OccurrenceIdSchema.parse(text)

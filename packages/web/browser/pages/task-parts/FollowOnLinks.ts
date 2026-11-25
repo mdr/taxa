@@ -1,8 +1,8 @@
 import { expect, type Page } from "@playwright/test"
-import { PageObject } from "./steps.ts"
-import { FollowOnDialog } from "./FollowOnDialog.ts"
-import { followOnLinksTestIds } from "../../src/tasks/follow-ons/FollowOnLinksTestIds.ts"
-import { taskDetailPageTestIds } from "../../src/tasks/detail/TaskDetailPageTestIds.ts"
+import { PageObject } from "../steps.ts"
+import { FollowOnDialog } from "../FollowOnDialog.ts"
+import { followOnLinksTestIds } from "../../../src/tasks/follow-ons/FollowOnLinksTestIds.ts"
+import { taskDetailPageTestIds } from "../../../src/tasks/detail/TaskDetailPageTestIds.ts"
 
 /** On a task's page: what it follows on from, and what it led to. */
 export class FollowOnLinks extends PageObject {

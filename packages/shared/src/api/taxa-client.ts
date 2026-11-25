@@ -1,3 +1,4 @@
+import type { ChecklistRequest } from "../tasks/checklist.ts"
 import { DAY_PLANS_PATH, DayPlanSchema, type DayPlan, type SetDayPlanRequest } from "../days/day-plan.ts"
 import { BIN_PATH, PurgedSchema } from "../tasks/bin.ts"
 import type { IsoDate } from "../dates/plain-date.ts"
@@ -163,6 +164,11 @@ export class TaxaClient {
   /** Does or skips a repeating task's occurrence, moving it on to its next date. */
   recordOccurrence(ref: string, request: RecordOccurrenceRequest): Promise<Task> {
     return this.#request(TaskSchema, `${taskPath(ref)}/occurrences`, { method: "POST", body: request })
+  }
+
+  /** Adds, ticks, rewords or removes a checklist item, or makes one a task of its own. */
+  changeChecklist(ref: string, request: ChecklistRequest): Promise<Task> {
+    return this.#request(TaskSchema, `${taskPath(ref)}/checklist`, { method: "POST", body: request })
   }
 
   /** A repeating task's occurrences, the latest first. */
