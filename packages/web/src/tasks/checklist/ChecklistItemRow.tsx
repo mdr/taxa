@@ -1,5 +1,5 @@
 import { ChecklistChangeType, type ChecklistItem, type ChecklistRequest } from "@taxa/shared/tasks/checklist"
-import { SquareArrowOutUpRight, X } from "lucide-react"
+import { CornerDownRight, X } from "lucide-react"
 import { useState } from "react"
 import { Link } from "wouter"
 import styles from "./ChecklistItemRow.module.css"
@@ -89,7 +89,7 @@ export const ChecklistItemRow = ({
             data-testid={checklistItemRowTestIds.makeTask}
             data-track="ChecklistItemRow.makeTask"
           >
-            <SquareArrowOutUpRight size={14} aria-hidden />
+            <CornerDownRight size={14} aria-hidden />
           </button>
         )}
         <button

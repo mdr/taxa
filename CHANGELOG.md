@@ -6,6 +6,10 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ## Unreleased
 
+### Changed
+
+- A checklist item's "make it a task" button has a follow-on arrow instead of the open-link icon.
+
 ## 0.4.0 (2026-11-25)
 
 ### New
