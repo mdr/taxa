@@ -6,6 +6,8 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ## Unreleased
 
+## 0.4.0 (2026-11-25)
+
 ### New
 
 - **Checklists.** A task can hold a checklist of steps to tick off, for
