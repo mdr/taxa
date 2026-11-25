@@ -43,11 +43,24 @@ jobs:
           fi
           ci=$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --json conclusion -q '.[0].conclusion')
           [ "$ci" = success ] || { echo "::error::CI hasn't passed on $GITHUB_SHA (${ci:-not run})"; exit 1; }
+      - name: Take the changes from CHANGELOG.md
+        run: |
+          # What's under "## Unreleased", up to the next "## ".
+          awk '/^## /{inside = ($0 == "## Unreleased"); next} inside' CHANGELOG.md > unreleased.md
+          grep -q '[^[:space:]]' unreleased.md || {
+            echo "::error::Nothing under ## Unreleased in CHANGELOG.md: say what's changed first"; exit 1
+          }
+          # The version, under Unreleased, which starts empty again.
+          awk -v heading="## $VERSION ($(date -u +%F))" \
+            '{print} $0 == "## Unreleased" {print ""; print heading}' CHANGELOG.md > changelog.new
+          mv changelog.new CHANGELOG.md
       - name: Write the release notes
         run: |
           last=$(git tag --list 'v*' --sort=-version:refname | head -1)
           range=${last:+$last..}HEAD
           {
+            sed 's/^### /## /' unreleased.md | sed '/./,$!d'
+            echo
             echo "## Upgrading"
             echo
             migrations=$(git diff --name-only --diff-filter=A ${last:+$last} HEAD -- packages/server/drizzle/*.sql 2>/dev/null || true)
@@ -67,7 +80,7 @@ jobs:
             echo
             echo "Pin \`github:mdr/taxa/$TAG\`: \`packages.<system>.taxa\` is the CLI, \`nixosModules.default\` the server (\`services.taxa\`). Built results are in the \`mdr-taxa\` Cachix cache (\`https://mdr-taxa.cachix.org\`, key \`mdr-taxa.cachix.org-1:tHW34mvFiWUUPwC1vjS+FQji6A7HvH9u/bOVbpW+OEI=\`)."
             echo
-            echo "## Changes"
+            echo "## Commits"
             echo
             git log --no-merges --format='- %s (%h)' "$range"
           } > release-notes.md
@@ -83,7 +96,7 @@ jobs:
           done
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "Release $TAG"
+          git commit -am "Release $TAG"  # the versions, and CHANGELOG.md
           git tag -a "$TAG" -m "Release $TAG"
           git push origin HEAD:main "$TAG"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"

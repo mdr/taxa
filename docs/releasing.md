@@ -15,6 +15,7 @@ gh workflow run release.yml -R mdr/taxa --ref main -f version=X.Y.Z
 
 It releases the commit at the tip of `main`. It refuses unless:
 
+- `CHANGELOG.md` has something under `## Unreleased`;
 - the version is `X.Y.Z` and later than the last release's;
 - no tag `vX.Y.Z` exists yet;
 - CI has passed on that commit.
@@ -22,11 +23,13 @@ It releases the commit at the tip of `main`. It refuses unless:
 Then it:
 
 1. writes the release notes (below);
-2. sets `"version"` in every `package.json`, commits `Release vX.Y.Z` to
+2. moves what's under `## Unreleased` in `CHANGELOG.md` under
+   `## X.Y.Z (date)`, leaving Unreleased empty;
+3. sets `"version"` in every `package.json`, commits `Release vX.Y.Z` to
    `main` and tags it `vX.Y.Z`;
-3. builds, from the tag, `taxa-server` and `taxa` for x86_64 Linux and
+4. builds, from the tag, `taxa-server` and `taxa` for x86_64 Linux and
    `taxa` for Apple silicon, and pushes them to the `mdr-taxa` Cachix cache;
-4. publishes the GitHub release.
+5. publishes the GitHub release.
 
 Pull afterwards: `main` has moved on by the version commit.
 
@@ -38,13 +41,21 @@ Before 1.0:
 - minor (`0.2.0`): new features, a database migration, or a change to
   `services.taxa`'s options.
 
+### The changelog
+
+`CHANGELOG.md` says what's changed for whoever uses Taxa, in plain words.
+Each change they'd notice adds a line under `## Unreleased`, in the commit
+that makes it, under `### New`, `### Changed` or `### Fixed`.
+
 ### What the release notes say
 
+- **What's changed**: the Unreleased section of `CHANGELOG.md`, its
+  `### New`, `### Changed` and `### Fixed` as the notes' first headings.
 - **Upgrading**: the migrations added since the last release, if any, and
   whether `services.taxa` (`nix/module.nix`, `nix/dump-before-upgrade.nix`)
   changed. This is what someone deploying needs to know first.
 - **Installing**: what to pin, and the cache's address and key.
-- **Changes**: the commits since the last release.
+- **Commits**: the commits since the last release, for reference.
 
 ### The version a build reports
 

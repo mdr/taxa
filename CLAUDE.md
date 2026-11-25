@@ -1,5 +1,9 @@
 Taxa is a task manager for people and their agents. What it does and why is in `docs/design.md`, and the stages we're building it in are in `docs/plan.md`. Read them before changing behaviour, and keep them current when a decision changes.
 
+## Changelog
+
+- A change someone using Taxa would notice (the web app, the CLI, the API, running the server) adds a line under `## Unreleased` in `CHANGELOG.md`, in the same commit, under `### New`, `### Changed` or `### Fixed`. Say what it does for them in plain words, and how to use it (the command, the button), not how it's built. Refactors, tests, tooling and design notes don't go in.
+
 ## Code comments
 
 - Add a comment only when the reason for the code isn't obvious from the code itself. Most code needs none.
