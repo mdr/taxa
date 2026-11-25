@@ -25,3 +25,6 @@ export const MeSchema = z.object({
 export type Me = z.infer<typeof MeSchema>
 
 export const AGENT_CONTEXT_HEADER = "X-Taxa-Agent-Context"
+
+/** The time zone a person's browser or CLI is in, which keeps theirs up to date: an agent's is ignored. */
+export const TIME_ZONE_HEADER = "X-Taxa-Time-Zone"

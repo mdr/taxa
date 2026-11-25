@@ -71,7 +71,7 @@ export const createApp = async ({
     openapi: "3.1.0",
     info: { title: "Taxa", version: build, description: "Tasks for people and their agents." }
   })
-  app.use("/api/*", authenticate(db, devUser))
+  app.use("/api/*", authenticate(db, logger, devUser))
   agentRoutes(app, db, logger, clock)
   domainRoutes(app, db, logger, clock)
   taskRoutes(app, db, logger, clock)

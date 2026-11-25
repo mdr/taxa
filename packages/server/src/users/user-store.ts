@@ -37,6 +37,22 @@ export const userById = async (db: Db, id: UserId): Promise<CallerUser | undefin
   return row && callerUserOf(row)
 }
 
+/** A person's now in another time zone. */
+export const moveUserTo = async (
+  db: Db,
+  log: ServerLogger,
+  user: CallerUser,
+  timeZone: TimeZone
+): Promise<CallerUser> => {
+  await db.update(users).set({ timeZone }).where(eq(users.id, user.id))
+  log.info(LOG_CODES.user.movedTimeZone, "person moved time zone", {
+    userId: user.id,
+    from: user.timeZone,
+    to: timeZone
+  })
+  return { ...user, timeZone }
+}
+
 /** The development login's person, made the first time. */
 export const ensureUserNamed = async (
   db: Db,

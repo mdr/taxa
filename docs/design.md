@@ -238,9 +238,10 @@ Each time it comes round is an **occurrence**, kept as its history.
 - Each person has a **current time zone**. It updates automatically from the
   browser or phone (and from the CLI's environment), and can be overridden
   or locked in settings. The server uses it to work out "today", overdue and
-  follow-ups for that person and their agents. Not yet: it's set when the
-  person is added and doesn't change, so it's wrong while they travel.
-  Repeating tasks need it.
+  follow-ups for that person and their agents. The web app and the CLI send
+  theirs with each request (`X-Taxa-Time-Zone`); a person's changes theirs,
+  but an agent's is ignored, as it may run anywhere. Overriding or locking
+  it in settings comes later.
 
 ## Deciding what to do
 

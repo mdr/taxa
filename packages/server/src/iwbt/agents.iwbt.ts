@@ -10,6 +10,23 @@ import { useInProcessServer } from "../test-support/use-in-process-server.ts"
 describe("agents", () => {
   const it = useInProcessServer()
 
+  it("keep a person's time zone up to date from where they call from, but not from where an agent runs", async ({
+    server
+  }) => {
+    const matt = await server.user("Matt")
+    const claude = await matt.agent("Claude Code")
+    const from = (secret: string, zone: string): TaxaClient =>
+      new TaxaClient({ baseUrl: server.httpUrl, apiKey: secret, timeZone: () => timeZone(zone) })
+    const before = (await matt.client.me()).user.timeZone
+
+    await from(claude.secret, "Pacific/Auckland").me()
+    expect((await matt.client.me()).user.timeZone).toBe(before)
+    expect((await from(matt.secret, "America/New_York").me()).user.timeZone).toBe("America/New_York")
+    expect((await matt.client.me()).user.timeZone).toBe("America/New_York")
+    expect((await claude.client.me()).user.timeZone).toBe("America/New_York")
+    expect(server.logs.filter(({ code }) => code === "user.movedTimeZone")).toHaveLength(1)
+  })
+
   it("act for their person, and are named as themselves in the activity log", async ({ server }) => {
     const matt = await server.user("Matt")
     await matt.addDomain("Home", "H")

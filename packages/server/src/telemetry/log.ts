@@ -12,7 +12,8 @@ export const LOG_CODES = {
     failed: "request.failed"
   },
   user: {
-    created: "user.created"
+    created: "user.created",
+    movedTimeZone: "user.movedTimeZone"
   },
   agent: {
     created: "agent.created"

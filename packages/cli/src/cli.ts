@@ -103,7 +103,12 @@ const runCommand = async (
   }
   const json = parsed.values.json
   const { server, apiKey, web } = await connect()
-  const client = new TaxaClient({ baseUrl: server, apiKey, agentContext: io.env["TAXA_AGENT_CONTEXT"] })
+  const client = new TaxaClient({
+    baseUrl: server,
+    apiKey,
+    agentContext: io.env["TAXA_AGENT_CONTEXT"],
+    timeZone: () => io.timeZone
+  })
   try {
     return await command.run(
       { client, io, json, web, today: () => dateIn(io.timeZone, io.now()) },

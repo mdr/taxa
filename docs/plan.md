@@ -63,7 +63,7 @@ with `X` and `I`, replanning, and a summary at the end. Not yet in the CLI.
 - The query language (string and JSON forms) in the API and CLI. Saved filters and the filter builder
 - Today (Planned, Needs attention, carried over), Upcoming, Someday, per-project views
 - Focus
-- Time zones, and times pinned to a zone: first, each person's zone kept up to date from the browser and the CLI
+- Time zones, and times pinned to a zone: first, each person's zone kept up to date from the browser and the CLI (done)
 - Repeating tasks, in this order: on a schedule, carrying missed ones over, with doing, skipping, undo, the CLI and the web's Repeat setting; then counting from completion; then skipping missed days
 - Markdown normalisation in the API, whoever writes, and links for task references
 

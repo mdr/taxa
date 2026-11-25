@@ -13,7 +13,8 @@ import type { Version } from "../units.ts"
 import { z } from "zod"
 import { ActivitySchema, type Activity } from "../activity/activity.ts"
 import { DOMAINS_PATH, DomainSchema, type CreateDomainRequest, type Domain } from "../domains/domain.ts"
-import { AGENT_CONTEXT_HEADER, ME_PATH, MeSchema, type Me } from "../identity/actor.ts"
+import { AGENT_CONTEXT_HEADER, ME_PATH, MeSchema, TIME_ZONE_HEADER, type Me } from "../identity/actor.ts"
+import type { TimeZone } from "../dates/plain-date.ts"
 import {
   AGENTS_PATH,
   AgentSchema,
@@ -51,6 +52,8 @@ export interface TaxaClientOptions {
   apiKey?: string
   /** For agents: what they're working on, recorded with their changes. */
   agentContext?: string
+  /** The time zone the caller is in now, sent with each request so a person's stays up to date as they travel. */
+  timeZone?: () => TimeZone
   fetch?: typeof fetch
 }
 
@@ -246,11 +249,12 @@ export class TaxaClient {
     path: string,
     { method = "GET", body, ifMatch, idempotencyKey }: RequestOptions = {}
   ): Promise<z.infer<T>> {
-    const { baseUrl, apiKey, agentContext, fetch: fetchFn = fetch } = this.#options
+    const { baseUrl, apiKey, agentContext, timeZone, fetch: fetchFn = fetch } = this.#options
     const headers: Record<string, string> = {}
     if (body !== undefined) headers["content-type"] = "application/json"
     if (apiKey) headers["authorization"] = `Bearer ${apiKey}`
     if (agentContext) headers[AGENT_CONTEXT_HEADER] = agentContext
+    if (timeZone) headers[TIME_ZONE_HEADER] = timeZone()
     if (ifMatch !== undefined) headers["if-match"] = `"${ifMatch}"`
     if (idempotencyKey) headers[IDEMPOTENCY_KEY_HEADER] = idempotencyKey
     const response = await fetchFn(`${baseUrl}${path}`, {
