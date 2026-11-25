@@ -2,6 +2,7 @@ import { describe, expect } from "vite-plus/test"
 import { ProblemType } from "@taxa/shared/api/problem"
 import { SessionOutcome } from "@taxa/shared/sessions/session"
 import { TaskStatus } from "@taxa/shared/tasks/task"
+import { RepeatFrom, RepeatUnit } from "@taxa/shared/tasks/repeat"
 import { LOG_CODES } from "../telemetry/log.ts"
 import { expectProblem } from "../test-support/problems.ts"
 import { useInProcessServer } from "../test-support/use-in-process-server.ts"
@@ -118,6 +119,29 @@ describe("sessions", () => {
     ])
     expect((await matt.client.task(tap.ref)).status).toBe(TaskStatus.IN_PROGRESS)
     expect((await matt.client.task(radiators.ref)).status).toBe(TaskStatus.OPEN)
+  })
+
+  it("do a repeating task this time, and taking that back takes back the occurrence too", async ({ server }) => {
+    const matt = await server.user("Matt")
+    const anki = await matt.addTask("Revise Anki cards", {
+      repeat: { every: 1, unit: RepeatUnit.DAY, from: RepeatFrom.SCHEDULE }
+    })
+    const tap = await matt.addTask("Fix the tap")
+    const session = await matt.client.createSession({
+      endsAt: new Date(server.clock.now() + 60 * MINUTE).toISOString(),
+      items: [
+        { taskId: anki.id, minutes: 15 },
+        { taskId: tap.id, minutes: 30 }
+      ],
+      start: anki.id
+    })
+    await matt.client.updateSession(session.id, { finish: SessionOutcome.DONE, start: tap.id })
+    expect(await matt.client.task(anki.ref)).toMatchObject({ status: TaskStatus.OPEN, scheduled: "2026-01-06" })
+    expect(await matt.client.occurrences(anki.ref)).toHaveLength(1)
+
+    await matt.client.updateSession(session.id, { start: anki.id })
+    expect(await matt.client.task(anki.ref)).toMatchObject({ status: TaskStatus.IN_PROGRESS, scheduled: "2026-01-05" })
+    expect(await matt.client.occurrences(anki.ref)).toEqual([])
   })
 
   it("stop a task deleted while under way, and keep its place for when it's restored", async ({ server }) => {

@@ -1,6 +1,6 @@
 import type { TaxaClient } from "@taxa/shared/api/taxa-client"
 import type { TaskId } from "@taxa/shared/ids"
-import type { ChangeStatusRequest, UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
+import type { ChangeStatusRequest, RecordOccurrenceRequest, UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import type { Version } from "@taxa/shared/units"
 import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { describe, expect } from "vite-plus/test"
@@ -73,6 +73,8 @@ class SlowServer implements TaskChangesApi, UndoApi, CommentsApi {
   readonly deleteTask = (ref: string, ifMatch?: Version): Promise<Task> =>
     this.#answer(() => this.#client.deleteTask(ref, ifMatch))
   readonly restoreTask = (ref: string): Promise<Task> => this.#answer(() => this.#client.restoreTask(ref))
+  readonly recordOccurrence = (ref: string, request: RecordOccurrenceRequest): Promise<Task> =>
+    this.#answer(() => this.#client.recordOccurrence(ref, request))
   readonly undoTask = (ref: string, version: Version): Promise<Task> =>
     this.#answer(() => this.#client.undoTask(ref, version))
   readonly undoComment = (id: CommentId, version: Version): Promise<Comment> =>

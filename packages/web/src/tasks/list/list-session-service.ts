@@ -141,7 +141,25 @@ export class ListSessionService extends AbstractService<ListSessionState> implem
   }
 
   readonly toggle = async (task: Task): Promise<void> => {
+    const ticked = this.state.ticked[task.id]
+    // A repeating task ticked here is open again, at its next date: unticking it takes the tick back.
+    if (ticked?.repeat && isShownDone(this.state, task)) {
+      if (this.state.pending[task.id] === undefined) await this.#untick(ticked)
+      return
+    }
     await this.#setStatus(task, { status: isShownDone(this.state, task) ? TaskStatus.OPEN : TaskStatus.DONE })
+  }
+
+  /** Takes back a tick by undoing it: shown unticked at once, and ticked again if that's refused. */
+  async #untick(ticked: Task): Promise<void> {
+    if (this.state.undoable?.id === ticked.id) this.dismissUndo()
+    this.updateState((state) => ({ ...state, pending: { ...state.pending, [ticked.id]: false } }))
+    const undone = await this.#history.undoChange(ticked)
+    this.updateState((state) => ({
+      ...state,
+      pending: { ...state.pending, [ticked.id]: undefined },
+      ticked: undone ? { ...state.ticked, [ticked.id]: undefined } : state.ticked
+    }))
   }
 
   /** Marks it done, with a chance to undo it, as a tick does. */

@@ -1,3 +1,5 @@
+import { repeatPropertyTestIds } from "../../src/tasks/detail/properties/RepeatPropertyTestIds.ts"
+import { occurrenceStripTestIds } from "../../src/tasks/detail/OccurrenceStripTestIds.ts"
 import type { When } from "@taxa/shared/tasks/when"
 import { expect, type Locator, type Page } from "@playwright/test"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
@@ -205,6 +207,38 @@ export class TaskDetailPage extends PageObject {
   async clearEstimate(): Promise<void> {
     await this.#page.getByTestId(taskPropertiesTestIds.estimate).click()
     await this.#page.getByTestId(estimatePropertyTestIds.clear).click()
+  }
+
+  /** Makes it repeat one of the usual ways, by what the option says: `Every day`. */
+  async setRepeat(label: string): Promise<void> {
+    await this.#page.getByTestId(taskPropertiesTestIds.repeat).click()
+    await this.#page.getByTestId(optionListTestIds.option).filter({ hasText: label }).click()
+  }
+
+  /** Makes it repeat however it's typed: `every 2 weeks on friday`. */
+  async typeRepeat(phrase: string): Promise<void> {
+    await this.#page.getByTestId(taskPropertiesTestIds.repeat).click()
+    const typed = this.#page.getByTestId(repeatPropertyTestIds.typed)
+    await typed.fill(phrase)
+    await typed.press("Enter")
+  }
+
+  async expectRepeat(shown: string): Promise<void> {
+    await expect(this.#page.getByTestId(taskPropertiesTestIds.repeat)).toContainText(shown)
+  }
+
+  /** Skips a repeating task this time, from its status. */
+  async skipThisTime(): Promise<void> {
+    await this.#choose(taskPropertiesTestIds.status, "SKIP")
+  }
+
+  /** Its history: what each occurrence shown came to, oldest first, then the next, and what it says above them. */
+  async expectHistory(marks: string[], summary: string): Promise<void> {
+    const strip = this.#page.getByTestId(occurrenceStripTestIds.strip)
+    await expect(strip).toContainText(summary)
+    await expect
+      .poll(() => strip.getByRole("img").evaluateAll((shown) => shown.map((mark) => mark.getAttribute("aria-label"))))
+      .toEqual(marks)
   }
 
   /** Today, soon, any time or someday; a day to come is its scheduled date. */

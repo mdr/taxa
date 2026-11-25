@@ -1,3 +1,4 @@
+import { OccurrenceStrip } from "./OccurrenceStrip.tsx"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { ChevronRight, Inbox, RotateCcw } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -132,6 +133,7 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
         <TitleField key={task.title} title={task.title} change={change} />
         <TaskProperties task={task} domains={domains.data ?? []} change={change} />
         <FollowOnLinks task={task} change={change} />
+        {task.repeat && task.scheduled && <OccurrenceStrip task={task} next={task.scheduled} />}
         {problem && (
           <p className={styles.problem} role="alert" data-testid={taskDetailPageTestIds.problem}>
             {problem}

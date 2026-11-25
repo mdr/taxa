@@ -7,7 +7,8 @@ import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
-import { CalendarClock } from "lucide-react"
+import { CalendarClock, Repeat } from "lucide-react"
+import { repeatText } from "@taxa/shared/tasks/repeat"
 import { useEffect, useRef } from "react"
 import { Link } from "wouter"
 import styles from "./TaskRow.module.css"
@@ -142,6 +143,12 @@ export const TaskRow = ({
           </span>
         )}
         <WhenTag task={task} today={today} listedBy={listedBy} className={styles.meta} />
+        {task.repeat && (
+          <span className={styles.meta} data-testid={taskRowTestIds.repeat}>
+            <Repeat size={14} aria-label="Repeats" role="img" />
+            {repeatText(task.repeat)}
+          </span>
+        )}
         {task.due && (
           <span className={dueClass(task.due, today)}>
             <CalendarClock size={14} aria-hidden />

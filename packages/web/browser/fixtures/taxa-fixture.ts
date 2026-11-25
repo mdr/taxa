@@ -56,6 +56,16 @@ export class TestTaxa {
   }
 
   /** The task's comments, as the server has them, come to say these, oldest first. */
+  /** A repeating task's occurrences on the server, the latest first, as `date outcome`: `2026-01-05 DONE`. */
+  async expectOccurrences(ref: string, occurrences: string[]): Promise<void> {
+    await expect
+      .poll(
+        async () => (await this.matt.client.occurrences(ref)).map(({ date, outcome }) => `${date} ${outcome}`),
+        `occurrences of ${ref} on the server`
+      )
+      .toEqual(occurrences)
+  }
+
   async expectComments(ref: string, bodies: string[]): Promise<void> {
     await expect
       .poll(

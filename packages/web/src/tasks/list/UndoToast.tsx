@@ -1,4 +1,6 @@
 import type { Task } from "@taxa/shared/tasks/task"
+import { formatNearDay } from "@taxa/shared/dates/date-format"
+import { useToday } from "../../dates/use-today.ts"
 import { CircleCheck, Plus, Trash2 } from "lucide-react"
 import styles from "./UndoToast.module.css"
 import { undoToastTestIds } from "./UndoToastTestIds.ts"
@@ -10,7 +12,10 @@ import { useIsLatestChange } from "../../undo/undo-service.ts"
 export const UndoToast = ({ task, undoes }: { task: Task; undoes: Undo }) => {
   const { undoOffered } = useListSession()
   const { start } = useFollowOn()
+  const today = useToday()
   if (!useIsLatestChange(task)) return undefined
+  // A repeating task ticked off is done this time, and comes round again.
+  const next = undoes === Undo.TICK && task.repeat && task.scheduled
   return (
     <div className={styles.toast} role="status" data-testid={undoToastTestIds.toast}>
       {undoes === Undo.DELETE ? (
@@ -20,8 +25,9 @@ export const UndoToast = ({ task, undoes }: { task: Task; undoes: Undo }) => {
       )}
       <span className={styles.text}>
         {undoes === Undo.DELETE ? "Deleted" : "Done"}: <span className={styles.title}>{task.title}</span>
+        {next && <span data-testid={undoToastTestIds.next}> · next {formatNearDay(next, today)}</span>}
       </span>
-      {undoes === Undo.TICK && (
+      {undoes === Undo.TICK && !next && (
         <button
           type="button"
           className={styles.followOn}

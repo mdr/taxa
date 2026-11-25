@@ -95,7 +95,7 @@ describe("activityText", () => {
       said(ActivityType.TASK_OCCURRENCE_RECORDED, { occurrence: { to: { ...occurrence, outcome: "SKIPPED" } } })
     ).toBe("Matt skipped Mon 5 Jan")
     expect(said(ActivityType.TASK_OCCURRENCE_UNDONE, { occurrence: { from: occurrence } })).toBe(
-      "Matt took back doing Mon 5 Jan"
+      "Matt put it back to Mon 5 Jan"
     )
     expect(
       said(ActivityType.TASK_UPDATED, {

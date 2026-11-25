@@ -118,12 +118,6 @@ const statusAction = (changes: Activity["changes"]): string => {
 /** An occurrence as the log keeps it. */
 const OccurrenceChangeSchema = z.object({ date: IsoDateSchema, outcome: z.enum(OccurrenceOutcome) })
 
-const OUTCOME_VERB: Record<OccurrenceOutcome, string> = {
-  [OccurrenceOutcome.DONE]: "doing",
-  [OccurrenceOutcome.SKIPPED]: "skipping",
-  [OccurrenceOutcome.MISSED]: "missing"
-}
-
 const OUTCOME_DONE: Record<OccurrenceOutcome, string> = {
   [OccurrenceOutcome.DONE]: "did",
   [OccurrenceOutcome.SKIPPED]: "skipped",
@@ -164,9 +158,8 @@ const actionOf = ({ type, changes }: Activity, context: ActivityContext): string
       return occurrenceAction(changes, context)
     case ActivityType.TASK_OCCURRENCE_UNDONE: {
       const occurrence = OccurrenceChangeSchema.safeParse(changes["occurrence"]?.from)
-      return occurrence.success
-        ? `took back ${OUTCOME_VERB[occurrence.data.outcome]} ${formatDay(occurrence.data.date, context.today)}`
-        : "took that back"
+      // Always an undo, which says so: `undid change 4: put it back to Tue 6 Jan`.
+      return occurrence.success ? `put it back to ${formatDay(occurrence.data.date, context.today)}` : "put it back"
     }
     case ActivityType.TASK_UPDATED: {
       // An undo can put a status back along with other fields.

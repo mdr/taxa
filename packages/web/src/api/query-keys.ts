@@ -12,6 +12,8 @@ export const queryKeys = {
   tags: ["tags"],
   allActivity: ["activity"],
   comments: (taskId: string): unknown[] => ["comments", taskId],
+  /** A repeating task's occurrences, as of a version of it: each change to it may record one, or take one back. */
+  occurrences: (taskId: string, version: number): unknown[] => ["occurrences", taskId, version],
   activity: (ref: string): unknown[] => ["activity", ref],
   /** Every session, the current one included. */
   allSessions: ["session"],

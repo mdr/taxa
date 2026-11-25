@@ -14,6 +14,7 @@ import {
   CalendarClock,
   CalendarDays,
   EyeOff,
+  SkipForward,
   Zap,
   type LucideIcon
 } from "lucide-react"
@@ -22,6 +23,8 @@ import { taskPropertiesTestIds } from "./TaskPropertiesTestIds.ts"
 import { ChoiceProperty } from "./properties/ChoiceProperty.tsx"
 import { DateProperty, DateTone } from "./properties/DateProperty.tsx"
 import { EstimateProperty } from "./properties/EstimateProperty.tsx"
+import { RepeatProperty } from "./properties/RepeatProperty.tsx"
+import { OccurrenceOutcome } from "@taxa/shared/tasks/repeat"
 import { useToday } from "../../dates/use-today.ts"
 import { DomainChoice } from "../filing/DomainChoice.tsx"
 import { PriorityIcon } from "../PriorityIcon.tsx"
@@ -35,6 +38,12 @@ const ENERGY_ICONS: Record<Energy, LucideIcon> = {
   [Energy.MEDIUM]: BatteryMedium,
   [Energy.HIGH]: BatteryFull
 }
+
+/** What When can choose for a repeating task, which always has a day it's next for. */
+const REPEATING_WHENS: ReadonlySet<string> = new Set([When.TODAY])
+
+/** In the status menu of a repeating task: not this time. */
+const SKIP = "SKIP"
 
 interface TaskPropertiesProps {
   task: Task
@@ -63,12 +72,26 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
             {capitalised(STATUS_TEXT[task.status])}
           </>
         }
-        options={Object.values(TaskStatus).map((status) => ({
-          value: status,
-          label: capitalised(STATUS_TEXT[status]),
-          icon: <StatusIcon status={status} />
-        }))}
-        onChoose={(status) => change({ type: TaskChangeType.STATUS, request: { status: status as TaskStatus } })}
+        options={[
+          // A repeating task is skipped this time, not cancelled.
+          ...Object.values(TaskStatus)
+            .filter((status) => !(task.repeat && status === TaskStatus.CANCELLED))
+            .map((status) => ({
+              value: status,
+              label: task.repeat && status === TaskStatus.DONE ? "Done this time" : capitalised(STATUS_TEXT[status]),
+              icon: <StatusIcon status={status} />
+            })),
+          ...(task.repeat
+            ? [{ value: SKIP, label: "Skip this time", icon: <SkipForward size={15} aria-hidden /> }]
+            : [])
+        ]}
+        onChoose={(status) =>
+          change(
+            status === SKIP
+              ? { type: TaskChangeType.OCCURRENCE, request: { outcome: OccurrenceOutcome.SKIPPED } }
+              : { type: TaskChangeType.STATUS, request: { status: status as TaskStatus } }
+          )
+        }
       />
       <ChoiceProperty
         label="Priority"
@@ -103,9 +126,21 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
             {when === When.ANY_TIME ? "When" : whenLabel(task, today)}
           </>
         }
-        // A day to come is the Scheduled date, just below.
-        options={whenOptions(task, today, false)}
+        // A day to come is the Scheduled date, just below; a repeating task always has one.
+        options={whenOptions(task, today, false).filter(({ value }) => !task.repeat || REPEATING_WHENS.has(value))}
         onChoose={(choice) => change({ type: TaskChangeType.UPDATE, request: whenRequest(choice as When, today) })}
+      />
+      <RepeatProperty
+        repeat={task.repeat}
+        from={task.scheduled ?? today}
+        testId={taskPropertiesTestIds.repeat}
+        shortcut={{ key: "o", description: "Repeat (how often)" }}
+        onChange={(repeat) =>
+          change({
+            type: TaskChangeType.UPDATE,
+            request: repeat ? { set: { repeat } } : { clear: [ClearableField.REPEAT] }
+          })
+        }
       />
       <DomainChoice
         task={task}

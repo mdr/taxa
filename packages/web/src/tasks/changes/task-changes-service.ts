@@ -1,7 +1,7 @@
 import { ProblemType } from "@taxa/shared/api/problem"
 import { TaxaApiError } from "@taxa/shared/api/taxa-client"
 import type { TaskId } from "@taxa/shared/ids"
-import type { ChangeStatusRequest, UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
+import type { ChangeStatusRequest, RecordOccurrenceRequest, UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import { TaskSchema, type Task } from "@taxa/shared/tasks/task"
 import type { Version } from "@taxa/shared/units"
 import type { ChangeOrder } from "./change-order.ts"
@@ -20,7 +20,9 @@ export enum TaskChangeType {
   UPDATE = "UPDATE",
   STATUS = "STATUS",
   DELETE = "DELETE",
-  RESTORE = "RESTORE"
+  RESTORE = "RESTORE",
+  /** A repeating task done or skipped this time, for the date it's at. */
+  OCCURRENCE = "OCCURRENCE"
 }
 
 export type TaskChange =
@@ -28,6 +30,7 @@ export type TaskChange =
   | { type: TaskChangeType.STATUS; request: ChangeStatusRequest }
   | { type: TaskChangeType.DELETE }
   | { type: TaskChangeType.RESTORE }
+  | { type: TaskChangeType.OCCURRENCE; request: RecordOccurrenceRequest }
 
 /** What a change touched, for analytics: the fields it set or cleared, or the status it moved to. */
 const changeFields = (change: TaskChange): LogFields => {
@@ -42,6 +45,8 @@ const changeFields = (change: TaskChange): LogFields => {
       }
     case TaskChangeType.STATUS:
       return { status: change.request.status }
+    case TaskChangeType.OCCURRENCE:
+      return { outcome: change.request.outcome }
     case TaskChangeType.DELETE:
     case TaskChangeType.RESTORE:
       return {}
@@ -54,6 +59,7 @@ export interface TaskChangesApi {
   changeStatus: (ref: string, request: ChangeStatusRequest, ifMatch?: Version) => Promise<Task>
   deleteTask: (ref: string, ifMatch?: Version) => Promise<Task>
   restoreTask: (ref: string) => Promise<Task>
+  recordOccurrence: (ref: string, request: RecordOccurrenceRequest) => Promise<Task>
   task: (ref: string) => Promise<Task>
 }
 
@@ -166,6 +172,9 @@ export class TaskChangesService extends AbstractService<TaskChangesState> implem
         return this.#api.deleteTask(task.id, task.version)
       case TaskChangeType.RESTORE:
         return this.#api.restoreTask(task.id)
+      case TaskChangeType.OCCURRENCE:
+        // For the date it's at as this tab saw it, so it's never done twice.
+        return this.#api.recordOccurrence(task.id, { ...change.request, date: change.request.date ?? task.scheduled })
     }
   }
 }

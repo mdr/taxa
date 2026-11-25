@@ -15,9 +15,14 @@ import { TaskStatus } from "@taxa/shared/tasks/task"
 import type { Domain } from "@taxa/shared/domains/domain"
 import { useDomains } from "../../domains/domain-queries.ts"
 
+/** Whether it's done: ticked off, or, repeating, done this time in the session and come round again. */
+const isDone = ({ task, outcome }: SessionItem): boolean =>
+  task.status === TaskStatus.DONE || (task.repeat !== undefined && outcome === SessionOutcome.DONE)
+
 /** Where a task stands now, after the session: done, or open and where. */
-const nowText = ({ task }: SessionItem, domains: readonly Domain[]): string => {
-  if (task.status === TaskStatus.DONE) return "Done"
+const nowText = (item: SessionItem, domains: readonly Domain[]): string => {
+  const { task } = item
+  if (isDone(item)) return "Done"
   const where = task.inbox ? "the Inbox" : (domains.find(({ id }) => id === task.domainId)?.name ?? "its domain")
   return `${task.status === TaskStatus.IN_PROGRESS ? "In progress" : "Open"}, in ${where}`
 }
@@ -88,7 +93,7 @@ const Summary = ({ session }: { session: Session }) => {
                     {item.spentMs > 0 ? durationText(item.spentMs) : "–"}
                   </td>
                   <td data-testid={sessionPageTestIds.summaryNow}>
-                    <span className={`${styles.tag} ${item.task.status === TaskStatus.DONE ? styles.tagDone : ""}`}>
+                    <span className={`${styles.tag} ${isDone(item) ? styles.tagDone : ""}`}>
                       {nowText(item, domains.data ?? [])}
                     </span>
                   </td>

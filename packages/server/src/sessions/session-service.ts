@@ -9,6 +9,9 @@ import type { Db } from "../database/database.ts"
 import { sessions } from "../database/schema.ts"
 import { ProblemError } from "../http/problem-error.ts"
 import { changeTaskStatus, tasksWithIds } from "../tasks/task-service.ts"
+import { undoTask } from "../tasks/task-undo.ts"
+import { changeTo } from "../activity/activity-store.ts"
+import { ActivityType } from "@taxa/shared/activity/activity"
 import { callerFields } from "../telemetry/change-fields.ts"
 import { LOG_CODES, type ServerLogCode, type ServerLogger } from "../telemetry/log.ts"
 import { recordOf, sessionOf, sessionValues, type SessionRecord } from "./session-rows.ts"
@@ -42,10 +45,17 @@ const moveTasks = async (
     caller,
     moves.map(({ taskId }) => taskId)
   )
-  for (const { taskId, to, from } of moves) {
+  for (const { taskId, to, from, takesBack } of moves) {
     const task = tasks.get(taskId)
-    if (task && from.includes(task.status))
-      await changeTaskStatus(db, log, caller, taskId, { status: to }, undefined, now)
+    if (!task) continue
+    // A repeating task done in the session moved on, still open: taking that back undoes it, if nothing's changed it since.
+    if (
+      takesBack &&
+      task.repeat &&
+      (await changeTo(db, task.id, task.version))?.type === ActivityType.TASK_OCCURRENCE_RECORDED
+    )
+      await undoTask(db, log, caller, taskId, task.version, now)
+    if (from.includes(task.status)) await changeTaskStatus(db, log, caller, taskId, { status: to }, undefined, now)
   }
 }
 

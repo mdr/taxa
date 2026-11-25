@@ -2,13 +2,13 @@ import type { TaxaClient } from "@taxa/shared/api/taxa-client"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import type { TaskId } from "@taxa/shared/ids"
 import type { Task } from "@taxa/shared/tasks/task"
-import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
+import { OccurrenceOutcome } from "@taxa/shared/tasks/repeat"
 import { When, whenRequest } from "@taxa/shared/tasks/when"
 import { problemMessage } from "../api/problem-message.ts"
 import { AbstractService } from "../services/abstract-service.ts"
 import { addEntry, DEFAULT_MINUTES, moveEntry, removeEntry } from "../sessions/plan/plan-edits.ts"
 import type { PlannedEntry } from "../sessions/plan/session-plan-service.ts"
-import { TaskChangeType, type TaskChangesActions } from "../tasks/changes/task-changes-service.ts"
+import { TaskChangeType, type TaskChange, type TaskChangesActions } from "../tasks/changes/task-changes-service.ts"
 import type { Analytics } from "../telemetry/analytics.ts"
 import { ANALYTICS_CODES } from "../telemetry/codes.ts"
 
@@ -98,10 +98,10 @@ export class DayPlanService extends AbstractService<DayPlanState> {
   }
 
   /** Makes a change to a task being put in or taken out, the plan following today's tasks again once it's done. */
-  async #moved(task: Task, request: UpdateTaskRequest): Promise<Task | undefined> {
+  async #moved(task: Task, change: TaskChange): Promise<Task | undefined> {
     this.#moving.add(task.id)
     try {
-      return await this.#changes.change(task, { type: TaskChangeType.UPDATE, request })
+      return await this.#changes.change(task, change)
     } finally {
       this.#moving.delete(task.id)
     }
@@ -117,7 +117,10 @@ export class DayPlanService extends AbstractService<DayPlanState> {
       taskId: task.id,
       taskRef: task.ref
     })
-    const changed = await this.#moved(task, whenRequest(When.TODAY, this.#today))
+    const changed = await this.#moved(task, {
+      type: TaskChangeType.UPDATE,
+      request: whenRequest(When.TODAY, this.#today)
+    })
     if (changed === undefined) {
       this.setState({
         entries: removeEntry(this.state.entries ?? [], task.id),
@@ -127,7 +130,7 @@ export class DayPlanService extends AbstractService<DayPlanState> {
     }
   }
 
-  /** Not today after all: it's left for soon. */
+  /** Not today after all: it's left for soon; a repeating task, skipped this time. */
   readonly remove = async (taskId: TaskId): Promise<void> => {
     const entry = this.state.entries?.find((planned) => planned.taskId === taskId)
     if (!entry) return
@@ -138,7 +141,12 @@ export class DayPlanService extends AbstractService<DayPlanState> {
       taskId,
       taskRef: entry.task.ref
     })
-    await this.#moved(entry.task, whenRequest(When.SOON, this.#today))
+    await this.#moved(
+      entry.task,
+      entry.task.repeat
+        ? { type: TaskChangeType.OCCURRENCE, request: { outcome: OccurrenceOutcome.SKIPPED } }
+        : { type: TaskChangeType.UPDATE, request: whenRequest(When.SOON, this.#today) }
+    )
   }
 
   readonly move = (taskId: TaskId, to: number): void => {

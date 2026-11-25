@@ -6,6 +6,7 @@ export const taskPropertiesTestIds = {
   scheduled: "TaskProperties.scheduled",
   start: "TaskProperties.start",
   when: "TaskProperties.when",
+  repeat: "TaskProperties.repeat",
   estimate: "TaskProperties.estimate",
   energy: "TaskProperties.energy",
   inProgressBy: "TaskProperties.inProgressBy",

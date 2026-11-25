@@ -1,4 +1,6 @@
+import type { Occurrence } from "@taxa/shared/tasks/occurrence"
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
@@ -28,6 +30,14 @@ export const useActivity = (ref: string): UseQueryResult<Activity[]> =>
 /** A task's comments, oldest first. */
 export const useComments = (taskId: string): UseQueryResult<Comment[]> =>
   useQuery({ queryKey: queryKeys.comments(taskId), queryFn: () => taxaApi.comments(taskId) })
+
+/** A repeating task's history, the latest first, kept up with its changes. */
+export const useOccurrences = (task: Pick<Task, "id" | "version">): UseQueryResult<Occurrence[]> =>
+  useQuery({
+    queryKey: queryKeys.occurrences(task.id, task.version),
+    queryFn: () => taxaApi.occurrences(task.id),
+    placeholderData: keepPreviousData
+  })
 
 /** Who the page is signed in as. */
 export const useMe = (): UseQueryResult<Me> => useQuery({ queryKey: queryKeys.me, queryFn: () => taxaApi.me() })

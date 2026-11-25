@@ -1,0 +1,10 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 15rem;
+}
+
+.editor input {
+  font-size: 0.9rem;
+}

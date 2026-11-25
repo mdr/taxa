@@ -1,4 +1,5 @@
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
+import { OccurrenceOutcome } from "@taxa/shared/tasks/repeat"
 import { STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 import { TaskChangeType, type TaskChange } from "../tasks/changes/task-changes-service.ts"
 
@@ -20,7 +21,12 @@ const statusLabel = (status: TaskStatus, ref: string): string => {
 export const changeLabel = (change: TaskChange, task: Task): string => {
   switch (change.type) {
     case TaskChangeType.STATUS:
-      return statusLabel(change.request.status, task.ref)
+      // Done, a repeating task is done this time, and stays open.
+      return task.repeat && change.request.status === TaskStatus.DONE
+        ? `Did ${task.ref}`
+        : statusLabel(change.request.status, task.ref)
+    case TaskChangeType.OCCURRENCE:
+      return change.request.outcome === OccurrenceOutcome.DONE ? `Did ${task.ref}` : `Skipped ${task.ref}`
     case TaskChangeType.DELETE:
       return `Deleted ${task.ref}`
     case TaskChangeType.RESTORE:

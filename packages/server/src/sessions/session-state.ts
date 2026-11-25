@@ -145,6 +145,8 @@ export const updateSession = (
 
 /** A status a session's change moves a task to, from the statuses it can move it from. */
 export interface StatusMove {
+  /** Starting a task the session had ticked off: taking that back. */
+  takesBack?: boolean
   taskId: TaskId
   to: TaskStatus
   from: readonly TaskStatus[]
@@ -173,7 +175,8 @@ export const statusMoves = (before: SessionState | undefined, after: SessionStat
     moves.push({
       taskId: is,
       to: TaskStatus.IN_PROGRESS,
-      from: [TaskStatus.OPEN, TaskStatus.WAITING, TaskStatus.DONE]
+      from: [TaskStatus.OPEN, TaskStatus.WAITING, TaskStatus.DONE],
+      ...(before?.items.find((item) => item.taskId === is)?.outcome === SessionOutcome.DONE && { takesBack: true })
     })
   return moves
 }
