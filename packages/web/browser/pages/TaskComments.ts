@@ -32,7 +32,17 @@ export class TaskComments extends PageObject {
   async addWithKeyboard(text: string): Promise<void> {
     const field = this.#page.getByTestId(commentComposerTestIds.text)
     await field.fill(text)
-    await field.press("ControlOrMeta+Enter")
+    await field.press("Enter")
+  }
+
+  /** Types a comment a line at a time, Shift+Enter between them, and posts it with Enter. */
+  async addLines(lines: string[]): Promise<void> {
+    const field = this.#page.getByTestId(commentComposerTestIds.text)
+    for (const [index, line] of lines.entries()) {
+      if (index > 0) await field.press("Shift+Enter")
+      await field.pressSequentially(line)
+    }
+    await field.press("Enter")
   }
 
   /** The comments, oldest first. */

@@ -4,6 +4,7 @@ import { commentComposerTestIds } from "./CommentComposerTestIds.ts"
 import type { TaskId } from "@taxa/shared/ids"
 import { useCommentActions, useCommentDraft, useCommentPosting, useCommentProblem } from "./comments-service.ts"
 import { useDeletedCommentLast, useUndo } from "../../undo/undo-service.ts"
+import { sendsComment } from "./comment-keys.ts"
 
 /**
  * Where a comment is written, under the timeline; and while deleting one is
@@ -50,12 +51,16 @@ export const CommentComposer = ({ taskId }: { taskId: TaskId }) => {
           value={draft}
           onChange={(event) => write(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) void post()
+            if (sendsComment({ ...event, isComposing: event.nativeEvent.isComposing })) {
+              // Not a new line: that's Shift+Enter.
+              event.preventDefault()
+              void post()
+            }
             if (event.key === "Escape") event.currentTarget.blur()
           }}
-          placeholder="Add a comment: what's happened, or progress (Markdown)"
+          placeholder="Add a comment: what's happened, or progress (Markdown; Shift+Enter for a new line)"
           aria-label="Add a comment"
-          aria-keyshortcuts="Meta+Enter Control+Enter"
+          aria-keyshortcuts="Enter"
           rows={Math.max(2, draft.split("\n").length)}
           data-testid={commentComposerTestIds.text}
           data-track="CommentComposer.text"

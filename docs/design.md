@@ -167,7 +167,9 @@ your notes.
 - Adding a comment doesn't change the task's version, so it never conflicts
   with someone editing the task. It counts as activity on a claim.
 - A task's page has a **timeline**: its changes and its comments, oldest
-  first, and a box for adding one (`⌘↵` posts it). Activity-log events aren't
+  first, and a box for adding one: Enter posts it, as in a chat, and
+  Shift+Enter starts a new line (editing one, Enter saves it). Notes are a
+  document, so there Enter starts a new line or list item. Activity-log events aren't
   stored as comments. It shows what mostly matters: made, started, waiting,
   done, cancelled, deleted, restored, moved, set to repeat, and the
   comments. Other changes (notes, title, dates, priority, tags, and each

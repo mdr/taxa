@@ -27,6 +27,12 @@ test("commenting on a task adds to its timeline and leaves the task as it is", a
   ])
   await detail.expectAccessible()
   await taxa.expectComments("H-1", ["Rang the plumber: he'll come **Thursday**", "Bought the washers"])
+  await detail.comments.addLines(["Still to do:", "- the bathroom tap"])
+  await taxa.expectComments("H-1", [
+    "Rang the plumber: he'll come **Thursday**",
+    "Bought the washers",
+    "Still to do:\n- the bathroom tap"
+  ])
   await taxa.expectTask("H-1", { notes: "The kitchen one", version: 2 })
 })
 

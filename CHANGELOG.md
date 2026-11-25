@@ -19,6 +19,8 @@ them at the top of its release notes. See `docs/releasing.md`.
 - **Your agents' comments are yours.** You can edit or delete comments
   written by your agents as well as your own. An agent can still change
   only its own.
+- **Enter posts a comment**, as in a chat; Shift+Enter starts a new line.
+  Editing a comment, Enter saves it. (It was ⌘Enter, which still works.)
 - **Show finished.** The section under each list that held done tasks now
   holds cancelled ones too, as "N finished". Cancelled tasks are struck
   through and say "Cancelled".

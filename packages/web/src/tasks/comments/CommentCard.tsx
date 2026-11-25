@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react"
 import styles from "./CommentCard.module.css"
 import { commentCardTestIds } from "./CommentCardTestIds.ts"
 import { useCommentActions, useEditedBody } from "./comments-service.ts"
+import { sendsComment } from "./comment-keys.ts"
 import { browserTimeZone } from "../../dates/browser-time-zone.ts"
 import { relativeTime } from "../../dates/relative-time.ts"
 import { MarkdownView } from "../../notes/MarkdownView.tsx"
@@ -86,7 +87,10 @@ export const CommentCard = ({ comment, mine }: { comment: Comment; mine: boolean
               onChange={(event) => writeEdit(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Escape") cancelEditing()
-                if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) void saveEdit(comment)
+                if (sendsComment({ ...event, isComposing: event.nativeEvent.isComposing })) {
+                  event.preventDefault()
+                  void saveEdit(comment)
+                }
               }}
               aria-label="Comment"
               rows={Math.max(3, edited.split("\n").length)}
