@@ -10,6 +10,10 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 - With only one domain, the sidebar has no Domains section or "New domain": just **All tasks**, going to that domain's list. A second domain (`taxa add-domain`) brings the section back.
 
+### Fixed
+
+- The favicon and home-screen icon show on the live site: the built web app was missing them.
+
 ## 0.5.0 (2026-11-25)
 
 ### New

@@ -33,6 +33,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       ../packages/web/tsconfig.json
       ../packages/web/vite.config.ts
       ../packages/web/index.html
+      ../packages/web/public
       ../packages/web/scripts
       ../packages/web/src
     ];
@@ -67,6 +68,14 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     runHook preInstall
     cp -r packages/web/dist $out
     runHook postInstall
+  '';
+
+  # The files served as they are (the icons), which Vite copies from public/: missing once when public/ wasn't in src.
+  doInstallCheck = true;
+  installCheckPhase = ''
+    for file in favicon.svg favicon-32.png apple-touch-icon.png; do
+      test -f "$out/$file" || { echo "the built web app has no $file"; exit 1; }
+    done
   '';
 
   meta.description = "Taxa's web app, built";
