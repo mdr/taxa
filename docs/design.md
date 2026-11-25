@@ -165,6 +165,66 @@ your notes.
 - Updates already appended to notes stay there; they aren't split into
   comments.
 
+### Repeating tasks
+
+A task can **repeat** ("Revise Anki cards", every day). It keeps one
+number for good: H-142 is the same task every day, not a new one each time.
+Each time it comes round is an **occurrence**, kept as its history.
+
+- **The rule** is structured, not RRULE text: every N days, weeks (on chosen
+  weekdays), months (on a day of the month) or years, counted either on a
+  schedule or from when it was last done ("3 days after it's done"), with a
+  start date it counts from, so moving one occurrence doesn't shift the
+  rest. "Monthly on the 31st" falls on the last day of shorter months, and
+  29 February on the 28th. RRULE can be produced from it for calendar sync.
+- **A repeating task always has a scheduled date**: its next occurrence.
+  Turning repeat on gives it the first one from today if it has none. Its
+  date can be moved, but not cleared: clearing it is refused, with a hint
+  to stop it repeating. Its due and start dates, if any, move with it,
+  keeping their gap, and a scheduled time stays as it is.
+- **Doing it** records an occurrence for its scheduled date, done (with the
+  day it was actually done, and who), and moves it on to its next date:
+  for a schedule, the first after both that date and today, so doing
+  Monday's on Sunday makes the next one Tuesday; from completion, the
+  interval after today. It stays open: a repeating task is only ever done
+  when it stops repeating ("Stop and mark done"). The task page says what
+  ticking does ("Done for Thu 26 Nov"), and the notice says what's next.
+- **Skipping** one records it as skipped and moves it on. Cancelling a
+  repeating task is refused, with a hint to skip this one or stop it
+  repeating, so an agent cancelling it doesn't just skip a day. Taking it
+  out of today's plan skips today's.
+- **Missed days**, by its setting: _carried over_ (the default for weekly
+  and longer), it stays, overdue, until it's done, and doing it late
+  records the one occurrence; _skipped_ (the default for daily), each day
+  that went by is recorded as missed and it moves on to today. Nothing runs
+  overnight to do this: until it's next changed, it simply counts as
+  today's, as anything scheduled in the past does, and its page shows the
+  days missed. The next change to it (doing it, skipping it, any edit)
+  records them, in the same entry, marked as automatic. Tasks in progress
+  or waiting aren't moved on.
+- **One operation:** `POST /tasks/{ref}/occurrences {outcome, date}`
+  records an occurrence, done or skipped, for the date it's for, and is
+  refused if the task has moved on from that date, so a retry, a second tab
+  or an offline replay can't do it twice. `/status` with DONE does the same
+  for the date it's at. `taxa done H-142` reads the task first and sends its
+  date; `taxa skip H-142` skips one.
+- **Undo** works as for any change. Recording an occurrence is its own kind
+  of entry in the log, and undoing it is another, as with deleting and
+  restoring: undo puts the dates back and voids the occurrence, rather than
+  deleting it, so redo can bring it back. Unticking a ticked repeating task,
+  in a list or a session, undoes the tick.
+- **On its page:** Repeat beside When, saying how it repeats and what
+  happens to a missed day; a strip of recent occurrences (done, skipped,
+  missed, next); each occurrence in the timeline; Done and Skip this one.
+- **In the CLI:** `taxa add "Revise Anki cards" --repeat daily`, `taxa edit
+  H-142 --repeat none`, with a strict set of phrases ("every weekday",
+  "every 2 weeks on monday", "monthly on the 1st", "3 days after done").
+- The day it comes round is worked out in the time zone of whoever acts on
+  it, as today is for them.
+- Deleting a repeating task for good wipes its occurrences with it.
+- Later: Today showing what was done today, repeating or not, for the rest
+  of the day; streaks.
+
 ## Dates, times and time zones
 
 - **Dates** (due, scheduled, start) are floating: Friday is Friday wherever
@@ -172,13 +232,15 @@ your notes.
 - **Times** are floating by default: "21:00" is 21:00 wherever the viewer
   is. A time can be **pinned** to a zone for real-world appointments ("15:00
   London"), and the UI shows the zone. This matches iCalendar's floating and
-  `TZID` times, so calendar sync and recurrence (RRULE) can follow later.
+  `TZID` times, so calendar sync can follow later.
 - **Timestamps** (created, completed, the activity log) are UTC instants,
   shown in local time.
 - Each person has a **current time zone**. It updates automatically from the
   browser or phone (and from the CLI's environment), and can be overridden
   or locked in settings. The server uses it to work out "today", overdue and
-  follow-ups for that person and their agents.
+  follow-ups for that person and their agents. Not yet: it's set when the
+  person is added and doesn't change, so it's wrong while they travel.
+  Repeating tasks need it.
 
 ## Deciding what to do
 
@@ -343,7 +405,7 @@ offline editing from the start, even though it ships in stages.
 - **Deletes are soft** (`deleted_at`), so they sync like any other change
   and give us a bin. From the bin a task can be deleted forever, one at a
   time or by emptying it, after asking; one left there 30 days goes by
-  itself (the server checks hourly). Deleted forever (`purged_at`), the row
+  itself (the server checks daily). Deleted forever (`purged_at`), the row
   stays so what pointed at it (a follow-on, a session, the log) still names
   something, but its title, notes, tags and what its log entries recorded
   are wiped, and nothing shows it or can restore it again.
@@ -407,7 +469,7 @@ offline editing from the start, even though it ships in stages.
 
 Not in v1, but the design shouldn't rule any of them out:
 
-- Recurring tasks (RRULE), dependencies, sequential projects (only the next
+- Dependencies, sequential projects (only the next
   task available)
 - Google Calendar: free/busy, then time blocks. Scheduling suggestions
 - Reminders by email or push. Urgent items breaking through a focus.
