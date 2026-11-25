@@ -1,9 +1,11 @@
 import type { AddCommentRequest, Comment, EditCommentRequest } from "@taxa/shared/comments/comment"
-import type { CommentId, TaskId } from "@taxa/shared/ids"
+import type { CommentId } from "@taxa/shared/ids"
+import type { Task } from "@taxa/shared/tasks/task"
 import type { Version } from "@taxa/shared/units"
 import { problemMessage } from "../../api/problem-message.ts"
 import { AbstractService } from "../../services/abstract-service.ts"
 import { createServiceContext, useService, useServiceState } from "../../services/service-hooks.ts"
+import type { UndoActions } from "../../undo/undo-service.ts"
 import type { Analytics } from "../../telemetry/analytics.ts"
 import { ANALYTICS_CODES, type AnalyticsCode } from "../../telemetry/codes.ts"
 
@@ -11,8 +13,10 @@ export interface CommentsApi {
   addComment: (ref: string, request: AddCommentRequest, idempotencyKey?: string) => Promise<Comment>
   editComment: (id: CommentId, request: EditCommentRequest, ifMatch?: Version) => Promise<Comment>
   deleteComment: (id: CommentId, ifMatch?: Version) => Promise<Comment>
-  restoreComment: (id: CommentId) => Promise<Comment>
 }
+
+/** The tab's history of changes, which comments' changes join, to undo. */
+export type CommentHistory = Pick<UndoActions, "changeComment">
 
 export interface CommentsState {
   /** The comment being written. */
@@ -21,8 +25,6 @@ export interface CommentsState {
   posting: boolean
   /** The comment being edited, and what it says so far. */
   editing: { id: CommentId; body: string } | undefined
-  /** The comment last deleted here: offered back until another is deleted or the page is left. */
-  deleted: Comment | undefined
   /** Why the last change couldn't be made. */
   problem: string | undefined
 }
@@ -35,21 +37,28 @@ export interface CommentsActions {
   cancelEditing: () => void
   saveEdit: (comment: Comment) => Promise<void>
   remove: (comment: Comment) => Promise<void>
-  restore: () => Promise<void>
 }
 
-/** Writing, editing, deleting and restoring one task's comments. */
+/** Writing, editing and deleting one task's comments, each change in the tab's history to undo. */
 export class CommentsService extends AbstractService<CommentsState> implements CommentsActions {
   readonly #api: CommentsApi
-  readonly #taskId: TaskId
+  readonly #history: CommentHistory
+  readonly #task: Pick<Task, "id" | "ref">
   readonly #refresh: () => Promise<void>
   readonly #analytics: Analytics
 
   /** `refresh` reloads the comments shown, once they've changed. */
-  constructor(api: CommentsApi, taskId: TaskId, refresh: () => Promise<void>, analytics: Analytics) {
-    super({ draft: "", posting: false, editing: undefined, deleted: undefined, problem: undefined })
+  constructor(
+    api: CommentsApi,
+    history: CommentHistory,
+    task: Pick<Task, "id" | "ref">,
+    refresh: () => Promise<void>,
+    analytics: Analytics
+  ) {
+    super({ draft: "", posting: false, editing: undefined, problem: undefined })
     this.#api = api
-    this.#taskId = taskId
+    this.#history = history
+    this.#task = task
     this.#refresh = refresh
     this.#analytics = analytics
   }
@@ -64,7 +73,11 @@ export class CommentsService extends AbstractService<CommentsState> implements C
     await this.#attempt(
       async () => {
         // A fresh key per comment, so a retried request can't add it twice.
-        const added = await this.#api.addComment(this.#taskId, { body: draft }, crypto.randomUUID())
+        const added = await this.#history.changeComment({
+          id: undefined,
+          make: () => this.#api.addComment(this.#task.id, { body: draft }, crypto.randomUUID()),
+          label: `Commented on ${this.#task.ref}`
+        })
         this.#track(ANALYTICS_CODES.comment.added, "commented", added)
         this.setState({ draft: "" })
       },
@@ -91,7 +104,11 @@ export class CommentsService extends AbstractService<CommentsState> implements C
       return
     }
     await this.#attempt(async () => {
-      const edited = await this.#api.editComment(comment.id, { body: editing.body }, comment.version)
+      const edited = await this.#history.changeComment({
+        id: comment.id,
+        make: () => this.#api.editComment(comment.id, { body: editing.body }, comment.version),
+        label: `Edited a comment on ${this.#task.ref}`
+      })
       this.#track(ANALYTICS_CODES.comment.edited, "edited a comment", edited)
       this.setState({ editing: undefined })
     })
@@ -99,20 +116,14 @@ export class CommentsService extends AbstractService<CommentsState> implements C
 
   readonly remove = async (comment: Comment): Promise<void> => {
     await this.#attempt(async () => {
-      const deleted = await this.#api.deleteComment(comment.id, comment.version)
+      const deleted = await this.#history.changeComment({
+        id: comment.id,
+        make: () => this.#api.deleteComment(comment.id, comment.version),
+        label: `Deleted a comment on ${this.#task.ref}`,
+        deletes: true
+      })
       this.#track(ANALYTICS_CODES.comment.deleted, "deleted a comment", deleted)
-      this.setState({ deleted, editing: undefined })
-    })
-  }
-
-  /** Brings back the comment last deleted here. */
-  readonly restore = async (): Promise<void> => {
-    const { deleted } = this.state
-    if (!deleted) return
-    await this.#attempt(async () => {
-      const restored = await this.#api.restoreComment(deleted.id)
-      this.#track(ANALYTICS_CODES.comment.restored, "restored a comment", restored)
-      this.setState({ deleted: undefined })
+      this.setState({ editing: undefined })
     })
   }
 
@@ -128,7 +139,7 @@ export class CommentsService extends AbstractService<CommentsState> implements C
   }
 
   #track(code: AnalyticsCode, msg: string, comment: Comment): void {
-    this.#analytics.track(code, msg, { taskId: this.#taskId, commentId: comment.id })
+    this.#analytics.track(code, msg, { taskId: this.#task.id, commentId: comment.id })
   }
 }
 
@@ -143,9 +154,6 @@ export const useCommentPosting = (): boolean => useServiceState(useService(Comme
 /** What the comment says so far, while it's being edited. */
 export const useEditedBody = (id: CommentId): string | undefined =>
   useServiceState(useService(CommentsContext), (state) => (state.editing?.id === id ? state.editing.body : undefined))
-
-export const useDeletedComment = (): Comment | undefined =>
-  useServiceState(useService(CommentsContext), (state) => state.deleted)
 
 export const useCommentProblem = (): string | undefined =>
   useServiceState(useService(CommentsContext), (state) => state.problem)

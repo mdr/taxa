@@ -42,7 +42,8 @@ export const LOG_CODES = {
     added: "comment.added",
     edited: "comment.edited",
     deleted: "comment.deleted",
-    restored: "comment.restored"
+    restored: "comment.restored",
+    undone: "comment.undone"
   },
   bin: {
     emptied: "bin.emptied",

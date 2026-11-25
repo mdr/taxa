@@ -4,7 +4,8 @@ import {
   AddCommentRequestSchema,
   COMMENTS_PATH,
   CommentSchema,
-  EditCommentRequestSchema
+  EditCommentRequestSchema,
+  UndoCommentRequestSchema
 } from "@taxa/shared/comments/comment"
 import { CommentIdSchema } from "@taxa/shared/ids"
 import { TASKS_PATH } from "@taxa/shared/tasks/task"
@@ -15,7 +16,7 @@ import { BEARER, IfMatchHeaderSchema, PROBLEMS, json, jsonBody, listOf } from ".
 import { ProblemSchema } from "@taxa/shared/api/problem"
 import type { TaxaApp } from "../http/taxa-hono.ts"
 import type { ServerLogger } from "../telemetry/log.ts"
-import { addComment, deleteComment, editComment, listComments, restoreComment } from "./comment-service.ts"
+import { addComment, deleteComment, editComment, listComments, restoreComment, undoComment } from "./comment-service.ts"
 
 const TaskRefSchema = z.object({
   ref: z.string().openapi({ description: "The task: H-142, 142 (the prefix is optional) or its id", example: "H-142" })
@@ -59,6 +60,16 @@ const routes = {
     request: { params: IdSchema, headers: IfMatchHeaderSchema },
     responses: { 200: json(CommentSchema, "The deleted comment"), ...CHANGE_PROBLEMS }
   }),
+  undo: createRoute({
+    method: "post",
+    path: `${COMMENT_PATH}/undo`,
+    summary: "Undo the change that brought a comment of yours to a version",
+    description:
+      "A comment added or restored is deleted, a deleted one restored, and an edit put back, unless it's been changed since (409). The undo is a change too: undo it to redo.",
+    security: BEARER,
+    request: { params: IdSchema, ...jsonBody(UndoCommentRequestSchema) },
+    responses: { 200: json(CommentSchema, "The comment as it is now"), ...CHANGE_PROBLEMS }
+  }),
   restore: createRoute({
     method: "post",
     path: `${COMMENT_PATH}/restore`,
@@ -99,6 +110,11 @@ export const commentRoutes = (app: TaxaApp, db: Db, log: ServerLogger, clock: Cl
       clock.now()
     )
     return context.json(comment, 200)
+  })
+  app.openapi(routes.undo, async (context) => {
+    const { id } = context.req.valid("param")
+    const comment = await undoComment(db, log, context.var.caller, id, context.req.valid("json").version, clock.now())
+    return context.json(comment, 200, { etag: `"${comment.version}"` })
   })
   app.openapi(routes.restore, async (context) =>
     context.json(await restoreComment(db, log, context.var.caller, context.req.valid("param").id, clock.now()), 200)

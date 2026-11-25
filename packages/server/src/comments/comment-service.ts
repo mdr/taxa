@@ -4,8 +4,8 @@ import { ActivityType, type FieldChange } from "@taxa/shared/activity/activity"
 import { ProblemType } from "@taxa/shared/api/problem"
 import type { AddCommentRequestSchema, Comment, EditCommentRequestSchema } from "@taxa/shared/comments/comment"
 import { commentId as newCommentId, uuidv7, type CommentId } from "@taxa/shared/ids"
-import type { Instant } from "@taxa/shared/units"
-import { recordActivity } from "../activity/activity-store.ts"
+import type { Instant, Version } from "@taxa/shared/units"
+import { changeTo, recordActivity } from "../activity/activity-store.ts"
 import { actorsNamed } from "../activity/actor-names.ts"
 import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
@@ -84,10 +84,12 @@ export const addComment = async (
   return comment
 }
 
-/** What a change sets, and what it changed: nothing, if it changes nothing. */
+/** What a change sets, and what it changed: nothing, if it changes nothing. An undo also says what it is, and which it undoes. */
 interface Applied {
   values: CommentValues
   changes: Record<string, FieldChange>
+  type?: ActivityType
+  undoesVersion?: Version
 }
 
 const UNCHANGED: Applied = { values: {}, changes: {} }
@@ -95,7 +97,7 @@ const UNCHANGED: Applied = { values: {}, changes: {} }
 interface CommentChange {
   type: ActivityType
   code: ServerLogCode
-  apply: (row: CommentRow) => Applied
+  apply: (row: CommentRow, tx: Db) => Applied | Promise<Applied>
 }
 
 const NOT_FOUND = (id: CommentId): ProblemError =>
@@ -113,7 +115,7 @@ const changeComment = async (
   id: CommentId,
   ifMatch: number | undefined,
   now: Instant,
-  { type, code, apply }: CommentChange
+  { type: changeType, code, apply }: CommentChange
 ): Promise<Comment> => {
   const { comment, task, changed } = await db.transaction(async (tx) => {
     const [row] = await tx.select().from(comments).where(eq(comments.id, id)).for("update")
@@ -129,7 +131,7 @@ const changeComment = async (
         `That comment has changed since version ${ifMatch}: it's at version ${row.version} now.`,
         await commentFrom(tx, row)
       )
-    const { values, changes } = apply(row)
+    const { values, changes, type = changeType, undoesVersion } = await apply(row, tx)
     if (Object.keys(changes).length === 0) return { comment: await commentFrom(tx, row), task, changed: false }
     const [saved] = await tx
       .update(comments)
@@ -141,6 +143,7 @@ const changeComment = async (
       entityId: id,
       domainId: task.row.domainId ?? undefined,
       version: row.version + 1,
+      ...(undoesVersion !== undefined && { undoesVersion }),
       changes
     })
     return { comment: await commentFrom(tx, saved!), task, changed: true }
@@ -170,6 +173,16 @@ export const editComment = (
     }
   })
 
+const deletion = (row: CommentRow, now: Instant): Applied =>
+  row.deletedAt
+    ? UNCHANGED
+    : { values: { deletedAt: new Date(now) }, changes: { deletedAt: { to: new Date(now).toISOString() } } }
+
+const restoration = (row: CommentRow): Applied =>
+  row.deletedAt
+    ? { values: RESTORED_COMMENT, changes: { deletedAt: { from: row.deletedAt.toISOString() } } }
+    : UNCHANGED
+
 /** Deleting a comment: soft, so it can be restored. */
 export const deleteComment = (
   db: Db,
@@ -182,10 +195,7 @@ export const deleteComment = (
   changeComment(db, log, caller, id, ifMatch, now, {
     type: ActivityType.COMMENT_DELETED,
     code: LOG_CODES.comment.deleted,
-    apply: (row) =>
-      row.deletedAt
-        ? UNCHANGED
-        : { values: { deletedAt: new Date(now) }, changes: { deletedAt: { to: new Date(now).toISOString() } } }
+    apply: (row) => deletion(row, now)
   })
 
 export const restoreComment = (
@@ -198,8 +208,63 @@ export const restoreComment = (
   changeComment(db, log, caller, id, undefined, now, {
     type: ActivityType.COMMENT_RESTORED,
     code: LOG_CODES.comment.restored,
-    apply: (row) =>
-      row.deletedAt
-        ? { values: RESTORED_COMMENT, changes: { deletedAt: { from: row.deletedAt.toISOString() } } }
-        : UNCHANGED
+    apply: restoration
+  })
+
+const CHANGED_SINCE = (): ProblemError =>
+  new ProblemError(
+    ProblemType.VERSION_CONFLICT,
+    "That comment has been changed since, so undoing that would lose it: undo the later change first."
+  )
+
+/** What undoing a change to a comment does: it's deleted, restored, or says what it said before. */
+const undone = (type: ActivityType, changes: Record<string, FieldChange>, row: CommentRow, now: Instant): Applied => {
+  switch (type) {
+    case ActivityType.COMMENT_ADDED:
+    case ActivityType.COMMENT_RESTORED:
+      return { ...deletion(row, now), type: ActivityType.COMMENT_DELETED }
+    case ActivityType.COMMENT_DELETED:
+      return { ...restoration(row), type: ActivityType.COMMENT_RESTORED }
+    case ActivityType.COMMENT_EDITED: {
+      const { from, to } = changes["body"] ?? {}
+      if (row.deletedAt || row.body !== to || typeof from !== "string") throw CHANGED_SINCE()
+      return {
+        values: { body: from, editedAt: new Date(now) },
+        changes: { body: { from: row.body, to: from } },
+        type: ActivityType.COMMENT_EDITED
+      }
+    }
+    case ActivityType.DOMAIN_CREATED:
+    case ActivityType.TASK_CREATED:
+    case ActivityType.TASK_UPDATED:
+    case ActivityType.TASK_STATUS_CHANGED:
+    case ActivityType.TASK_DELETED:
+    case ActivityType.TASK_RESTORED:
+      throw new ProblemError(ProblemType.INVALID_REQUEST, "That change isn't to a comment.")
+  }
+}
+
+/**
+ * Takes back the change that brought a comment to `version`: a comment
+ * added or restored is deleted, a deleted one restored, and an edit put back,
+ * unless it's been changed since. Only its author can. An undo is a change
+ * too, so undoing it again redoes what it undid.
+ */
+export const undoComment = (
+  db: Db,
+  log: ServerLogger,
+  caller: Caller,
+  id: CommentId,
+  version: Version,
+  now: Instant
+): Promise<Comment> =>
+  changeComment(db, log, caller, id, undefined, now, {
+    type: ActivityType.COMMENT_EDITED,
+    code: LOG_CODES.comment.undone,
+    apply: async (row, tx) => {
+      const change = await changeTo(tx, id, version)
+      if (!change)
+        throw new ProblemError(ProblemType.NOT_FOUND, `That comment has no change to version ${version} to undo.`)
+      return { ...undone(change.type, change.changes, row, now), undoesVersion: version }
+    }
   })

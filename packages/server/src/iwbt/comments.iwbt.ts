@@ -108,6 +108,34 @@ describe("comments", () => {
     expect(await claude.client.editComment(its.id, { body: "Found the part: 15mm" })).toMatchObject({ version: 2 })
   })
 
+  it("undoes a change by the version it brought the comment to, and undoing that redoes it", async ({ server }) => {
+    const matt = await server.user("Matt")
+    const tap = await matt.addTask("Fix the tap")
+    const added = await matt.client.addComment(tap.ref, { body: "Rang the plumbr" })
+    const edited = await matt.client.editComment(added.id, { body: "Rang the plumber" })
+
+    const unedited = await matt.client.undoComment(added.id, edited.version)
+    expect(unedited).toMatchObject({ body: "Rang the plumbr", version: 3 })
+    expect(await matt.client.undoComment(added.id, unedited.version)).toMatchObject({ body: "Rang the plumber" })
+    const removed = await matt.client.undoComment(added.id, added.version)
+    expect(await matt.client.comments(tap.ref)).toEqual([])
+    expect(await matt.client.undoComment(added.id, removed.version)).toMatchObject({ body: "Rang the plumber" })
+    expect((await matt.client.comments(tap.ref)).map(({ body }) => body)).toEqual(["Rang the plumber"])
+    expect(server.logs.filter(({ code }) => code === "comment.undone")).toHaveLength(4)
+  })
+
+  it("won't undo an edit that's been changed since, nor someone else's change", async ({ server }) => {
+    const matt = await server.user("Matt")
+    const claude = await matt.agent("Claude Code")
+    const tap = await matt.addTask("Fix the tap")
+    const added = await matt.client.addComment(tap.ref, { body: "Rang the plumbr" })
+    const edited = await matt.client.editComment(added.id, { body: "Rang the plumber" })
+    await matt.client.editComment(added.id, { body: "Rang the plumber twice" })
+    await expectProblem(matt.client.undoComment(added.id, edited.version), ProblemType.VERSION_CONFLICT)
+    await expectProblem(claude.client.undoComment(added.id, added.version), ProblemType.FORBIDDEN)
+    await expectProblem(matt.client.undoComment(added.id, 99), ProblemType.NOT_FOUND)
+  })
+
   it("finds a task by what its comments say, but not by a deleted one", async ({ server }) => {
     const matt = await server.user("Matt")
     const plumber = await matt.addTask("Call the plumber")

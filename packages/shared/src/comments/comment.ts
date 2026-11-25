@@ -35,4 +35,9 @@ export type AddCommentRequest = z.input<typeof AddCommentRequestSchema>
 
 export const EditCommentRequestSchema = z.object({ body: BodySchema })
 
+export const UndoCommentRequestSchema = z.object({
+  /** The version the change to undo brought the comment to. */
+  version: z.number().int().min(1)
+})
+
 export type EditCommentRequest = z.input<typeof EditCommentRequestSchema>

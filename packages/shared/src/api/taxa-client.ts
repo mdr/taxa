@@ -176,6 +176,11 @@ export class TaxaClient {
     return this.#request(CommentSchema, commentPath(id), { method: "DELETE", ifMatch })
   }
 
+  /** Takes back the change that brought a comment to `version`; undoing an undo redoes it. */
+  undoComment(id: CommentId, version: Version): Promise<Comment> {
+    return this.#request(CommentSchema, `${commentPath(id)}/undo`, { method: "POST", body: { version } })
+  }
+
   restoreComment(id: CommentId): Promise<Comment> {
     return this.#request(CommentSchema, `${commentPath(id)}/restore`, { method: "POST" })
   }

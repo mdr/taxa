@@ -30,16 +30,18 @@ export const ActivityList = ({ task, domains }: { task: Task; domains: Domain[] 
   const comments = useComments(task.id)
   const me = useMe()
   const queryClient = useQueryClient()
+  const history = useUndo()
+  const { undoChange } = history
   const [commenting] = useState(
     () =>
       new CommentsService(
         taxaApi,
-        task.id,
+        history,
+        task,
         () => queryClient.invalidateQueries({ queryKey: queryKeys.comments(task.id) }),
         appAnalytics
       )
   )
-  const { undoChange } = useUndo()
   const today = useToday()
   const now = realClock.now()
   const timeZone = browserTimeZone()
@@ -87,7 +89,7 @@ export const ActivityList = ({ task, domains }: { task: Task; domains: Domain[] 
             )
           })}
         </ol>
-        <CommentComposer />
+        <CommentComposer taskId={task.id} />
       </section>
     </CommentsContext.Provider>
   )

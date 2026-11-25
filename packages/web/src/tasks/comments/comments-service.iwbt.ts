@@ -2,7 +2,10 @@ import { describe, expect } from "vite-plus/test"
 import { useInProcessServer } from "../../../../server/src/test-support/use-in-process-server.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { testTelemetry } from "../../test-support/test-telemetry.ts"
-import { CommentsService, type CommentsApi } from "./comments-service.ts"
+import { CommentsService, type CommentHistory, type CommentsApi } from "./comments-service.ts"
+
+/** A history that only makes each change, as the tab's would, without noting it. */
+const noHistory: CommentHistory = { changeComment: ({ make }) => make() }
 
 describe("CommentsService", () => {
   const it = useInProcessServer()
@@ -14,7 +17,8 @@ describe("CommentsService", () => {
     let refreshed = 0
     const comments = new CommentsService(
       matt.client,
-      tap.id,
+      noHistory,
+      tap,
       () => Promise.resolve(void refreshed++),
       telemetry.analytics
     )
@@ -34,7 +38,13 @@ describe("CommentsService", () => {
     const matt = await server.user("Matt")
     const tap = await matt.addTask("Fix the tap")
     const comment = await matt.client.addComment(tap.ref, { body: "Rang the plumbr" })
-    const comments = new CommentsService(matt.client, tap.id, () => Promise.resolve(), testTelemetry().analytics)
+    const comments = new CommentsService(
+      matt.client,
+      noHistory,
+      tap,
+      () => Promise.resolve(),
+      testTelemetry().analytics
+    )
 
     comments.startEditing(comment)
     comments.writeEdit("Something else")
@@ -55,7 +65,13 @@ describe("CommentsService", () => {
     const tap = await matt.addTask("Fix the tap")
     const comment = await matt.client.addComment(tap.ref, { body: "Rang the plumber" })
     await matt.client.editComment(comment.id, { body: "Rang the plumber twice" })
-    const comments = new CommentsService(matt.client, tap.id, () => Promise.resolve(), testTelemetry().analytics)
+    const comments = new CommentsService(
+      matt.client,
+      noHistory,
+      tap,
+      () => Promise.resolve(),
+      testTelemetry().analytics
+    )
     comments.startEditing(comment)
     comments.writeEdit("Rang him")
     await comments.saveEdit(comment)
@@ -63,23 +79,15 @@ describe("CommentsService", () => {
     expect(comments.state.problem).toMatch(/changed since/)
   })
 
-  it("deletes a comment and brings it back", async ({ server }) => {
+  it("deletes a comment", async ({ server }) => {
     const matt = await server.user("Matt")
     const tap = await matt.addTask("Fix the tap")
     const comment = await matt.client.addComment(tap.ref, { body: "Rang the plumber" })
     const telemetry = testTelemetry()
-    const comments = new CommentsService(matt.client, tap.id, () => Promise.resolve(), telemetry.analytics)
-
+    const comments = new CommentsService(matt.client, noHistory, tap, () => Promise.resolve(), telemetry.analytics)
     await comments.remove(comment)
-    expect(comments.state.deleted?.id).toBe(comment.id)
     expect(await matt.client.comments(tap.ref)).toEqual([])
-    await comments.restore()
-    expect(comments.state.deleted).toBeUndefined()
-    expect((await matt.client.comments(tap.ref)).map(({ body }) => body)).toEqual(["Rang the plumber"])
-    expect(telemetry.tracked().map(([code]) => code)).toEqual([
-      ANALYTICS_CODES.comment.deleted,
-      ANALYTICS_CODES.comment.restored
-    ])
+    expect(telemetry.tracked().map(([code]) => code)).toEqual([ANALYTICS_CODES.comment.deleted])
   })
 
   it("keeps the draft and says why when the server can't be reached", async ({ server }) => {
@@ -89,10 +97,9 @@ describe("CommentsService", () => {
     const api: CommentsApi = {
       addComment: unreachable,
       editComment: unreachable,
-      deleteComment: unreachable,
-      restoreComment: unreachable
+      deleteComment: unreachable
     }
-    const comments = new CommentsService(api, tap.id, () => Promise.resolve(), testTelemetry().analytics)
+    const comments = new CommentsService(api, noHistory, tap, () => Promise.resolve(), testTelemetry().analytics)
     comments.write("Rang the plumber")
     await comments.post()
     expect(comments.state).toMatchObject({

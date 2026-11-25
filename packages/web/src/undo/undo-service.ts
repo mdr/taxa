@@ -1,4 +1,5 @@
-import type { TaskId } from "@taxa/shared/ids"
+import type { Comment } from "@taxa/shared/comments/comment"
+import type { CommentId, TaskId } from "@taxa/shared/ids"
 import type { Task } from "@taxa/shared/tasks/task"
 import type { Ms, Version } from "@taxa/shared/units"
 import { TaxaApiError } from "@taxa/shared/api/taxa-client"
@@ -21,13 +22,49 @@ const HISTORY = 100
 
 export interface UndoApi {
   undoTask: (ref: string, version: Version) => Promise<Task>
+  undoComment: (id: CommentId, version: Version) => Promise<Comment>
 }
 
-/** A change that can be undone, or redone: the version it brought its task to. */
-interface Step {
+/** Where comments are shown: an undone change to one is shown there. */
+export interface CommentCache {
+  show: (comment: Comment) => Promise<void>
+}
+
+enum StepType {
+  TASK = "TASK",
+  COMMENT = "COMMENT"
+}
+
+/** A change to a task that can be undone, or redone: the version it brought the task to. */
+interface TaskStep {
+  type: StepType.TASK
   taskId: TaskId
   version: Version
   label: string
+}
+
+/** A change to a comment that can be undone, or redone: the version it brought the comment to. */
+interface CommentStep {
+  type: StepType.COMMENT
+  commentId: CommentId
+  taskId: TaskId
+  version: Version
+  label: string
+  /** Whether the change deleted it, so it can be offered back. */
+  deletes: boolean
+}
+
+type Step = TaskStep | CommentStep
+
+/** A change to a comment, made in turn with the tab's other changes and noted to undo. */
+export interface CommentChange {
+  /** The comment changed; none for one being added. */
+  id: CommentId | undefined
+  make: () => Promise<Comment>
+  /** What it does, in a few words, for the notice once it's undone: `Commented on H-3`. */
+  label: string
+  /** Whether it deletes the comment. */
+  deletes?: boolean
 }
 
 export enum NoticeType {
@@ -49,7 +86,7 @@ export interface UndoState {
   notice: UndoNotice | undefined
 }
 
-/** A change undone or redone: the version it had brought its task to, and the task now. */
+/** A change to a task undone or redone: the version it had brought the task to, and the task now. */
 export interface Undone {
   taskId: TaskId
   version: Version
@@ -59,7 +96,9 @@ export interface Undone {
 export interface UndoActions extends ChangeHistory {
   /** Adds a task, in turn with the tab's other changes, noting it to undo. */
   add: (adding: () => Promise<Task>) => Promise<Task>
-  /** Undoes the last change asked for here, once it's been answered; what that was, unless there was none or it was refused. */
+  /** Makes a change to a comment, in turn with the tab's other changes, noting it to undo; refused, it rejects. */
+  changeComment: (change: CommentChange) => Promise<Comment>
+  /** Undoes the last change asked for here, once it's been answered; what that was if it was to a task, unless there was none or it was refused. */
   undo: () => Promise<Undone | undefined>
   redo: () => Promise<Undone | undefined>
   /** Undoes the change that brought a task to a version, by default the one it's at, whether made here or not; the task then, or undefined if refused. */
@@ -69,9 +108,27 @@ export interface UndoActions extends ChangeHistory {
   isLatest: (task: Task) => boolean
 }
 
+const taskStep = (task: Task, label: string): TaskStep => ({
+  type: StepType.TASK,
+  taskId: task.id,
+  version: task.version,
+  label
+})
+
 const isLatestIn = ({ undoable }: UndoState, task: Task): boolean => {
   const last = undoable.at(-1)
-  return last?.taskId === task.id && last.version === task.version
+  return last?.type === StepType.TASK && last.taskId === task.id && last.version === task.version
+}
+
+/** Whether the last change made here deleted a comment on this task, which undo would bring back. */
+const deletedCommentLastIn = ({ undoable }: UndoState, taskId: TaskId): boolean => {
+  const last = undoable.at(-1)
+  return last?.type === StepType.COMMENT && last.deletes && last.taskId === taskId
+}
+
+/** What undoing or redoing a step came to: the task, for a change to one. */
+interface Taken {
+  task: Task | undefined
 }
 
 /**
@@ -83,36 +140,59 @@ const isLatestIn = ({ undoable }: UndoState, task: Task): boolean => {
 export class UndoService extends AbstractService<UndoState> implements UndoActions {
   readonly #api: UndoApi
   readonly #cache: TaskCache
+  readonly #comments: CommentCache
   readonly #analytics: Analytics
   readonly #scheduler: Scheduler
   readonly #order: ChangeOrder
   #cancelNotice: (() => void) | undefined
 
-  constructor(api: UndoApi, cache: TaskCache, analytics: Analytics, scheduler: Scheduler, order: ChangeOrder) {
+  constructor(
+    api: UndoApi,
+    cache: TaskCache,
+    comments: CommentCache,
+    analytics: Analytics,
+    scheduler: Scheduler,
+    order: ChangeOrder
+  ) {
     super({ undoable: [], redoable: [], notice: undefined })
     this.#api = api
     this.#order = order
     this.#cache = cache
+    this.#comments = comments
     this.#analytics = analytics
     this.#scheduler = scheduler
   }
 
-  readonly recordChange = (task: Task, change: TaskChange): void => this.#record(task, changeLabel(change, task))
+  readonly recordChange = (task: Task, change: TaskChange): void =>
+    this.#record(taskStep(task, changeLabel(change, task)))
 
   readonly add = (adding: () => Promise<Task>): Promise<Task> =>
     this.#order.add(async () => {
       const task = await adding()
-      this.#record(task, addedLabel(task))
+      this.#record(taskStep(task, addedLabel(task)))
       return task
     })
 
-  #record(task: Task, label: string): void {
+  readonly changeComment = ({ id, make, label, deletes = false }: CommentChange): Promise<Comment> => {
+    const made = async (): Promise<Comment> => {
+      const comment = await make()
+      this.#record({
+        type: StepType.COMMENT,
+        commentId: comment.id,
+        taskId: comment.taskId,
+        version: comment.version,
+        label,
+        deletes
+      })
+      return comment
+    }
+    return id === undefined ? this.#order.add(made) : this.#order.change(id, made)
+  }
+
+  #record(step: Step): void {
     // What an undo did is old news once something else changes.
     this.dismiss()
-    this.setState({
-      undoable: [...this.state.undoable, { taskId: task.id, version: task.version, label }].slice(-HISTORY),
-      redoable: []
-    })
+    this.setState({ undoable: [...this.state.undoable, step].slice(-HISTORY), redoable: [] })
   }
 
   readonly undo = (): Promise<Undone | undefined> =>
@@ -128,13 +208,17 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
     })
 
   readonly undoChange = (task: Task, version: Version = task.version): Promise<Task | undefined> =>
-    this.#order.undo(() => {
-      const step = this.state.undoable.find((other) => other.taskId === task.id && other.version === version)
-      return this.#take(step ?? { taskId: task.id, version, label: changedLabel(task) }, true)
+    this.#order.undo(async () => {
+      const step = this.state.undoable.find(
+        (other) => other.type === StepType.TASK && other.taskId === task.id && other.version === version
+      )
+      return (await this.#take(step ?? { ...taskStep(task, changedLabel(task)), version }, true))?.task
     })
 
-  #undone({ taskId, version }: Step, task: Task | undefined): Undone | undefined {
-    return task && { taskId, version, task }
+  #undone(step: Step, taken: Taken | undefined): Undone | undefined {
+    return step.type === StepType.TASK && taken?.task
+      ? { taskId: step.taskId, version: step.version, task: taken.task }
+      : undefined
   }
 
   readonly dismiss = (): void => {
@@ -147,33 +231,52 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
 
   readonly dispose = (): void => this.#cancelNotice?.()
 
+  /** Has the server undo the change that brought a task to a step's version: the version that brings it to, and the task. */
+  async #takeTask(step: TaskStep, undoing: boolean): Promise<{ version: Version; taken: Taken }> {
+    const task = await this.#api.undoTask(step.taskId, step.version)
+    await this.#cache.show(task)
+    this.#analytics.track(
+      undoing ? ANALYTICS_CODES.task.undone : ANALYTICS_CODES.task.redone,
+      `${undoing ? "undid" : "redid"} a change to ${task.ref}`,
+      { taskId: task.id, taskRef: task.ref }
+    )
+    return { version: task.version, taken: { task } }
+  }
+
+  /** As #takeTask, for a comment. */
+  async #takeComment(step: CommentStep, undoing: boolean): Promise<{ version: Version; taken: Taken }> {
+    const comment = await this.#api.undoComment(step.commentId, step.version)
+    await this.#comments.show(comment)
+    this.#analytics.track(
+      undoing ? ANALYTICS_CODES.comment.undone : ANALYTICS_CODES.comment.redone,
+      `${undoing ? "undid" : "redid"} a change to a comment`,
+      { taskId: comment.taskId, commentId: comment.id }
+    )
+    return { version: comment.version, taken: { task: undefined } }
+  }
+
   /**
    * Undoes a step, or redoes one: either way, the server undoes the change
-   * that brought its task to its version. Never rejects. If the server's never
-   * reached, the step stays where it was, to try again.
+   * that brought its task or comment to its version. Never rejects. If the
+   * server's never reached, the step stays where it was, to try again.
    */
-  async #take(step: Step, undoing: boolean): Promise<Task | undefined> {
+  async #take(step: Step, undoing: boolean): Promise<Taken | undefined> {
     const without = (steps: readonly Step[]): Step[] => steps.filter((other) => other !== step)
     const { undoable, redoable } = this.state
     this.setState({ undoable: without(undoable), redoable: without(redoable) })
     try {
-      const task = await this.#api.undoTask(step.taskId, step.version)
-      await this.#cache.show(task)
-      const next = { ...step, version: task.version }
+      const { version, taken } =
+        step.type === StepType.TASK ? await this.#takeTask(step, undoing) : await this.#takeComment(step, undoing)
+      const next = { ...step, version }
       this.setState(
         undoing ? { redoable: [...this.state.redoable, next] } : { undoable: [...this.state.undoable, next] }
-      )
-      this.#analytics.track(
-        undoing ? ANALYTICS_CODES.task.undone : ANALYTICS_CODES.task.redone,
-        `${undoing ? "undid" : "redid"} a change to ${task.ref}`,
-        { taskId: task.id, taskRef: task.ref }
       )
       this.#notify(
         undoing
           ? { type: NoticeType.UNDONE, text: `Undid: ${step.label}` }
           : { type: NoticeType.REDONE, text: `Redid: ${step.label}` }
       )
-      return task
+      return taken
     } catch (error) {
       if (!(error instanceof TaxaApiError))
         this.setState({
@@ -201,6 +304,10 @@ export const useUndo = (): UndoActions => useService(UndoContext)
 
 export const useIsLatestChange = (task: Task): boolean =>
   useServiceState(useService(UndoContext), (state) => isLatestIn(state, task))
+
+/** Whether the last change made here deleted a comment on this task: it's offered back. */
+export const useDeletedCommentLast = (taskId: TaskId): boolean =>
+  useServiceState(useService(UndoContext), (state) => deletedCommentLastIn(state, taskId))
 
 export const useUndoNotice = (): UndoNotice | undefined =>
   useServiceState(useService(UndoContext), ({ notice }) => notice)

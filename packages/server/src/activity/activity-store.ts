@@ -49,7 +49,7 @@ export const activityOf = async (db: Db, entityId: TaskId | DomainId): Promise<A
 /** The change that brought a task to `version`, if there was one: its type and what it changed. */
 export const changeTo = async (
   db: Db,
-  entityId: TaskId,
+  entityId: TaskId | CommentId,
   version: Version
 ): Promise<Pick<ActivityRecord, "type" | "changes"> | undefined> => {
   const [row] = await db

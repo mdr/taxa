@@ -13,7 +13,10 @@ import { TaskChangesService, TaskChangeType, type TaskChangesApi } from "../task
 import { ANALYTICS_CODES } from "../telemetry/codes.ts"
 import { FakeScheduler } from "../test-support/fake-scheduler.ts"
 import { testTelemetry, type TestTelemetry } from "../test-support/test-telemetry.ts"
-import { NoticeType, UNDO_NOTICE_MS, UndoService, type UndoApi } from "./undo-service.ts"
+import { NoticeType, UNDO_NOTICE_MS, UndoService, type CommentCache, type UndoApi } from "./undo-service.ts"
+import { CommentsService, type CommentsApi } from "../tasks/comments/comments-service.ts"
+import type { AddCommentRequest, Comment, EditCommentRequest } from "@taxa/shared/comments/comment"
+import type { CommentId } from "@taxa/shared/ids"
 
 class FakeTaskCache implements TaskCache {
   readonly #tasks = new Map<TaskId, Task>()
@@ -31,7 +34,7 @@ class FakeTaskCache implements TaskCache {
  * answers are held, none comes back until they're let go; or, unreachable, a
  * request fails without reaching it.
  */
-class SlowServer implements TaskChangesApi, UndoApi {
+class SlowServer implements TaskChangesApi, UndoApi, CommentsApi {
   readonly #client: TaxaClient
   #held: Promise<void> = Promise.resolve()
   #letGo = (): void => undefined
@@ -72,6 +75,21 @@ class SlowServer implements TaskChangesApi, UndoApi {
   readonly restoreTask = (ref: string): Promise<Task> => this.#answer(() => this.#client.restoreTask(ref))
   readonly undoTask = (ref: string, version: Version): Promise<Task> =>
     this.#answer(() => this.#client.undoTask(ref, version))
+  readonly undoComment = (id: CommentId, version: Version): Promise<Comment> =>
+    this.#answer(() => this.#client.undoComment(id, version))
+  readonly addComment = (ref: string, request: AddCommentRequest, idempotencyKey?: string): Promise<Comment> =>
+    this.#answer(() => this.#client.addComment(ref, request, idempotencyKey))
+  readonly editComment = (id: CommentId, request: EditCommentRequest, ifMatch?: Version): Promise<Comment> =>
+    this.#answer(() => this.#client.editComment(id, request, ifMatch))
+  readonly deleteComment = (id: CommentId, ifMatch?: Version): Promise<Comment> =>
+    this.#answer(() => this.#client.deleteComment(id, ifMatch))
+}
+
+/** Comments shown: how many times one's been shown changed by an undo. */
+class FakeCommentCache implements CommentCache {
+  shown = 0
+
+  readonly show = (): Promise<void> => Promise.resolve(void this.shown++)
 }
 
 interface Setup {
@@ -92,13 +110,60 @@ const makeUndoService = async (server: InProcessServer): Promise<Setup> => {
   const telemetry = testTelemetry()
   const slow = new SlowServer(matt.client)
   const order = new ChangeOrder()
-  const undo = new UndoService(slow, cache, telemetry.analytics, scheduler, order)
+  const undo = new UndoService(slow, cache, new FakeCommentCache(), telemetry.analytics, scheduler, order)
   const changes = new TaskChangesService(slow, cache, telemetry.analytics, telemetry.logger, undo, order)
   return { matt, server: slow, undo, changes, scheduler, telemetry }
 }
 
 describe("UndoService", () => {
   const it = useInProcessServer()
+
+  it("undoes and redoes comments with the tab's other changes: adding, editing and deleting", async ({ server }) => {
+    const { matt, undo, changes, telemetry } = await makeUndoService(server)
+    const tap = await matt.addTask("Fix the tap", { domain: "H" })
+    const bodies = async (): Promise<string[]> => (await matt.client.comments(tap.id)).map(({ body }) => body)
+    const comments = new CommentsService(matt.client, undo, tap, () => Promise.resolve(), telemetry.analytics)
+    await changes.change(tap, { type: TaskChangeType.UPDATE, request: { set: { priority: Priority.HIGH } } })
+    comments.write("Rang the plumbr")
+    await comments.post()
+
+    // The comment's the last change, so it's what's taken back, not the priority.
+    await undo.undo()
+    expect(await bodies()).toEqual([])
+    expect(undo.state.notice).toEqual({ type: NoticeType.UNDONE, text: "Undid: Commented on H-1" })
+    expect((await matt.client.task(tap.id)).priority).toBe(Priority.HIGH)
+    await undo.redo()
+    expect(await bodies()).toEqual(["Rang the plumbr"])
+
+    const [posted] = await matt.client.comments(tap.id)
+    comments.startEditing(posted!)
+    comments.writeEdit("Rang the plumber")
+    await comments.saveEdit(posted!)
+    await undo.undo()
+    expect(await bodies()).toEqual(["Rang the plumbr"])
+    await undo.redo()
+    expect(await bodies()).toEqual(["Rang the plumber"])
+
+    const [edited] = await matt.client.comments(tap.id)
+    await comments.remove(edited!)
+    expect(await bodies()).toEqual([])
+    await undo.undo()
+    expect(await bodies()).toEqual(["Rang the plumber"])
+    expect(telemetry.tracked().map(([code]) => code)).toContain(ANALYTICS_CODES.comment.undone)
+  })
+
+  it("waits for a comment still being sent before undoing it", async ({ server }) => {
+    const { matt, server: slow, undo, telemetry } = await makeUndoService(server)
+    const tap = await matt.addTask("Fix the tap", { domain: "H" })
+    const comments = new CommentsService(slow, undo, tap, () => Promise.resolve(), telemetry.analytics)
+    slow.holdAnswers()
+    comments.write("Rang the plumber")
+    const posting = comments.post()
+    const undoing = undo.undo()
+    slow.letAnswersGo()
+    await Promise.all([posting, undoing])
+    expect(await matt.client.comments(tap.id)).toEqual([])
+  })
 
   it("undoes the tab's changes, last first, across tasks, and redoes them", async ({ server }) => {
     const { matt, undo, changes } = await makeUndoService(server)

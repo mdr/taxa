@@ -40,7 +40,8 @@ export const ANALYTICS_CODES = {
     added: "comment.added",
     edited: "comment.edited",
     deleted: "comment.deleted",
-    restored: "comment.restored"
+    undone: "comment.undone",
+    redone: "comment.redone"
   },
   bin: {
     emptied: "bin.emptied"

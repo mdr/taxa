@@ -1,20 +1,20 @@
 import { Undo2 } from "lucide-react"
 import styles from "./CommentComposer.module.css"
 import { commentComposerTestIds } from "./CommentComposerTestIds.ts"
-import {
-  useCommentActions,
-  useCommentDraft,
-  useCommentPosting,
-  useCommentProblem,
-  useDeletedComment
-} from "./comments-service.ts"
+import type { TaskId } from "@taxa/shared/ids"
+import { useCommentActions, useCommentDraft, useCommentPosting, useCommentProblem } from "./comments-service.ts"
+import { useDeletedCommentLast, useUndo } from "../../undo/undo-service.ts"
 
-/** Where a comment is written, under the timeline, with the offer to bring back one just deleted. */
-export const CommentComposer = () => {
-  const { write, post, restore } = useCommentActions()
+/**
+ * Where a comment is written, under the timeline; and while deleting one is
+ * the last change made, the offer to undo that.
+ */
+export const CommentComposer = ({ taskId }: { taskId: TaskId }) => {
+  const { write, post } = useCommentActions()
+  const { undo } = useUndo()
   const draft = useCommentDraft()
   const posting = useCommentPosting()
-  const deleted = useDeletedComment()
+  const deleted = useDeletedCommentLast(taskId)
   const problem = useCommentProblem()
   return (
     <div className={styles.composer}>
@@ -24,7 +24,8 @@ export const CommentComposer = () => {
           <button
             type="button"
             className={styles.restore}
-            onClick={() => void restore()}
+            onClick={() => void undo()}
+            aria-keyshortcuts="Meta+Z Control+Z"
             data-testid={commentComposerTestIds.restore}
             data-track="CommentComposer.restore"
           >

@@ -65,3 +65,32 @@ test("editing a comment, deleting it, and undoing that", async ({ taxa }) => {
   await detail.comments.expectComments([{ author: "Matt", body: "Rang the plumber" }])
   await taxa.expectComments("H-1", ["Rang the plumber"])
 })
+
+test("⌘Z takes back the last thing done to a comment, and ⇧⌘Z puts it back", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  const detail = await (await taxa.openTab("Matt")).openTask("H-1")
+  await detail.setPriority(Priority.HIGH)
+  await detail.comments.add("Rang the plumbr")
+  await detail.comments.expectComments([{ author: "Matt", body: "Rang the plumbr" }])
+
+  // Posting it was the last change, so that's what's taken back, not the priority.
+  await detail.keyboard.press("mod+z")
+  await detail.comments.expectComments([])
+  await detail.undoNotice.expectSays("Undid: Commented on H-1")
+  await taxa.expectComments("H-1", [])
+  await taxa.expectTask("H-1", { priority: Priority.HIGH })
+  await detail.keyboard.press("mod+Shift+z")
+  await detail.comments.expectComments([{ author: "Matt", body: "Rang the plumbr" }])
+
+  await detail.comments.edit("Rang the plumbr", "Rang the plumber")
+  await detail.comments.expectComments([{ author: "Matt", body: "Rang the plumber" }])
+  await detail.keyboard.press("mod+z")
+  await detail.comments.expectComments([{ author: "Matt", body: "Rang the plumbr" }])
+  await taxa.expectComments("H-1", ["Rang the plumbr"])
+
+  await detail.comments.delete("Rang the plumbr")
+  await detail.comments.expectComments([])
+  await detail.keyboard.press("mod+z")
+  await detail.comments.expectComments([{ author: "Matt", body: "Rang the plumbr" }])
+})

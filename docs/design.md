@@ -144,6 +144,13 @@ your notes.
   edit or delete one (an agent's are its own, not its person's), and each
   change is logged with the comment, not the task. A deleted comment can be
   restored; deleting a task for good wipes its comments too.
+- Changes to comments undo like changes to tasks: in the web app, posting,
+  editing or deleting one is part of the tab's history, so ⌘Z deletes a
+  comment just posted, puts back what one said, or restores one deleted,
+  and ⇧⌘Z redoes it. The server undoes the change that brought a comment to
+  a version (`POST /api/comments/{id}/undo`), its author only, refusing to
+  put back an edit made over since. The CLI doesn't undo comments: agents
+  correct their own with `edit-comment` and `delete-comment`.
 - Adding a comment doesn't change the task's version, so it never conflicts
   with someone editing the task. It counts as activity on a claim.
 - A task's page has a **timeline**: its changes and its comments, oldest
