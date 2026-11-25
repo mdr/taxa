@@ -12,6 +12,9 @@ import { revertedState, RevertType } from "./task-state.ts"
 import type { TaskRow } from "./task-rows.ts"
 import type { TaskState } from "./task-state.ts"
 import { occurrencesReverted } from "./repeating.ts"
+import { eq } from "drizzle-orm"
+import type { DomainId } from "@taxa/shared/ids"
+import { domains } from "../database/schema.ts"
 
 /**
  * Takes back the change that brought a task to `version`, whoever made it:
@@ -62,6 +65,25 @@ const withOccurrences = async (
   changes: { ...outcome.changes, ...(await occurrencesReverted(tx, now, row, changes)) }
 })
 
+/** Refuses to move a task back into a domain that's been deleted since it left. */
+const refuseDeletedDomain = async (
+  tx: Db,
+  changes: Parameters<typeof revertedState>[1],
+  ref: string
+): Promise<void> => {
+  const from = changes["domainId"]?.from
+  if (typeof from !== "string") return
+  const [domain] = await tx
+    .select({ name: domains.name, deletedAt: domains.deletedAt })
+    .from(domains)
+    .where(eq(domains.id, from as DomainId))
+  if (domain?.deletedAt)
+    throw new ProblemError(
+      ProblemType.VERSION_CONFLICT,
+      `That would put ${ref} back in ${domain.name}, which has been deleted since.`
+    )
+}
+
 const undone = async (
   tx: Db,
   type: ActivityType,
@@ -79,6 +101,7 @@ const undone = async (
       return { ...restoration(state, row), type: ActivityType.TASK_RESTORED }
     case ActivityType.TASK_UPDATED:
     case ActivityType.TASK_STATUS_CHANGED:
+      await refuseDeletedDomain(tx, changes, ref)
       // Either may have caught up missed days too.
       return withOccurrences(tx, now, row, reverted(state, changes, ref), changes)
     case ActivityType.TASK_OCCURRENCE_RECORDED:
@@ -92,6 +115,7 @@ const undone = async (
         type: ActivityType.TASK_OCCURRENCE_RECORDED
       }
     case ActivityType.DOMAIN_CREATED:
+    case ActivityType.DOMAIN_DELETED:
     case ActivityType.COMMENT_ADDED:
     case ActivityType.COMMENT_EDITED:
     case ActivityType.COMMENT_DELETED:

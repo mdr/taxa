@@ -4,6 +4,9 @@ import { flavoured, type Version } from "../units.ts"
 
 export const DOMAINS_PATH = "/api/domains"
 
+/** One domain, by prefix or id. */
+export const DOMAIN_PATH = `${DOMAINS_PATH}/{domain}`
+
 /** 1–5 capital letters, unique across the installation: the `H` of `H-142`. */
 export const PREFIX_PATTERN = /^[A-Z]{1,5}$/
 

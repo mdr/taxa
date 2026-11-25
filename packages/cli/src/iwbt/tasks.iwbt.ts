@@ -308,6 +308,19 @@ describe("taxa for people and agents", () => {
     expect((await taxa(server, matt, "domains")).stdout).toBe("H      Home\nW      Work\n")
   })
 
+  it("deletes a domain once its tasks have moved out", async ({ server }) => {
+    const matt = await server.user("Matt")
+    await matt.addDomain("Home", "H")
+    await matt.addDomain("Personal", "P")
+    await matt.addTask("Fix the tap", { domain: "H" })
+    const refused = await taxa(server, matt, "delete-domain", "H")
+    expect(refused.exitCode).not.toBe(ExitCode.OK)
+    expect(refused.stderr).toContain("Home still has a task (H-1)")
+    await taxa(server, matt, "edit", "H-1", "--domain", "P")
+    expect((await taxa(server, matt, "delete-domain", "h")).stdout).toBe("Deleted Home (H)\n")
+    expect((await taxa(server, matt, "domains")).stdout).toBe("P      Personal\n")
+  })
+
   it("makes an agent a key, printing only the secret", async ({ server }) => {
     const matt = await server.user("Matt")
     const agent = await matt.client.createAgent("Claude Code")

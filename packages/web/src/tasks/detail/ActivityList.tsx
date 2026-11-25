@@ -72,7 +72,7 @@ export const ActivityList = ({ task, domains }: { task: Task; domains: Domain[] 
                 <time className={styles.when} dateTime={entry.at} title={new Date(entry.at).toLocaleString()}>
                   {relativeTime(Date.parse(entry.at), now, timeZone)}
                 </time>
-                {entry.type !== ActivityType.DOMAIN_CREATED && (
+                {entry.type !== ActivityType.DOMAIN_CREATED && entry.type !== ActivityType.DOMAIN_DELETED && (
                   <button
                     type="button"
                     className={styles.undo}

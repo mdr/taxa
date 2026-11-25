@@ -51,17 +51,29 @@ Domain (Personal / Work / Home)   who can see it
 - **Assignees** come from a domain's members. In a shared domain, a task's
   assignee says whose job it is.
 
-## Focus
+## Being in a domain
 
-A focus is a named set of domains, such as Work = {W}, Life = {M, H}, or
-Everything. One switch in the app sets it, and every view, count and search
-follows it. In v1 a focus is **sealed**: nothing from outside it shows, not
-even urgent tasks. The current focus is always visible, new tasks go to the
-focus's default domain, and each device remembers its own focus. The CLI and
-agents take `--focus` or `TAXA_FOCUS`.
+Domains are few and big, and each is like an account: Personal, Work, or a
+big software project whose tasks belong together but apart from the rest of
+life. Splits within one part of life, such as home and money, aren't domains:
+they're tags, or later projects, inside one.
 
-A focus is a soft preference about attention. What an API key can see is a
-hard security boundary, and the two are kept separate.
+You're always in one domain, and the whole app follows it, like switching
+accounts: Today, the Inbox, capture, search, counts, sessions and the day
+plan show only that domain, and nothing from another mixes in. The sidebar
+has a switcher at the top, and each device remembers which domain it's in.
+The CLI and agents work in a default domain, which `--domain` overrides, so
+an agent working on a project can default to that project's domain.
+
+A view across domains (today in all of them, or a summary) may come later,
+as the exception. Built only once there's a second domain to switch to.
+
+What you're in is a preference about attention. What an API key can see is
+a hard security boundary, and the two are kept separate.
+
+A domain is deleted only once it's empty, the Bin included
+(`taxa delete-domain`). Its prefix stays taken, so its tasks' old refs, which
+go by number, still find them wherever they moved.
 
 ## Tasks
 
@@ -305,7 +317,7 @@ Today, or in a separate "unclaimed" list?
 
 ## The query language
 
-One small language is used by saved filters, focus, the CLI, the API
+One small language is used by saved filters, the CLI, the API
 (`?q=`) and agents:
 
 ```
@@ -475,8 +487,8 @@ Not in v1, but the design shouldn't rule any of them out:
 - Dependencies, sequential projects (only the next
   task available)
 - Google Calendar: free/busy, then time blocks. Scheduling suggestions
-- Reminders by email or push. Urgent items breaking through a focus.
-  Switching focus on a schedule
+- Reminders by email or push. Urgent items from another domain breaking
+  through. Switching domain on a schedule
 - Attachments in S3-compatible storage (S3, B2, R2, Tigris), with signed URLs
 - An MCP server for Claude on the web and phone
 - AI in the app: what to do now, auto-tagging, an agent-drafted daily plan,

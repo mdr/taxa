@@ -101,6 +101,11 @@ export class TaxaClient {
     return (await this.#request(ListSchema(DomainSchema), DOMAINS_PATH)).items
   }
 
+  /** Deletes a domain once it has no tasks, even in the Bin. */
+  deleteDomain(domain: string): Promise<Domain> {
+    return this.#request(DomainSchema, `${DOMAINS_PATH}/${encodeURIComponent(domain)}`, { method: "DELETE" })
+  }
+
   createDomain(request: CreateDomainRequest, idempotencyKey?: string): Promise<Domain> {
     return this.#request(DomainSchema, DOMAINS_PATH, {
       method: "POST",

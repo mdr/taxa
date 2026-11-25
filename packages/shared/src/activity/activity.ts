@@ -4,6 +4,8 @@ import { flavoured, type ActivitySequence, type Version } from "../units.ts"
 
 export enum ActivityType {
   DOMAIN_CREATED = "DOMAIN_CREATED",
+  /** Deleted once empty: its prefix stays taken, so old refs still mean what they did. */
+  DOMAIN_DELETED = "DOMAIN_DELETED",
   TASK_CREATED = "TASK_CREATED",
   TASK_UPDATED = "TASK_UPDATED",
   TASK_STATUS_CHANGED = "TASK_STATUS_CHANGED",

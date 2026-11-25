@@ -23,7 +23,8 @@ export const LOG_CODES = {
     revoked: "apiKey.revoked"
   },
   domain: {
-    created: "domain.created"
+    created: "domain.created",
+    deleted: "domain.deleted"
   },
   session: {
     created: "session.created",

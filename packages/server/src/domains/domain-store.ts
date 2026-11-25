@@ -9,7 +9,7 @@ import type { Instant } from "@taxa/shared/units"
 import { recordActivity } from "../activity/activity-store.ts"
 import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
-import { domainMembers, domains } from "../database/schema.ts"
+import { domainMembers, domains, tasks } from "../database/schema.ts"
 import { ProblemError } from "../http/problem-error.ts"
 import { callerFields } from "../telemetry/change-fields.ts"
 import { LOG_CODES, type ServerLogger } from "../telemetry/log.ts"
@@ -85,4 +85,54 @@ export const createDomain = async (
     prefix: created.prefix
   })
   return created
+}
+
+/** The most refs a refusal names. */
+const NAMED = 5
+
+/**
+ * Deletes one of this person's domains, once nothing's filed in it, not even
+ * in the Bin. Its prefix stays taken, so its tasks' old refs still find them.
+ */
+export const deleteDomain = async (
+  db: Db,
+  log: ServerLogger,
+  caller: Caller,
+  name: string,
+  now: Instant
+): Promise<Domain> => {
+  const deleted = await db.transaction(async (tx) => {
+    const domain = await findDomain(tx, caller.user.id, name)
+    const left = await tx
+      .select({ number: tasks.number })
+      .from(tasks)
+      .where(and(eq(tasks.domainId, domain.id), isNull(tasks.purgedAt)))
+      .orderBy(asc(tasks.number))
+    if (left.length > 0) {
+      const refs = left.slice(0, NAMED).map(({ number }) => `${domain.prefix}-${number}`)
+      throw new ProblemError(
+        ProblemType.INVALID_REQUEST,
+        `${domain.name} still has ${left.length === 1 ? "a task" : `${left.length} tasks`} (${refs.join(", ")}${left.length > NAMED ? ", …" : ""}): move ${left.length === 1 ? "it" : "them"} to another domain, or delete ${left.length === 1 ? "it" : "them"} for good from the Bin, first.`
+      )
+    }
+    const version = domain.version + 1
+    await tx
+      .update(domains)
+      .set({ deletedAt: new Date(now), updatedAt: new Date(now), version })
+      .where(eq(domains.id, domain.id))
+    await recordActivity(tx, caller, now, {
+      type: ActivityType.DOMAIN_DELETED,
+      entityId: domain.id,
+      domainId: domain.id,
+      version,
+      changes: { deletedAt: { to: new Date(now).toISOString() } }
+    })
+    return { ...domain, version }
+  })
+  log.info(LOG_CODES.domain.deleted, `domain ${deleted.prefix} deleted`, {
+    ...callerFields(caller),
+    domainId: deleted.id,
+    prefix: deleted.prefix
+  })
+  return deleted
 }

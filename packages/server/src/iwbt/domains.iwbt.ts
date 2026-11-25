@@ -32,6 +32,32 @@ describe("domains", () => {
     await expectProblem(matt.client.createDomain({ name: "Ideas", prefix: "in" }), ProblemType.INVALID_REQUEST)
   })
 
+  it("are deleted once empty, even of the Bin, and old refs still find tasks moved out", async ({ server }) => {
+    const matt = await server.user("Matt")
+    await matt.addDomain("Home", "H")
+    await matt.addDomain("Personal", "P")
+    const tap = await matt.addTask("Fix the tap", { domain: "H" })
+    const old = await matt.addTask("Old idea", { domain: "H" })
+    await matt.client.deleteTask(old.ref)
+
+    const refused = await expectProblem(matt.client.deleteDomain("h"), ProblemType.INVALID_REQUEST)
+    expect(refused.message).toBe(
+      "Home still has 2 tasks (H-1, H-2): move them to another domain, or delete them for good from the Bin, first."
+    )
+    const moved = await matt.client.updateTask(tap.ref, { set: { domain: "P" } })
+    expect(moved.ref).toBe("P-1")
+    await matt.client.purgeTask(old.ref)
+
+    expect(await matt.client.deleteDomain("H")).toMatchObject({ name: "Home", prefix: "H" })
+    expect((await matt.client.domains()).map(({ prefix }) => prefix)).toEqual(["P"])
+    expect((await matt.client.task("H-1")).ref).toBe("P-1")
+    // Its prefix stays taken, so H-1 never means another task.
+    await expectProblem(matt.addDomain("Hobbies", "H"), ProblemType.PREFIX_TAKEN)
+    // Moving it back in would lose it.
+    await expectProblem(matt.client.undoTask(moved.ref, moved.version), ProblemType.VERSION_CONFLICT)
+    expect(server.logs.filter(({ code }) => code === "domain.deleted")).toHaveLength(1)
+  })
+
   it("are seen only by their members", async ({ server }) => {
     const matt = await server.user("Matt")
     const jo = await server.user("Jo")

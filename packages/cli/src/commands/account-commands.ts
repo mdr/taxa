@@ -47,6 +47,20 @@ const addDomain: Command = {
   }
 }
 
+const deleteDomain: Command = {
+  name: "delete-domain",
+  summary: "Delete a domain, once it has no tasks",
+  usage: `<prefix>
+  Move its tasks to another domain first (taxa edit H-142 --domain P), and empty
+  them from the Bin. Its prefix stays taken, so its tasks' old refs still work.`,
+  options: {},
+  run: async (context, _values, positionals) => {
+    const domain = await context.client.deleteDomain(oneArgument(positionals, "domain"))
+    print(context, domain, () => `Deleted ${domain.name} (${domain.prefix})`)
+    return ExitCode.OK
+  }
+}
+
 const agents: Command = {
   name: "agents",
   summary: "List your agents",
@@ -133,4 +147,14 @@ const revokeKey: Command = {
   }
 }
 
-export const ACCOUNT_COMMANDS: Command[] = [whoami, domains, addDomain, agents, addAgent, keys, addKey, revokeKey]
+export const ACCOUNT_COMMANDS: Command[] = [
+  whoami,
+  domains,
+  addDomain,
+  deleteDomain,
+  agents,
+  addAgent,
+  keys,
+  addKey,
+  revokeKey
+]

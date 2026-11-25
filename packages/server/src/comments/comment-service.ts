@@ -235,6 +235,7 @@ const undone = (type: ActivityType, changes: Record<string, FieldChange>, row: C
       }
     }
     case ActivityType.DOMAIN_CREATED:
+    case ActivityType.DOMAIN_DELETED:
     case ActivityType.TASK_CREATED:
     case ActivityType.TASK_UPDATED:
     case ActivityType.TASK_STATUS_CHANGED:
