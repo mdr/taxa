@@ -1,7 +1,8 @@
-import { Inbox, Keyboard, Sprout, Tag, Timer, Trash2 } from "lucide-react"
+import { Inbox, Keyboard, Tag, Timer, Trash2 } from "lucide-react"
 import { tagPath } from "../tags/tag-paths.ts"
 import { useTags } from "../tags/tag-queries.ts"
 import { Link, useLocation } from "wouter"
+import { TaxaLogo } from "./TaxaLogo.tsx"
 import styles from "./Sidebar.module.css"
 import { sidebarTestIds } from "./SidebarTestIds.ts"
 import { DomainBadge } from "../domains/DomainBadge.tsx"
@@ -141,7 +142,7 @@ export const Sidebar = () => {
   return (
     <nav className={styles.sidebar} aria-label="Lists">
       <p className={styles.brand}>
-        <Sprout size={20} className={styles.logo} aria-hidden />
+        <TaxaLogo size={22} />
         Taxa
       </p>
       <WhenLink

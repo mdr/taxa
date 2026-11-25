@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .ink { fill: #5b6b1c; stroke: #5b6b1c; }
+    @media (prefers-color-scheme: dark) { .ink { fill: #a9bd52; stroke: #a9bd52; } }
+  </style>
+  <mask id="cut">
+    <rect width="32" height="32" fill="#fff"/>
+    <g transform="translate(0 1) rotate(-12 16 17)">
+      <circle cx="16" cy="8.5" r="2" fill="#000"/>
+      <path d="M10.5 17.5 14.5 21 21.5 13.5" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </mask>
+  <g class="ink" mask="url(#cut)">
+    <path transform="translate(0 1) rotate(-12 16 17)" stroke="none" d="M8 3.5H24A2.5 2.5 0 0 1 26.5 6V23.5L16 29 5.5 23.5V6A2.5 2.5 0 0 1 8 3.5Z"/>
+  </g>
+  <path class="ink" transform="translate(0 1) rotate(-12 16 17)" d="M16 8.5V2" fill="none" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

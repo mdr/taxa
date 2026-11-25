@@ -6,6 +6,12 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ## Unreleased
 
+### New
+
+- **A logo.** Taxa's mark is a specimen tag, ticked, hanging on its string,
+  in moss green. It's the favicon in your browser's tabs, the icon when you
+  add Taxa to a phone's home screen, and beside the name in the sidebar.
+
 ## 0.3.0 (2026-11-25)
 
 ### Changed

@@ -1,0 +1,20 @@
+.logo {
+  flex: none;
+  color: var(--logo);
+  fill: currentcolor;
+}
+
+.cut {
+  fill: none;
+  stroke: #000;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.string {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState, type SubmitEvent } from "react"
 import styles from "./Onboarding.module.css"
+import { TaxaLogo } from "../app/TaxaLogo.tsx"
 import { onboardingTestIds } from "./OnboardingTestIds.ts"
 import { problemMessage } from "../api/problem-message.ts"
 import { queryKeys } from "../api/query-keys.ts"
@@ -49,7 +50,10 @@ export const Onboarding = () => {
   }
   return (
     <div className={styles.page}>
-      <p className={styles.brand}>Taxa</p>
+      <p className={styles.brand}>
+        <TaxaLogo size={28} />
+        Taxa
+      </p>
       <section className={styles.card} aria-labelledby="welcome-heading" data-testid={onboardingTestIds.welcome}>
         <p className={styles.eyebrow}>Getting started</p>
         <h1 id="welcome-heading" className={styles.heading}>
