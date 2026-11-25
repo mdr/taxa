@@ -84,7 +84,8 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
   const domains = useDomains()
   const query = listQuery(list)
   const tasks = useTasks(query)
-  const completed = useTasks({ ...query, status: TaskStatus.DONE }, home)
+  // Finished: done or cancelled, out of the way until asked for.
+  const completed = useTasks({ ...query, status: `${TaskStatus.DONE},${TaskStatus.CANCELLED}` }, home)
   const today = useToday()
   const [showCompleted, setShowCompleted] = useState(false)
   const domain = domains.data?.find(({ prefix }) => prefix === domainPrefix?.toUpperCase())
@@ -195,7 +196,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
               aria-expanded={completedOpen}
               onClick={() => {
                 if (!completedOpen)
-                  appAnalytics.track(ANALYTICS_CODES.list.completedShown, "showed completed tasks", {
+                  appAnalytics.track(ANALYTICS_CODES.list.completedShown, "showed finished tasks", {
                     domainPrefix: domain?.prefix
                   })
                 setShowCompleted(!completedOpen)
@@ -204,7 +205,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
               data-track="TaskListPage.showCompleted"
             >
               {completedOpen ? <ChevronDown size={15} aria-hidden /> : <ChevronRight size={15} aria-hidden />}
-              {earlierFound.length} completed
+              {earlierFound.length} finished
             </button>
             {completedOpen && (
               <ul className={styles.tasks} data-testid={taskListPageTestIds.completed}>

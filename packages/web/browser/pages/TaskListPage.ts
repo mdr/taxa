@@ -230,12 +230,13 @@ export class TaskListPage extends PageObject {
     await expect(this.#page.getByTestId(taskListPageTestIds.noMatches)).toHaveText(text)
   }
 
-  async showCompleted(): Promise<void> {
+  /** Opens the done and cancelled tasks. */
+  async showFinished(): Promise<void> {
     await this.#page.getByTestId(taskListPageTestIds.showCompleted).click()
   }
 
-  /** The completed tasks shown, as `ref title`, ✓ before each still ticked. */
-  async expectCompleted(tasks: string[]): Promise<void> {
+  /** The finished tasks shown, done and cancelled, as `ref title`, ✓ before each still ticked. */
+  async expectFinished(tasks: string[]): Promise<void> {
     await this.#expectRows(this.#page.getByTestId(taskListPageTestIds.completed), tasks)
   }
 

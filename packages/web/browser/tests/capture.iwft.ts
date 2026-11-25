@@ -116,22 +116,25 @@ test("a ticked-off task stays in place until you leave, with a chance to undo", 
   await taxa.expectTask("H-1", { status: TaskStatus.OPEN })
 })
 
-test("finished tasks can be found again, and unticked", async ({ taxa }) => {
+test("finished tasks, done or cancelled, can be found again, and unticked", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Fix the tap", { domain: "H" })
   await taxa.matt.addTask("Renew passport", { domain: "H" })
+  await taxa.matt.addTask("Book the plumber", { domain: "H" })
+  await taxa.matt.client.changeStatus("H-2", { status: TaskStatus.CANCELLED, reason: "Not going abroad" })
   const list = await (await taxa.openTab("Matt")).openInbox()
   await list.sidebar.openDomain("Home")
   await list.complete("Fix the tap")
-  await list.expectTasks(["✓ H-1 Fix the tap", "H-2 Renew passport"])
+  await list.expectTasks(["✓ H-1 Fix the tap", "H-3 Book the plumber"])
 
   await list.sidebar.openInbox()
   await list.sidebar.openDomain("Home")
-  await list.expectTasks(["H-2 Renew passport"])
-  await list.showCompleted()
-  await list.expectCompleted(["✓ H-1 Fix the tap"])
+  await list.expectTasks(["H-3 Book the plumber"])
+  await list.showFinished()
+  await list.expectFinished(["✓ H-1 Fix the tap", "H-2 Renew passport"])
+  await list.expectHighlights("Renew passport", "Cancelled")
   await list.reopen("Fix the tap")
-  await list.expectTasks(["H-1 Fix the tap", "H-2 Renew passport"])
+  await list.expectTasks(["H-1 Fix the tap", "H-3 Book the plumber"])
   await taxa.expectTask("H-1", { status: TaskStatus.OPEN })
 })
 

@@ -67,7 +67,8 @@
     text-decoration-color 300ms 150ms;
 }
 
-.row[data-done="true"] .title {
+.row[data-done="true"] .title,
+.row[data-cancelled="true"] .title {
   color: var(--muted);
   text-decoration-color: var(--faint);
 }

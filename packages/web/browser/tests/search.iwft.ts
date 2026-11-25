@@ -13,14 +13,14 @@ test("searching a list by title or notes, finished tasks included", async ({ tax
 
   await home.search("tap")
   await home.expectTasks(["H-1 Fix the kitchen tap", "H-2 Call the plumber"])
-  await home.expectCompleted(["✓ H-4 Buy a tap washer"])
+  await home.expectFinished(["✓ H-4 Buy a tap washer"])
   await home.search("Drips TAP")
   await home.expectTasks(["H-2 Call the plumber"])
   await home.expectAccessible()
 
   await home.search("washer")
   await home.expectNoMatches("Nothing still to do matches")
-  await home.expectCompleted(["✓ H-4 Buy a tap washer"])
+  await home.expectFinished(["✓ H-4 Buy a tap washer"])
   await home.search("boiler")
   await home.expectNoMatches("Nothing here matches “boiler”")
 

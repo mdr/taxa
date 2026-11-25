@@ -38,6 +38,13 @@ export interface Filing {
   file: (task: Task, request: UpdateTaskRequest) => void
 }
 
+/** Statuses a row says, beyond open and the tick of done. */
+const SHOWN_STATUSES: ReadonlySet<TaskStatus> = new Set([
+  TaskStatus.IN_PROGRESS,
+  TaskStatus.WAITING,
+  TaskStatus.CANCELLED
+])
+
 const dueClass = (due: IsoDate, today: IsoDate): string | undefined =>
   due < today ? styles.overdue : due === today ? styles.dueToday : styles.meta
 
@@ -101,6 +108,7 @@ export const TaskRow = ({
       ref={row}
       className={styles.row}
       data-done={done}
+      data-cancelled={task.status === TaskStatus.CANCELLED}
       data-celebrate={done && celebrate}
       data-highlighted={highlighted}
       data-testid={taskRowTestIds.row}
@@ -130,7 +138,7 @@ export const TaskRow = ({
         </Link>
       )}
       <span className={styles.details} data-testid={taskRowTestIds.highlights}>
-        {(task.status === TaskStatus.IN_PROGRESS || task.status === TaskStatus.WAITING) && (
+        {SHOWN_STATUSES.has(task.status) && (
           <span className={styles.meta}>
             <StatusIcon status={task.status} size={14} />
             {task.waitingOn ? `Waiting on ${task.waitingOn}` : capitalised(STATUS_TEXT[task.status])}
