@@ -1,11 +1,12 @@
 import { formatDay } from "@taxa/shared/dates/date-format"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
-import { isCarriedOver } from "@taxa/shared/tasks/when"
+import { isCarriedOver, When } from "@taxa/shared/tasks/when"
 import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { Link } from "wouter"
 import styles from "../sessions/Session.module.css"
 import { PlanEditor, type PlanRow } from "../sessions/plan/PlanEditor.tsx"
+import { QuickCapture } from "../tasks/list/QuickCapture.tsx"
 import type { PlannedEntry } from "../sessions/plan/session-plan-service.ts"
 import { minutesText } from "../sessions/session-text.ts"
 import { queryKeys } from "../api/query-keys.ts"
@@ -87,6 +88,7 @@ export const DayPlanPage = () => {
           {problem}
         </p>
       )}
+      <QuickCapture when={When.TODAY} />
       <PlanEditor
         rows={dayRows(planned, today)}
         suggestions={daySuggestions(

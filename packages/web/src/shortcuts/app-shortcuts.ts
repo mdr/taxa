@@ -2,7 +2,7 @@ import { MENU_KEY } from "./command-menu-service.ts"
 import { SESSION_PATH } from "../sessions/session-paths.ts"
 import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
 import { BIN_PATH } from "../tasks/bin/bin-path.ts"
-import { SOMEDAY_PATH, SOON_PATH, TODAY_PATH } from "../tasks/when/when-paths.ts"
+import { PLAN_TODAY_PATH, SOMEDAY_PATH, SOON_PATH, TODAY_PATH } from "../tasks/when/when-paths.ts"
 import type { UndoActions } from "../undo/undo-service.ts"
 import { FocusTarget, ShortcutGroup, type Shortcut, type ShortcutActions } from "./shortcut-service.ts"
 
@@ -20,8 +20,10 @@ const GO_TO: readonly { key: string; description: string; path: string }[] = [
   { key: "b", description: "Bin", path: BIN_PATH }
 ]
 
-/** Whether a page shows a list, with quick capture at the top. */
-const isList = (location: string): boolean => location === "/" || location.startsWith("/domains/")
+/** Pages with quick capture at the top: lists tasks live in, and the views of what's for today or soon. */
+const CAPTURES_ON = new Set(["/", TODAY_PATH, PLAN_TODAY_PATH, SOON_PATH])
+
+const hasCapture = (location: string): boolean => CAPTURES_ON.has(location) || location.startsWith("/domains/")
 
 /** The shortcuts on every page, given where you are and how to go elsewhere. */
 export const appShortcuts = (
@@ -35,7 +37,7 @@ export const appShortcuts = (
     description: "Add a task",
     group: ShortcutGroup.GENERAL,
     run: () => {
-      if (!isList(location)) navigate("/")
+      if (!hasCapture(location)) navigate("/")
       shortcuts.requestFocus(FocusTarget.CAPTURE)
     }
   },

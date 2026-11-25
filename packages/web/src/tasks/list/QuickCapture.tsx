@@ -1,4 +1,6 @@
+import type { TaskId } from "@taxa/shared/ids"
 import type { Task } from "@taxa/shared/tasks/task"
+import { When, whenRequest } from "@taxa/shared/tasks/when"
 import { Inbox, Plus } from "lucide-react"
 import { Link } from "wouter"
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type SubmitEvent } from "react"
@@ -25,7 +27,7 @@ import { OptionList } from "../../ui/OptionList.tsx"
 import { Popover, PopoverLook } from "../../ui/Popover.tsx"
 import { INBOX_CHOICE } from "../filing/filing.ts"
 import { loadCaptureFiling, saveCaptureFiling } from "./capture-filing.ts"
-import { useListSession } from "./list-session-service.ts"
+import { useToday } from "../../dates/use-today.ts"
 import { FocusTarget, useFocusRequested, useShortcutActions } from "../../shortcuts/shortcut-service.ts"
 
 /** In the Inbox, where a new task goes: the Inbox, or straight into a domain. */
@@ -74,11 +76,26 @@ const FilingPicker = ({ filing, onChoose }: { filing: string; onChoose: (choice:
   )
 }
 
+const PLACEHOLDER: Record<When.TODAY | When.SOON, string> = {
+  [When.TODAY]: "Add a task for today",
+  [When.SOON]: "Add a task for soon"
+}
+
 /**
  * A title, and Enter: into this domain if given; else the Inbox, or a domain
  * chosen for it there, which stays chosen for the next, here and next time.
+ * Given a `when`, the task is for then, so it's listed where it was added.
+ * Once added, a task shown on the page is highlighted there, if it can be.
  */
-export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefined }) => {
+export const QuickCapture = ({
+  domainPrefix,
+  when,
+  highlight
+}: {
+  domainPrefix?: string
+  when?: When.TODAY | When.SOON
+  highlight?: (id: TaskId) => void
+}) => {
   const [title, setTitle] = useState("")
   /** Tags picked with #, for the task about to be added. */
   const [tags, setTags] = useState<string[]>([])
@@ -103,7 +120,7 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
   const create = useCreateTask()
   const field = useRef<HTMLInputElement>(null)
   const { focusTaken } = useShortcutActions()
-  const { highlight } = useListSession()
+  const today = useToday()
   const focusWanted = useFocusRequested(FocusTarget.CAPTURE)
   useEffect(() => {
     if (!focusWanted) return
@@ -134,15 +151,21 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
     event.preventDefault()
     if (title.trim() === "") return
     create.mutate(
-      { title: title.trim(), tags, domain: domainPrefix ?? (filing === INBOX_CHOICE ? undefined : filing) },
+      {
+        title: title.trim(),
+        tags,
+        domain: domainPrefix ?? (filing === INBOX_CHOICE ? undefined : filing),
+        ...(when && whenRequest(when, today).set)
+      },
       {
         onSuccess: (task) => {
           setTitle("")
           setTags([])
-          const filedElsewhere = domainPrefix === undefined && !task.inbox
+          // Added from the Inbox straight into a domain, it isn't listed here.
+          const filedElsewhere = domainPrefix === undefined && when === undefined && !task.inbox
           setFiled(filedElsewhere ? task : undefined)
           // Highlighting the new row moves focus to it, for its keys; C comes back here.
-          if (!filedElsewhere) highlight(task.id)
+          if (!filedElsewhere) highlight?.(task.id)
           appAnalytics.track(ANALYTICS_CODES.task.captured, `captured ${task.ref}`, {
             taskId: task.id,
             taskRef: task.ref,
@@ -173,7 +196,7 @@ export const QuickCapture = ({ domainPrefix }: { domainPrefix: string | undefine
         aria-activedescendant={suggestions[highlighted] ? `${suggestionsId}-${highlighted}` : undefined}
         aria-label="New task"
         aria-keyshortcuts="C"
-        placeholder="Add a task"
+        placeholder={when ? PLACEHOLDER[when] : "Add a task"}
         data-testid={quickCaptureTestIds.title}
         data-track="QuickCapture.title"
       />

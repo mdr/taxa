@@ -82,8 +82,12 @@ hard security boundary, and the two are kept separate.
 
 Everything except the title is optional. A quick capture is a title in the
 Inbox, or straight into a domain picked beside it; the Inbox remembers the
-last one picked, in that browser, until another is chosen. A task captured into the list
-you're on is highlighted there, ready for its keys; `C` goes back to capture.
+last one picked, in that browser, until another is chosen. Today, Plan
+today and Soon capture too, into the Inbox or a domain picked the same way,
+and the task is for then: scheduled today, or put down for soon, so it's
+listed where it was added (while planning, at the end of the plan). A task
+captured into the list you're on is highlighted there, ready for its keys;
+`C` goes back to capture.
 
 The **Inbox** is where a task waits before it's filed: a task created without
 a domain goes into its creator's Inbox, in no domain, seen only by them. Its

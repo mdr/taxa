@@ -60,5 +60,12 @@ export const listQuery = (list: TaskList): ListTasksQuery => {
   }
 }
 
+/** For a view of what's for today or soon, what a task added there is for, so it's listed there. */
+export const capturesWhen = (list: TaskList): When.TODAY | When.SOON | undefined => {
+  if (list.type === ListType.TODAY) return When.TODAY
+  if (list.type === ListType.SOON) return When.SOON
+  return undefined
+}
+
 /** Whether tasks live in the list, so it can take new ones and show those finished: not so for a view across lists. */
 export const isHome = (list: TaskList): boolean => list.type === ListType.INBOX || list.type === ListType.DOMAIN

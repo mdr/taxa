@@ -1,6 +1,7 @@
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { describe, expect, it } from "vite-plus/test"
-import { isHome, listQuery, ListType } from "./task-list.ts"
+import { When } from "@taxa/shared/tasks/when"
+import { capturesWhen, isHome, listQuery, ListType } from "./task-list.ts"
 
 describe("task lists", () => {
   it("ask for the Inbox, a domain's tasks, or everything in progress", () => {
@@ -15,10 +16,18 @@ describe("task lists", () => {
     expect(listQuery({ type: ListType.SOMEDAY })).toEqual({ when: "SOMEDAY" })
   })
 
-  it("take new tasks only where tasks live", () => {
+  it("are homes only where tasks live", () => {
     expect(isHome({ type: ListType.INBOX })).toBe(true)
     expect(isHome({ type: ListType.DOMAIN, prefix: "H" })).toBe(true)
     expect(isHome({ type: ListType.IN_PROGRESS })).toBe(false)
     expect(isHome({ type: ListType.TODAY })).toBe(false)
+  })
+
+  it("take new tasks for today or soon in those views, and not in others across lists", () => {
+    expect(capturesWhen({ type: ListType.TODAY })).toBe(When.TODAY)
+    expect(capturesWhen({ type: ListType.SOON })).toBe(When.SOON)
+    expect(capturesWhen({ type: ListType.SOMEDAY })).toBeUndefined()
+    expect(capturesWhen({ type: ListType.IN_PROGRESS })).toBeUndefined()
+    expect(capturesWhen({ type: ListType.INBOX })).toBeUndefined()
   })
 })

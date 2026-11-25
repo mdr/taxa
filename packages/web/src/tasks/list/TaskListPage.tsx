@@ -28,7 +28,7 @@ import { useToday } from "../../dates/use-today.ts"
 import { useDomains } from "../../domains/domain-queries.ts"
 import { useTasks } from "../task-queries.ts"
 import { EmptyList, ListIcon, listHeading, listWhen } from "./ListLooks.tsx"
-import { isHome, listQuery, ListType, type TaskList } from "./task-list.ts"
+import { capturesWhen, isHome, listQuery, ListType, type TaskList } from "./task-list.ts"
 import { openedMemoryFor } from "./opened-memory.ts"
 
 /** Finds tasks in the list as you type; Escape clears it and leaves. */
@@ -66,6 +66,7 @@ const ListSearch = ({
 export const TaskListPage = ({ list }: { list: TaskList }) => {
   const domainPrefix = list.type === ListType.DOMAIN ? list.prefix : undefined
   const home = isHome(list)
+  const capturesFor = capturesWhen(list)
   // A session for each visit: the routes give each list its own page.
   const changes = useTaskChanges()
   const history = useUndo()
@@ -155,7 +156,9 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
             </Link>
           )}
         </header>
-        {home && <QuickCapture domainPrefix={domain?.prefix} />}
+        {(home || capturesFor !== undefined) && (
+          <QuickCapture domainPrefix={domain?.prefix} when={capturesFor} highlight={session.highlight} />
+        )}
         {tasks.isError ? (
           <p className={styles.problem} role="alert" data-testid={taskListPageTestIds.error}>
             {problemMessage(tasks.error)}

@@ -6,6 +6,7 @@ import { PlanEditor } from "./PlanEditor.ts"
 import { TaskListPage } from "./TaskListPage.ts"
 import { UndoNotice } from "./UndoNotice.ts"
 import { dayPlanPageTestIds } from "../../src/days/DayPlanPageTestIds.ts"
+import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
 
 /** Plan today: choosing today's tasks, and their order. Each row's time is its place: `1 Fix the tap`. */
 export class DayPlanPage extends PageObject {
@@ -29,6 +30,14 @@ export class DayPlanPage extends PageObject {
   /** How many tasks, and how long they're reckoned to take: `3 tasks · about 1 h estimated`. */
   async expectEstimated(text: string): Promise<void> {
     await expect(this.#page.getByTestId(dayPlanPageTestIds.estimated)).toHaveText(text)
+  }
+
+  /** Adds a new task for today, from the box at the top. */
+  async capture(title: string): Promise<void> {
+    const input = this.#page.getByTestId(quickCaptureTestIds.title)
+    await input.fill(title)
+    await input.press("Enter")
+    await expect(input).toHaveValue("")
   }
 
   /** Back to Today. */

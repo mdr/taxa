@@ -1,4 +1,4 @@
-import { TaskStatus } from "@taxa/shared/tasks/task"
+import { Horizon, TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
 test("capturing to the Inbox and filing a task", async ({ taxa }) => {
@@ -158,4 +158,35 @@ test("the Inbox remembers where quick capture last sent a task", async ({ taxa }
   await again.capture("Clear the gutters")
   await again.expectFiled("Added H-2 to Home.")
   await again.expectTasks([])
+})
+
+test("a task captured on Today or Soon is for then, and listed where it was added", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H", scheduled: "2026-01-05" })
+  const tab = await taxa.openTab("Matt")
+  const today = await (await tab.openInbox()).sidebar.openList("Today")
+  await today.expectTasks(["H-1 Fix the tap"])
+  await (await today.keyboard.addTask("Bleed the radiators")).expectHighlighted("Bleed the radiators")
+  await today.expectTasks(["H-1 Fix the tap", "IN-2 Bleed the radiators"])
+  await taxa.expectTask("IN-2", { scheduled: "2026-01-05", inbox: true })
+  await today.expectAccessible()
+
+  const soon = await today.sidebar.openList("Soon")
+  await soon.captureInto("Clear the gutters", "H")
+  await soon.expectTasks(["H-3 Clear the gutters"])
+  await taxa.expectTask("H-3", { horizon: Horizon.SOON, scheduled: undefined })
+})
+
+test("a task captured while planning today goes into the plan", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { scheduled: "2026-01-05" })
+  const today = await (await (await taxa.openTab("Matt")).openInbox()).sidebar.openList("Today")
+  const planning = await today.planToday()
+  await planning.plan.expectPlan(["1 Fix the tap"])
+  await planning.capture("Book the dentist")
+  await planning.plan.expectPlan(["1 Fix the tap", "2 Book the dentist"])
+  await taxa.expectTask("IN-2", { scheduled: "2026-01-05" })
+  await planning.expectAccessible()
+  const planned = await planning.done()
+  await planned.expectTasks(["IN-1 Fix the tap", "IN-2 Book the dentist"])
 })
