@@ -1,5 +1,7 @@
 import { ChecklistChangeType, type ChecklistItem, type ChecklistRequest } from "@taxa/shared/tasks/checklist"
-import { CornerDownRight, X } from "lucide-react"
+import { useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { CornerDownRight, GripVertical, X } from "lucide-react"
 import { useState } from "react"
 import { Link } from "wouter"
 import styles from "./ChecklistItemRow.module.css"
@@ -28,7 +30,7 @@ const ItemField = ({ text, onDone }: { text: string; onDone: (text: string | und
   )
 }
 
-/** One step on a task's checklist: tick it, reword it, make it a task, or take it off. */
+/** One step on a task's checklist: move it by its grip, tick it, reword it, make it a task, or take it off. */
 export const ChecklistItemRow = ({
   item,
   done,
@@ -41,8 +43,30 @@ export const ChecklistItemRow = ({
 }) => {
   const [editing, setEditing] = useState(false)
   const { id, text, task } = item
+  const { setNodeRef, setActivatorNodeRef, listeners, attributes, transform, transition, isDragging } = useSortable({
+    id
+  })
   return (
-    <li className={styles.item} data-done={done} data-testid={checklistItemRowTestIds.item}>
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={styles.item}
+      data-done={done}
+      data-dragging={isDragging}
+      data-testid={checklistItemRowTestIds.item}
+    >
+      <button
+        type="button"
+        ref={setActivatorNodeRef}
+        className={styles.grip}
+        {...attributes}
+        {...listeners}
+        aria-label={`Move “${text}”`}
+        data-testid={checklistItemRowTestIds.grip}
+        data-track="ChecklistItemRow.grip"
+      >
+        <GripVertical size={14} aria-hidden />
+      </button>
       <input
         type="checkbox"
         className={styles.tick}

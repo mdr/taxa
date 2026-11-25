@@ -56,6 +56,8 @@ export enum ChecklistChangeType {
   TICK = "TICK",
   RENAME = "RENAME",
   REMOVE = "REMOVE",
+  /** Moves an item to another place on the checklist. */
+  MOVE = "MOVE",
   /** Makes an item a task of its own, following on from this one; the item stays, ticked when that task is done. */
   MAKE_TASK = "MAKE_TASK"
 }
@@ -70,6 +72,12 @@ export const ChecklistRequestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal(ChecklistChangeType.TICK), item: ChecklistItemIdSchema, done: z.boolean() }),
   z.object({ type: z.literal(ChecklistChangeType.RENAME), item: ChecklistItemIdSchema, text: ChecklistTextSchema }),
   z.object({ type: z.literal(ChecklistChangeType.REMOVE), item: ChecklistItemIdSchema }),
+  z.object({
+    type: z.literal(ChecklistChangeType.MOVE),
+    item: ChecklistItemIdSchema,
+    /** After this item; first otherwise. */
+    after: ChecklistItemIdSchema.optional()
+  }),
   z.object({
     type: z.literal(ChecklistChangeType.MAKE_TASK),
     item: ChecklistItemIdSchema,

@@ -50,7 +50,21 @@ const withItem = (
   return checklist.map((each) => (each === item ? change(each) : each))
 }
 
-/** A checklist with an item added, ticked, reworded or removed, as asked; making a task is the service's. */
+/** A checklist with an item moved after another, or to the top. */
+const moved = (
+  checklist: Checklist,
+  id: ChecklistItemId,
+  after: ChecklistItemId | undefined,
+  ref: string
+): Checklist => {
+  const item = itemIn(checklist, id, ref)
+  if (after === id) return checklist
+  const rest = checklist.filter((each) => each !== item)
+  const at = after === undefined ? 0 : rest.indexOf(itemIn(rest, after, ref)) + 1
+  return [...rest.slice(0, at), item, ...rest.slice(at)]
+}
+
+/** A checklist with an item added, ticked, reworded, removed or moved, as asked; making a task is the service's. */
 export const changedChecklist = (
   checklist: Checklist,
   request: Exclude<z.infer<typeof ChecklistRequestSchema>, { type: ChecklistChangeType.MAKE_TASK }>,
@@ -74,5 +88,7 @@ export const changedChecklist = (
     case ChecklistChangeType.REMOVE:
       itemIn(checklist, request.item, ref)
       return checklist.filter(({ id }) => id !== request.item)
+    case ChecklistChangeType.MOVE:
+      return moved(checklist, request.item, request.after, ref)
   }
 }

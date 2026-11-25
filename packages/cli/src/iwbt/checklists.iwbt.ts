@@ -39,6 +39,21 @@ describe("taxa checklists", () => {
     expect(await output(server, matt.secret, ["show", "IN-1"])).toContain("\nChecklist  1/4\n1. [ ] Oxfam\n")
   })
 
+  it("moves an item after another, or to the top", async ({ server }) => {
+    const matt = await server.user("Matt")
+    await matt.addTask("Move charitable giving", { checklist: ["Oxfam", "Shelter", "RSPB"] })
+    expect(await output(server, matt.secret, ["move-item", "IN-1", "oxfam", "--after", "rspb"])).toBe(
+      "Checklist  0/3\n1. [ ] Shelter\n2. [ ] RSPB\n3. [ ] Oxfam\n"
+    )
+    expect(await output(server, matt.secret, ["move-item", "IN-1", "3", "--first"])).toBe(
+      "Checklist  0/3\n1. [ ] Oxfam\n2. [ ] Shelter\n3. [ ] RSPB\n"
+    )
+    expect(await taxaAs(server, matt.secret, ["move-item", "IN-1", "oxfam"])).toMatchObject({
+      exitCode: ExitCode.USAGE,
+      stderr: expect.stringContaining("Say where")
+    })
+  })
+
   it("makes an item a task, which ticks it when done", async ({ server }) => {
     const matt = await server.user("Matt")
     await matt.addDomain("Personal", "P")

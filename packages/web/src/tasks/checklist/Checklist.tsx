@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from "react"
 import { TaskChangeType, type TaskChange } from "../changes/task-changes-service.ts"
 import styles from "./Checklist.module.css"
 import { checklistTestIds } from "./ChecklistTestIds.ts"
-import { ChecklistItemRow } from "./ChecklistItemRow.tsx"
+import { ChecklistItems } from "./ChecklistItems.tsx"
 
 /** The box for adding items: Enter adds one, and a pasted list adds a line each. */
 const AddItem = ({ empty, add }: { empty: boolean; add: (texts: string[]) => void }) => {
@@ -104,11 +104,7 @@ export const Checklist = ({ task, change }: { task: Task; change: (change: TaskC
           <span style={{ width: `${(100 * progress.done) / progress.total}%` }} />
         </div>
       )}
-      <ul className={styles.items}>
-        {items.map(({ item, done }) => (
-          <ChecklistItemRow key={item.id} item={item} done={done} change={changeChecklist} />
-        ))}
-      </ul>
+      <ChecklistItems items={items} version={task.version} change={changeChecklist} />
       <AddItem empty={items.length === 0} add={add} />
       {finished && (
         <p className={styles.finished} role="status" data-testid={checklistTestIds.finished}>

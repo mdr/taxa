@@ -60,6 +60,42 @@ export class TaskChecklist extends PageObject {
     await this.#item(text).getByTestId(checklistItemRowTestIds.makeTask).click()
   }
 
+  /** Drags an item by its grip with the mouse, as a hand does, and lets go over the top half of another. */
+  async drag(text: string, onto: string): Promise<void> {
+    const grip = this.#item(text).getByTestId(checklistItemRowTestIds.grip)
+    await this.#item(text).hover()
+    const start = await grip.boundingBox()
+    const end = await this.#item(onto).boundingBox()
+    if (!start || !end) throw new Error("Can't drag: the item or the place isn't showing.")
+    await this.#page.mouse.move(start.x + start.width / 2, start.y + start.height / 2)
+    await this.#page.mouse.down()
+    await this.#page.mouse.move(start.x + start.width / 2, end.y + end.height / 4, { steps: 12 })
+    await this.#page.mouse.up()
+    // Letting go, the drag library swallows clicks for 50ms from a timer, so the drop isn't a click too: outlast it.
+    await this.#page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 50)))
+  }
+
+  /** Picks an item up by its grip with the keyboard, moves it down (or up, if negative) that many places, and puts it down. */
+  async moveByKeyboard(text: string, places: number): Promise<void> {
+    const grip = this.#item(text).getByTestId(checklistItemRowTestIds.grip)
+    await grip.focus()
+    await this.#page.keyboard.press("Space")
+    await expect(grip).toHaveAttribute("aria-pressed", "true")
+    // On picking up, it measures the items over the next frames and listens for arrow keys from a timer: let both happen.
+    await this.#page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve))))
+    )
+    // Each move is announced, for screen readers, once it's made: wait for that before the next key.
+    const announced = this.#page.getByTestId(checklistTestIds.announcer)
+    for (let step = 0; step < Math.abs(places); step++) {
+      const before = (await announced.textContent()) ?? ""
+      await this.#page.keyboard.press(places > 0 ? "ArrowDown" : "ArrowUp")
+      await expect(announced).not.toHaveText(before)
+    }
+    await this.#page.keyboard.press("Space")
+    await expect(grip).not.toHaveAttribute("aria-pressed", "true")
+  }
+
   /** Opens the task an item was made into. */
   async openItemTask(text: string): Promise<void> {
     await this.#item(text).getByTestId(checklistItemRowTestIds.taskRef).click()

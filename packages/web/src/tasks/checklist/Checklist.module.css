@@ -49,8 +49,9 @@
   list-style: none;
 }
 
+/* Its text lines up with the items': past the grip, the tick and the gaps, less its own padding and border. */
 .add {
-  margin-left: 1.75rem;
+  margin-left: calc(3rem - 0.4rem - 1px);
   padding: 0.3rem 0.4rem;
   border: 1px solid transparent;
   border-radius: 6px;

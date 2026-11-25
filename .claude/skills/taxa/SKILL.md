@@ -106,6 +106,7 @@ taxa checklist H-142                        # numbered, ticked ones [x]
 taxa check H-142 1 rspb                     # tick by number or text; taxa uncheck unticks
 taxa edit-item H-142 3 "RSPB (monthly)"
 taxa remove-item H-142 crisis
+taxa move-item H-142 rspb --after 1         # or --first
 taxa item-to-task H-142 oxfam               # a task of its own, following on from H-142
 ```
 

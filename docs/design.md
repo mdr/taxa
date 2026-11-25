@@ -35,7 +35,8 @@ Domain (Personal / Work / Home)   who can see it
   accounts to move, passwords to change, things to pack. An item is a line
   of text and a tick, with no ref, dates or status of its own, so a task with
   eight steps stays one task. Lists show how far through it is (`3/8`), and
-  its page a bar. Each item added, ticked, reworded or removed is a change to
+  its page a bar. Items are dragged by a grip into order (or moved with the
+  keyboard from it). Each item added, ticked, reworded, moved or removed is a change to
   the task, in its timeline (among the changes shown with **Show all
   changes**) and undone with ⌘Z. A pasted list adds a line each. When every
   item's ticked, its page offers to mark the task done. When a repeating

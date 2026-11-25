@@ -61,6 +61,32 @@ describe("checklists", () => {
     expect(JSON.stringify(server.logs)).not.toContain("Oxfam")
   })
 
+  it("moves an item after another, or to the top", async ({ server }) => {
+    const matt = await server.user("Matt")
+    const giving = await matt.addTask("Move charitable giving", { checklist: ["Oxfam", "Shelter", "RSPB"] })
+    const down = await matt.client.changeChecklist(giving.ref, {
+      type: ChecklistChangeType.MOVE,
+      item: itemId(giving, "Oxfam"),
+      after: itemId(giving, "RSPB")
+    })
+    expect(shown(down)).toEqual(["  Shelter", "  RSPB", "  Oxfam"])
+    const top = await matt.client.changeChecklist(giving.ref, {
+      type: ChecklistChangeType.MOVE,
+      item: itemId(giving, "RSPB")
+    })
+    expect(shown(top)).toEqual(["  RSPB", "  Shelter", "  Oxfam"])
+    const log = await matt.client.activity(giving.ref)
+    expect(activityText(log.at(-1)!, CONTEXT)).toBe("Matt moved “RSPB”")
+    await expectProblem(
+      matt.client.changeChecklist(giving.ref, {
+        type: ChecklistChangeType.MOVE,
+        item: itemId(giving, "RSPB"),
+        after: "0190f7a8-0000-7000-8000-000000000999"
+      }),
+      ProblemType.NOT_FOUND
+    )
+  })
+
   it("refuses items that aren't there, and more than it holds", async ({ server }) => {
     const matt = await server.user("Matt")
     const giving = await matt.addTask("Move charitable giving", { checklist: ["Oxfam"] })

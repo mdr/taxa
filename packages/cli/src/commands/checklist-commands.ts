@@ -125,6 +125,35 @@ ${ITEM_HELP}`,
   }
 }
 
+const moveItem: Command = {
+  name: "move-item",
+  summary: "Move an item to another place on a task's checklist",
+  usage: `<ref> <ITEM> (--after ITEM | --first)
+  --after ITEM          Just after this item
+  --first               To the top
+${ITEM_HELP}`,
+  options: { after: { type: "string" }, first: { type: "boolean" } },
+  run: async (context, values, positionals) => {
+    const [ref, word, ...rest] = positionals
+    if (ref === undefined || word === undefined || rest.length > 0)
+      throw new UsageError("Say which task, and which item.")
+    const after = stringOption(values, "after")
+    if ((after === undefined) === (values["first"] !== true))
+      throw new UsageError("Say where: --after ITEM, or --first.")
+    const task = await context.client.task(ref)
+    const item = itemFrom(task, word)
+    printChecklist(
+      context,
+      await context.client.changeChecklist(task.id, {
+        type: ChecklistChangeType.MOVE,
+        item: item.id,
+        ...(after !== undefined && { after: itemFrom(task, after).id })
+      })
+    )
+    return ExitCode.OK
+  }
+}
+
 const itemToTask: Command = {
   name: "item-to-task",
   summary: "Make a checklist item a task of its own, which ticks the item when it's done",
@@ -156,5 +185,6 @@ export const CHECKLIST_COMMANDS: Command[] = [
   addItem,
   editItem,
   removeItem,
+  moveItem,
   itemToTask
 ]

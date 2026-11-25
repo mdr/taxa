@@ -32,6 +32,8 @@ const checklistLabel = (request: ChecklistRequest, task: Task): string => {
       return `Removed an item from ${task.ref}`
     case ChecklistChangeType.MAKE_TASK:
       return `Made ${item} a task`
+    case ChecklistChangeType.MOVE:
+      return `Moved ${item}`
   }
 }
 

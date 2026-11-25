@@ -12,6 +12,41 @@
   background: var(--hover);
 }
 
+.item[data-dragging="true"] {
+  position: relative;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+}
+
+/* Shown where the row's pointed at or in use, as the actions are; always on a touch screen. */
+.grip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1rem;
+  height: 1.5rem;
+  margin-right: -0.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--faint);
+  cursor: grab;
+  opacity: 0;
+  touch-action: none;
+}
+
+.grip:focus-visible,
+.item:hover .grip,
+.item[data-dragging="true"] .grip {
+  opacity: 1;
+}
+
+.grip:hover {
+  color: var(--muted);
+}
+
 .tick {
   flex: none;
   width: 1rem;
@@ -92,6 +127,7 @@
 }
 
 @media (hover: none) {
+  .grip,
   .actions {
     opacity: 1;
   }

@@ -33,6 +33,25 @@ test("a checklist, added to by typing and pasting, ticked off, and the task mark
   await list.expectHighlights("Move charitable giving", "2/2")
 })
 
+test("items put in order by dragging, or with the keyboard, and kept in it", async ({ taxa }) => {
+  await taxa.matt.addDomain("Personal", "P")
+  await taxa.matt.addTask("Move charitable giving", { domain: "P", checklist: ["Oxfam", "Shelter", "RSPB"] })
+  const detail = await (await taxa.openTab("Matt")).openTask("P-1")
+
+  await detail.checklist.drag("RSPB", "Oxfam")
+  await detail.checklist.expectItems(["RSPB", "Oxfam", "Shelter"])
+  await detail.checklist.moveByKeyboard("RSPB", 2)
+  await detail.checklist.expectItems(["Oxfam", "Shelter", "RSPB"])
+  await detail.checklist.moveByKeyboard("Shelter", -1)
+  await detail.checklist.expectItems(["Shelter", "Oxfam", "RSPB"])
+  await detail.keyboard.press("mod+z")
+  await detail.checklist.expectItems(["Oxfam", "Shelter", "RSPB"])
+  await detail.expectAccessible()
+
+  const again = await (await taxa.openTab("Matt")).openTask("P-1")
+  await again.checklist.expectItems(["Oxfam", "Shelter", "RSPB"])
+})
+
 test("an item made a task of its own is ticked when that task is done", async ({ taxa }) => {
   await taxa.matt.addDomain("Personal", "P")
   await taxa.matt.addTask("Move charitable giving", { domain: "P", checklist: ["Oxfam", "Shelter"] })

@@ -6,6 +6,10 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ## Unreleased
 
+### New
+
+- Checklist items can be put in order: drag one by its grip, or pick it up with the keyboard. In the CLI, `taxa move-item`.
+
 ### Changed
 
 - A checklist item's "make it a task" button has a follow-on arrow instead of the open-link icon.

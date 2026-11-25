@@ -37,4 +37,14 @@ describe("checklistPhrase", () => {
       "removed “Oxfam” from the checklist"
     )
   })
+
+  it("says which item was moved, or that several were", () => {
+    const [oxfam, shelter, rspb] = [item(0, "Oxfam"), item(1, "Shelter"), item(2, "RSPB")]
+    expect(checklistPhrase({ from: [oxfam, shelter, rspb], to: [shelter, rspb, oxfam] })).toBe("moved “Oxfam”")
+    expect(checklistPhrase({ from: [oxfam, shelter, rspb], to: [rspb, oxfam, shelter] })).toBe("moved “RSPB”")
+    expect(checklistPhrase({ from: [oxfam, shelter, rspb], to: [rspb, shelter, oxfam] })).toBe(
+      "reordered the checklist"
+    )
+    expect(checklistPhrase({ from: [oxfam, shelter], to: [shelter] })).toBe("removed “Oxfam” from the checklist")
+  })
 })

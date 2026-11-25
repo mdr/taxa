@@ -4,5 +4,6 @@ export const checklistTestIds = {
   progress: "Checklist.progress",
   add: "Checklist.add",
   finished: "Checklist.finished",
-  markDone: "Checklist.markDone"
+  markDone: "Checklist.markDone",
+  announcer: "Checklist.announcer"
 }
