@@ -44,6 +44,12 @@ export class Sidebar extends PageObject {
     await expect(this.#page.getByTestId(newDomainFormTestIds.error)).toContainText(text)
   }
 
+  /** With only one domain: no list of them, nor adding one, just All tasks, going to its tasks. */
+  async expectOnlyAllTasks(): Promise<void> {
+    await expect(this.#page.getByTestId(sidebarTestIds.domain)).toHaveText(["All tasks"])
+    await expect(this.#page.getByTestId(newDomainFormTestIds.open)).toHaveCount(0)
+  }
+
   /** Each domain, as `prefix name`. */
   async expectDomains(domains: string[]): Promise<void> {
     await expect(this.#page.getByTestId(sidebarTestIds.domain)).toHaveText(
@@ -105,7 +111,7 @@ export class Sidebar extends PageObject {
   }
 
   async openDomain(name: string): Promise<TaskListPage> {
-    await this.#page.getByTestId(sidebarTestIds.domain).filter({ hasText: name }).click()
+    await this.#page.locator(`[data-testid="${sidebarTestIds.domain}"][data-domain="${name}"]`).click()
     return new TaskListPage(this.#page)
   }
 

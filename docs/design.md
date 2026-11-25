@@ -82,6 +82,8 @@ an agent working on a project can default to that project's domain.
 
 A view across domains (today in all of them, or a summary) may come later,
 as the exception. Built only once there's a second domain to switch to.
+Until then, with only one domain the sidebar has no Domains section, nor
+"New domain" (`taxa add-domain` adds one): just **All tasks**, its list.
 
 What you're in is a preference about attention. What an API key can see is
 a hard security boundary, and the two are kept separate.

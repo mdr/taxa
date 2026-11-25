@@ -70,9 +70,10 @@ test("what people do is tracked, from starting the app to capturing and changing
 
 test("a new domain's prefix is suggested from its name", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addDomain("Work", "W")
   const inbox = await (await taxa.openTab("Matt")).openInbox()
   await inbox.sidebar.addDomainSuggested("Hobbies")
-  await inbox.sidebar.expectDomains(["H Home", "HO Hobbies"])
+  await inbox.sidebar.expectDomains(["H Home", "W Work", "HO Hobbies"])
 })
 
 test("a captured task is highlighted, ready for its keys, and C goes back to capture", async ({ taxa }) => {

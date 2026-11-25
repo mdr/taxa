@@ -1,4 +1,4 @@
-import { Inbox, Keyboard, Tag, Timer, Trash2 } from "lucide-react"
+import { Inbox, Keyboard, Layers, Tag, Timer, Trash2 } from "lucide-react"
 import { tagPath } from "../tags/tag-paths.ts"
 import { useTags } from "../tags/tag-queries.ts"
 import { Link, useLocation } from "wouter"
@@ -16,6 +16,7 @@ import { BIN_PATH } from "../tasks/bin/bin-path.ts"
 import { WHEN_ICONS } from "../tasks/when/when-choices.tsx"
 import { When } from "@taxa/shared/tasks/when"
 import type { ReactNode } from "react"
+import type { Domain } from "@taxa/shared/domains/domain"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { useShortcutActions } from "../shortcuts/shortcut-service.ts"
 import type { Session } from "@taxa/shared/sessions/session"
@@ -129,6 +130,60 @@ const SidebarTags = () => {
   )
 }
 
+/**
+ * The domains, each a list, and adding one. With only one, there's nothing to
+ * tell apart or switch between: just a link to all its tasks.
+ */
+const SidebarDomains = ({
+  domains,
+  current
+}: {
+  domains: readonly Domain[]
+  current: (href: string) => "page" | undefined
+}) => {
+  const [only] = domains
+  if (only && domains.length === 1) {
+    const href = `/domains/${only.prefix}`
+    return (
+      <Link
+        href={href}
+        className={styles.link}
+        aria-current={current(href)}
+        data-testid={sidebarTestIds.domain}
+        data-domain={only.name}
+      >
+        <Layers size={16} className={styles.linkIcon} aria-hidden />
+        <span className={styles.name}>All tasks</span>
+      </Link>
+    )
+  }
+  return (
+    <>
+      <p className={styles.section}>Domains</p>
+      <ul className={styles.links}>
+        {domains.map((domain) => {
+          const href = `/domains/${domain.prefix}`
+          return (
+            <li key={domain.id}>
+              <Link
+                href={href}
+                className={styles.link}
+                aria-current={current(href)}
+                data-testid={sidebarTestIds.domain}
+                data-domain={domain.name}
+              >
+                <DomainBadge prefix={domain.prefix} />
+                <span className={styles.name}>{domain.name}</span>
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+      <NewDomainForm />
+    </>
+  )
+}
+
 export const Sidebar = () => {
   const [location] = useLocation()
   const domains = useDomains()
@@ -194,26 +249,7 @@ export const Sidebar = () => {
         <span className={styles.name}>Session</span>
         {session && <SessionLeft session={session} />}
       </Link>
-      <p className={styles.section}>Domains</p>
-      <ul className={styles.links}>
-        {domains.data?.map((domain) => {
-          const href = `/domains/${domain.prefix}`
-          return (
-            <li key={domain.id}>
-              <Link
-                href={href}
-                className={styles.link}
-                aria-current={current(href)}
-                data-testid={sidebarTestIds.domain}
-              >
-                <DomainBadge prefix={domain.prefix} />
-                <span className={styles.name}>{domain.name}</span>
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-      <NewDomainForm />
+      <SidebarDomains domains={domains.data ?? []} current={current} />
       <WhenLink
         when={When.SOMEDAY}
         href={SOMEDAY_PATH}

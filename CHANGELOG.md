@@ -6,6 +6,10 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ## Unreleased
 
+### Changed
+
+- With only one domain, the sidebar has no Domains section or "New domain": just **All tasks**, going to that domain's list. A second domain (`taxa add-domain`) brings the section back.
+
 ## 0.5.0 (2026-11-25)
 
 ### New
