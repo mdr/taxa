@@ -12,6 +12,8 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ### Changed
 
+- Undoing adding a task takes it back completely: it no longer lands in the Bin.
+- Undoing making a checklist item a task takes that task back too, unless it's been changed since.
 - A checklist item's "make it a task" button has a follow-on arrow instead of the open-link icon.
 
 ## 0.4.0 (2026-11-25)

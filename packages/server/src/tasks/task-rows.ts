@@ -20,14 +20,19 @@ const isoOf = (date: Date | null): string | undefined => date?.toISOString()
 
 export enum Deletion {
   DELETE = "DELETE",
+  /** Deleted by undoing what made it: out of the bin too. */
+  UNCREATE = "UNCREATE",
   RESTORE = "RESTORE"
 }
 
 /** When a task was put in its horizon, as stored: now, if it has one; none, if not. */
 export const horizonSetAtFor = (state: TaskState, now: number): Date | null => (state.horizon ? new Date(now) : null)
 
-export const deletedAtFor = (deletion: Deletion, at: number): Date | null =>
-  deletion === Deletion.DELETE ? new Date(at) : null
+/** A task's deletion, as stored. */
+export const deletionValues = (deletion: Deletion, at: number): { deletedAt: Date | null; uncreated: boolean } => ({
+  deletedAt: deletion === Deletion.RESTORE ? null : new Date(at),
+  uncreated: deletion === Deletion.UNCREATE
+})
 
 export const inProgressIdsOf = (row: TaskRow): ActorIds | undefined =>
   row.inProgressUserId

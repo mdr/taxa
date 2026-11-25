@@ -34,15 +34,27 @@ describe("undo", () => {
     ])
   })
 
-  it("deletes a task added by mistake, and restores a deleted one", async ({ server }) => {
+  it("takes back a task added by mistake, not even leaving it in the bin, and redoes it", async ({ server }) => {
     const matt = await server.user("Matt")
     const oops = await matt.addTask("Fix the tpa")
     const deleted = await matt.client.undoTask(oops.id, oops.version)
     expect(deleted.deletedAt).toBeDefined()
     expect(await matt.client.tasks({})).toEqual([])
-    expect((await matt.client.tasks({ deleted: "true" })).map(({ title }) => title)).toEqual(["Fix the tpa"])
+    expect(await matt.client.tasks({ deleted: "true" })).toEqual([])
     const restored = await matt.client.undoTask(oops.id, deleted.version)
     expect(restored.deletedAt).toBeUndefined()
+    const again = await matt.client.undoTask(oops.id, restored.version)
+    expect(again.deletedAt).toBeDefined()
+    expect(await matt.client.tasks({ deleted: "true" })).toEqual([])
+  })
+
+  it("puts a deleted task back in the bin, undoing restoring it", async ({ server }) => {
+    const matt = await server.user("Matt")
+    const tap = await matt.addTask("Fix the tap")
+    await matt.client.deleteTask(tap.ref)
+    const restored = await matt.client.restoreTask(tap.ref)
+    await matt.client.undoTask(tap.id, restored.version)
+    expect((await matt.client.tasks({ deleted: "true" })).map(({ title }) => title)).toEqual(["Fix the tap"])
   })
 
   it("undoes an agent's change, and won't undo what's been changed since", async ({ server }) => {

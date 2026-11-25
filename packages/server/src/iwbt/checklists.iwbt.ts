@@ -141,6 +141,40 @@ describe("checklists", () => {
     expect(server.logs.filter(({ code }) => code === "task.created")).toHaveLength(2)
   })
 
+  it("undoing making an item a task takes that task back too, and redoing it brings it back", async ({ server }) => {
+    const matt = await server.user("Matt")
+    await matt.addDomain("Personal", "P")
+    const giving = await matt.addTask("Move charitable giving", { domain: "P", checklist: ["Oxfam", "Shelter"] })
+    const made = await matt.client.changeChecklist(giving.ref, {
+      type: ChecklistChangeType.MAKE_TASK,
+      item: itemId(giving, "Oxfam")
+    })
+    const undone = await matt.client.undoTask(giving.ref, made.version)
+    expect(shown(undone)).toEqual(["  Oxfam", "  Shelter"])
+    expect((await matt.client.tasks({})).map(({ ref }) => ref)).toEqual(["P-1"])
+    expect(await matt.client.tasks({ deleted: "true" })).toEqual([])
+    const redone = await matt.client.undoTask(giving.ref, undone.version)
+    expect(shown(redone)).toEqual(["  Oxfam → P-2", "  Shelter"])
+    expect((await matt.client.task("P-2")).deletedAt).toBeUndefined()
+    const again = await matt.client.undoTask(giving.ref, redone.version)
+    expect(shown(again)).toEqual(["  Oxfam", "  Shelter"])
+    expect((await matt.client.tasks({})).map(({ ref }) => ref)).toEqual(["P-1"])
+  })
+
+  it("won't undo making an item a task once that task's changed", async ({ server }) => {
+    const matt = await server.user("Matt")
+    await matt.addDomain("Personal", "P")
+    const giving = await matt.addTask("Move charitable giving", { domain: "P", checklist: ["Oxfam"] })
+    const made = await matt.client.changeChecklist(giving.ref, {
+      type: ChecklistChangeType.MAKE_TASK,
+      item: itemId(giving, "Oxfam")
+    })
+    await matt.client.updateTask("P-2", { set: { title: "Move Oxfam to my name" } })
+    await expectProblem(matt.client.undoTask(giving.ref, made.version), ProblemType.VERSION_CONFLICT)
+    expect((await matt.client.task("P-2")).deletedAt).toBeUndefined()
+    expect(shown(await matt.client.task(giving.ref))).toEqual(["  Oxfam → P-2"])
+  })
+
   it("starts again each time a repeating task comes round", async ({ server }) => {
     const matt = await server.user("Matt")
     const review = await matt.addTask("Weekly review", {

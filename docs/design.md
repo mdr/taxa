@@ -391,8 +391,11 @@ the Zod schemas in `shared`.
   agent). The UI marks automated changes clearly. The server can undo any
   entry in the log (⌘Z and `taxa undo` use this): each records the version it brought the task
   to, and undoing it puts back each field it changed, unless one has been
-  changed since. Undoing an addition deletes the task, undoing a deletion
-  restores it, and an undo is itself an entry, so undoing it redoes.
+  changed since. Undo takes things back to as they were: undoing an
+  addition uncreates the task, gone from everywhere, the Bin too (kept a
+  day, for redoing, then deleted for good), and undoing making a checklist
+  item a task uncreates that task too, unless it's changed since. Undoing a
+  deletion restores it, and an undo is itself an entry, so undoing it redoes.
   `taxa undo` names the change by its number in the log rather than taking
   the last, which may be someone else's. In the
   web app, ⌘Z undoes the tab's last change and ⇧⌘Z redoes it; an offer to

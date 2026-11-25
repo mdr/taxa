@@ -34,12 +34,12 @@ describe("taxa undo", () => {
     expect((await matt.client.task("1")).priority).toBe("HIGH")
   })
 
-  it("deletes a task added by mistake", async ({ server }) => {
+  it("takes back a task added by mistake, not even leaving it in the bin", async ({ server }) => {
     const matt = await server.user("Matt")
     await matt.addTask("Fix the tpa")
     await taxa(server, matt, "undo", "1", "--version", "1")
     expect((await taxa(server, matt, "list")).stdout).toBe("No tasks.\n")
-    expect((await taxa(server, matt, "list", "--deleted")).stdout).toContain("IN-1  Fix the tpa")
+    expect((await taxa(server, matt, "list", "--deleted")).stdout).toBe("No tasks.\n")
   })
 
   it("says when what a change did has been changed since, with its own exit code", async ({ server }) => {

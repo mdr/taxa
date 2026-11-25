@@ -62,7 +62,7 @@ export const findTasks = async (
       db,
       userId,
       and(
-        deleted ? isNotNull(tasks.deletedAt) : isNull(tasks.deletedAt),
+        deleted ? and(isNotNull(tasks.deletedAt), eq(tasks.uncreated, false)) : isNull(tasks.deletedAt),
         inArray(tasks.status, [...statuses]),
         domainId === undefined ? undefined : eq(tasks.domainId, domainId),
         followsOnId === undefined ? undefined : eq(tasks.followsOnId, followsOnId),

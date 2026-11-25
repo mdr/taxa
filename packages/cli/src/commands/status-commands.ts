@@ -135,7 +135,7 @@ const undo: Command = {
   usage: `<ref> --version N
   --version N           The change to undo, by the number taxa log gives it
 It takes a number, not "the last", because the last change may be someone else's.
-Undoing a change that added the task deletes it; one that deleted it restores it.
+Undoing a change that added the task takes it back, not even leaving it in the bin; one that deleted it restores it.
 Undoing an undo redoes it. Exit 3 if what the change did has been changed since.`,
   options: { version: { type: "string" } },
   run: async (context, values, positionals) => {

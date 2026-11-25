@@ -8,5 +8,8 @@ export const BIN_KEEPS_DAYS = 30
 
 export const BIN_KEEPS_MS: Ms = BIN_KEEPS_DAYS * 24 * 60 * 60 * 1000
 
+/** How long a task uncreated by an undo is kept, for redoing that: about as long as a page keeps what it can redo. */
+export const UNCREATED_KEEPS_MS: Ms = 24 * 60 * 60 * 1000
+
 /** How many tasks were deleted for good. */
 export const PurgedSchema = z.object({ purged: z.number().int().nonnegative() })

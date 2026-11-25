@@ -13,6 +13,7 @@ import { domainMembers, domains, tasks } from "../database/schema.ts"
 import { ProblemError } from "../http/problem-error.ts"
 import { callerFields } from "../telemetry/change-fields.ts"
 import { LOG_CODES, type ServerLogger } from "../telemetry/log.ts"
+import { purgeUncreated } from "../tasks/purging.ts"
 
 type DomainRow = typeof domains.$inferSelect
 
@@ -103,6 +104,7 @@ export const deleteDomain = async (
 ): Promise<Domain> => {
   const deleted = await db.transaction(async (tx) => {
     const domain = await findDomain(tx, caller.user.id, name)
+    await purgeUncreated(tx, domain.id, now)
     const left = await tx
       .select({ number: tasks.number })
       .from(tasks)

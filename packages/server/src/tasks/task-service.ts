@@ -32,7 +32,7 @@ import { findDomain } from "../domains/domain-store.ts"
 import { ProblemError } from "../http/problem-error.ts"
 import { callerFields } from "../telemetry/change-fields.ts"
 import { LOG_CODES, type ServerLogCode, type ServerLogger } from "../telemetry/log.ts"
-import { Deletion, deletedAtFor, horizonSetAtFor, stateOf, valuesOf, type TaskRow } from "./task-rows.ts"
+import { Deletion, deletionValues, horizonSetAtFor, stateOf, valuesOf, type TaskRow } from "./task-rows.ts"
 import {
   changesAcross,
   changeStatus,
@@ -296,7 +296,7 @@ export const changeTask = async (
       .update(tasks)
       .set({
         ...valuesOf(state),
-        ...(deletion && { deletedAt: deletedAtFor(deletion, now) }),
+        ...(deletion && deletionValues(deletion, now)),
         // When it last went into soon or someday, or came out: bookkeeping, not a change to log.
         ...(changes["horizon"] && { horizonSetAt: horizonSetAtFor(state, now) }),
         updatedAt: new Date(now),
@@ -314,7 +314,7 @@ export const changeTask = async (
     return {
       task: await taskFrom(tx, await findTask(tx, caller.user.id, { type: "ID", id: row.id })),
       changes,
-      stopped: deletion === Deletion.DELETE ? await stopDeletedTask(tx, row.id, now) : []
+      stopped: deletion && deletion !== Deletion.RESTORE ? await stopDeletedTask(tx, row.id, now) : []
     }
   })
   // Only changes that changed something: an edit that matches the task as it is has no effect to log.
@@ -414,10 +414,19 @@ export const deletion = (state: TaskState, row: TaskRow, now: Instant): Applied 
   deletion: Deletion.DELETE
 })
 
+/** Undoing what made a task: deleted, and not even in the bin; the log says so, so redoing it and undoing that again does too. */
+export const uncreation = (state: TaskState, row: TaskRow, now: Instant): Applied => ({
+  state,
+  changes: row.deletedAt ? NO_CHANGES : { deletedAt: { to: new Date(now).toISOString() }, uncreated: { to: true } },
+  deletion: Deletion.UNCREATE
+})
+
 /** Restoring a deleted task. */
 export const restoration = (state: TaskState, row: TaskRow): Applied => ({
   state,
-  changes: row.deletedAt ? { deletedAt: { from: row.deletedAt.toISOString() } } : NO_CHANGES,
+  changes: row.deletedAt
+    ? { deletedAt: { from: row.deletedAt.toISOString() }, ...(row.uncreated && { uncreated: { from: true } }) }
+    : NO_CHANGES,
   deletion: Deletion.RESTORE
 })
 

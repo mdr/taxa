@@ -7,11 +7,12 @@ import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
 import { ProblemError } from "../http/problem-error.ts"
 import { LOG_CODES, type ServerLogger } from "../telemetry/log.ts"
-import { changeTask, deletion, restoration, type Applied } from "./task-service.ts"
+import { changeTask, deletion, restoration, uncreation, type Applied } from "./task-service.ts"
 import { revertedState, RevertType } from "./task-state.ts"
 import type { TaskRow } from "./task-rows.ts"
 import type { TaskState } from "./task-state.ts"
 import { occurrencesReverted } from "./repeating.ts"
+import { madeTasksReverted } from "./made-tasks.ts"
 import { eq } from "drizzle-orm"
 import type { DomainId } from "@taxa/shared/ids"
 import { domains } from "../database/schema.ts"
@@ -36,7 +37,10 @@ export const undoTask = (
     apply: async (state, row, tx) => {
       const change = await changeTo(tx, row.id, version)
       if (!change) throw new ProblemError(ProblemType.NOT_FOUND, `${ref} has no change to version ${version} to undo.`)
-      return { ...(await undone(tx, change.type, change.changes, state, row, now, ref)), undoesVersion: version }
+      return {
+        ...(await undone(tx, caller, change.type, change.changes, { state, row, now, ref })),
+        undoesVersion: version
+      }
     }
   })
 
@@ -84,26 +88,40 @@ const refuseDeletedDomain = async (
     )
 }
 
+interface Undoing {
+  state: TaskState
+  row: TaskRow
+  now: Instant
+  ref: string
+}
+
 const undone = async (
   tx: Db,
+  caller: Caller,
   type: ActivityType,
   changes: Parameters<typeof revertedState>[1],
-  state: TaskState,
-  row: TaskRow,
-  now: Instant,
-  ref: string
+  { state, row, now, ref }: Undoing
 ): Promise<Applied> => {
   switch (type) {
     case ActivityType.TASK_CREATED:
+      return { ...uncreation(state, row, now), type: ActivityType.TASK_DELETED }
     case ActivityType.TASK_RESTORED:
-      return { ...deletion(state, row, now), type: ActivityType.TASK_DELETED }
+      // Redoing what an undo uncreated, undone again, uncreates it again.
+      return {
+        ...(changes["uncreated"] ? uncreation(state, row, now) : deletion(state, row, now)),
+        type: ActivityType.TASK_DELETED
+      }
     case ActivityType.TASK_DELETED:
       return { ...restoration(state, row), type: ActivityType.TASK_RESTORED }
     case ActivityType.TASK_UPDATED:
-    case ActivityType.TASK_STATUS_CHANGED:
+    case ActivityType.TASK_STATUS_CHANGED: {
       await refuseDeletedDomain(tx, changes, ref)
+      const outcome = reverted(state, changes, ref)
+      // Items made tasks go with them, or come back.
+      await madeTasksReverted(tx, caller, now, changes)
       // Either may have caught up missed days too.
-      return withOccurrences(tx, now, row, reverted(state, changes, ref), changes)
+      return withOccurrences(tx, now, row, outcome, changes)
+    }
     case ActivityType.TASK_OCCURRENCE_RECORDED:
       return {
         ...(await withOccurrences(tx, now, row, reverted(state, changes, ref), changes)),

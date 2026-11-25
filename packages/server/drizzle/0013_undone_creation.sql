@@ -1,0 +1,1 @@
+ALTER TABLE "tasks" ADD COLUMN "uncreated" boolean DEFAULT false NOT NULL;

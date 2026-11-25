@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm"
 import type { StoredChecklistItem } from "@taxa/shared/tasks/checklist"
 import {
   bigserial,
+  boolean,
   date,
   index,
   integer,
@@ -152,6 +153,11 @@ export const tasks = pgTable(
     deletedAt: instant("deleted_at"),
     /** When it was deleted for good: what was written in it is gone, and it's never shown again. */
     purgedAt: instant("purged_at"),
+    /**
+     * Deleted by undoing what made it: never in the bin, as if it had never
+     * been made, and kept only for redoing that, until the bin's next cleared.
+     */
+    uncreated: boolean("uncreated").notNull().default(false),
     version: version()
   },
   (table) => [

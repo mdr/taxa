@@ -39,6 +39,9 @@ describe("domains", () => {
     const tap = await matt.addTask("Fix the tap", { domain: "H" })
     const old = await matt.addTask("Old idea", { domain: "H" })
     await matt.client.deleteTask(old.ref)
+    // Taken back by an undo: not in the bin, and nothing to stop the domain going.
+    const oops = await matt.addTask("Fix the tpa", { domain: "H" })
+    await matt.client.undoTask(oops.id, oops.version)
 
     const refused = await expectProblem(matt.client.deleteDomain("h"), ProblemType.INVALID_REQUEST)
     expect(refused.message).toBe(

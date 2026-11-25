@@ -1,6 +1,6 @@
 import { describe, expect } from "vite-plus/test"
 import { ProblemType } from "@taxa/shared/api/problem"
-import { BIN_KEEPS_MS } from "@taxa/shared/tasks/bin"
+import { BIN_KEEPS_MS, UNCREATED_KEEPS_MS } from "@taxa/shared/tasks/bin"
 import { expectProblem } from "../test-support/problems.ts"
 import { useInProcessServer } from "../test-support/use-in-process-server.ts"
 
@@ -48,6 +48,17 @@ describe("the bin", () => {
     expect((await matt.client.tasks()).map(({ ref }) => ref)).toEqual([kept.ref])
     expect((await anna.client.tasks({ deleted: "true" })).map(({ ref }) => ref)).toEqual([hers.ref])
     expect(await matt.client.emptyBin()).toBe(0)
+  })
+
+  it("clears out tasks uncreated by an undo after a day, kept that long only for redoing it", async ({ server }) => {
+    const matt = await server.user("Matt")
+    const oops = await matt.addTask("Fix the tpa")
+    await matt.client.undoTask(oops.id, oops.version)
+    server.advance(UNCREATED_KEEPS_MS)
+    expect(await server.clearOldBin()).toBe(0)
+    server.advance(1)
+    expect(await server.clearOldBin()).toBe(1)
+    expect((await server.stored(oops.id)).title).toBe("")
   })
 
   it("clears out tasks left in it for 30 days", async ({ server }) => {
