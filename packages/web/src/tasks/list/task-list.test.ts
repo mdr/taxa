@@ -23,10 +23,10 @@ describe("task lists", () => {
     expect(isHome({ type: ListType.TODAY })).toBe(false)
   })
 
-  it("take new tasks for today or soon in those views, and not in others across lists", () => {
+  it("take new tasks for today, soon or someday in those views, and not in others across lists", () => {
     expect(capturesWhen({ type: ListType.TODAY })).toBe(When.TODAY)
     expect(capturesWhen({ type: ListType.SOON })).toBe(When.SOON)
-    expect(capturesWhen({ type: ListType.SOMEDAY })).toBeUndefined()
+    expect(capturesWhen({ type: ListType.SOMEDAY })).toBe(When.SOMEDAY)
     expect(capturesWhen({ type: ListType.IN_PROGRESS })).toBeUndefined()
     expect(capturesWhen({ type: ListType.INBOX })).toBeUndefined()
   })

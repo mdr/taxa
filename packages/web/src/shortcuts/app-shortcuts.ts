@@ -20,8 +20,8 @@ const GO_TO: readonly { key: string; description: string; path: string }[] = [
   { key: "b", description: "Bin", path: BIN_PATH }
 ]
 
-/** Pages with quick capture at the top: lists tasks live in, and the views of what's for today or soon. */
-const CAPTURES_ON = new Set(["/", TODAY_PATH, PLAN_TODAY_PATH, SOON_PATH])
+/** Pages with quick capture at the top: lists tasks live in, and the views of what's for today, soon or someday. */
+const CAPTURES_ON = new Set(["/", TODAY_PATH, PLAN_TODAY_PATH, SOON_PATH, SOMEDAY_PATH])
 
 const hasCapture = (location: string): boolean => CAPTURES_ON.has(location) || location.startsWith("/domains/")
 

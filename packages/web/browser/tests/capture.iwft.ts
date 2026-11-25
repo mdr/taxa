@@ -160,7 +160,7 @@ test("the Inbox remembers where quick capture last sent a task", async ({ taxa }
   await again.expectTasks([])
 })
 
-test("a task captured on Today or Soon is for then, and listed where it was added", async ({ taxa }) => {
+test("a task captured on Today, Soon or Someday is for then, and listed where it was added", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Fix the tap", { domain: "H", scheduled: "2026-01-05" })
   const tab = await taxa.openTab("Matt")
@@ -175,6 +175,11 @@ test("a task captured on Today or Soon is for then, and listed where it was adde
   await soon.captureInto("Clear the gutters", "H")
   await soon.expectTasks(["H-3 Clear the gutters"])
   await taxa.expectTask("H-3", { horizon: Horizon.SOON, scheduled: undefined })
+
+  const someday = await soon.sidebar.openList("Someday")
+  await someday.capture("Learn the cello")
+  await someday.expectTasks(["H-4 Learn the cello"])
+  await taxa.expectTask("H-4", { horizon: Horizon.SOMEDAY })
 })
 
 test("a task captured while planning today goes into the plan", async ({ taxa }) => {

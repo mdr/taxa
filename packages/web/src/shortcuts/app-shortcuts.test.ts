@@ -40,8 +40,8 @@ describe("appShortcuts", () => {
     expect(focused).toEqual([FocusTarget.CAPTURE])
   })
 
-  it("adds a task for today or soon from those views, and while planning today", () => {
-    for (const location of ["/today", "/today/plan", "/soon"]) {
+  it("adds a task for today, soon or someday from those views, and while planning today", () => {
+    for (const location of ["/today", "/today/plan", "/soon", "/someday"]) {
       const { went, focused, shortcuts } = setUp(location)
       run(shortcuts, "c")
       expect(went).toEqual([])

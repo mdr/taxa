@@ -28,6 +28,7 @@ import { Popover, PopoverLook } from "../../ui/Popover.tsx"
 import { INBOX_CHOICE } from "../filing/filing.ts"
 import { loadCaptureFiling, saveCaptureFiling } from "./capture-filing.ts"
 import { useToday } from "../../dates/use-today.ts"
+import type { CaptureWhen } from "./task-list.ts"
 import { FocusTarget, useFocusRequested, useShortcutActions } from "../../shortcuts/shortcut-service.ts"
 
 /** In the Inbox, where a new task goes: the Inbox, or straight into a domain. */
@@ -76,9 +77,10 @@ const FilingPicker = ({ filing, onChoose }: { filing: string; onChoose: (choice:
   )
 }
 
-const PLACEHOLDER: Record<When.TODAY | When.SOON, string> = {
+const PLACEHOLDER: Record<CaptureWhen, string> = {
   [When.TODAY]: "Add a task for today",
-  [When.SOON]: "Add a task for soon"
+  [When.SOON]: "Add a task for soon",
+  [When.SOMEDAY]: "Add a task for someday"
 }
 
 /**
@@ -93,7 +95,7 @@ export const QuickCapture = ({
   highlight
 }: {
   domainPrefix?: string
-  when?: When.TODAY | When.SOON
+  when?: CaptureWhen
   highlight?: (id: TaskId) => void
 }) => {
   const [title, setTitle] = useState("")

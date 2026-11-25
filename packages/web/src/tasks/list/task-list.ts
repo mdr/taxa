@@ -60,10 +60,14 @@ export const listQuery = (list: TaskList): ListTasksQuery => {
   }
 }
 
-/** For a view of what's for today or soon, what a task added there is for, so it's listed there. */
-export const capturesWhen = (list: TaskList): When.TODAY | When.SOON | undefined => {
+/** The views of what's for a time, each taking new tasks for then. */
+export type CaptureWhen = When.TODAY | When.SOON | When.SOMEDAY
+
+/** For a view of what's for today, soon or someday, what a task added there is for, so it's listed there. */
+export const capturesWhen = (list: TaskList): CaptureWhen | undefined => {
   if (list.type === ListType.TODAY) return When.TODAY
   if (list.type === ListType.SOON) return When.SOON
+  if (list.type === ListType.SOMEDAY) return When.SOMEDAY
   return undefined
 }
 
