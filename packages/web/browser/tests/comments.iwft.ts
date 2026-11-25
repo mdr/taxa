@@ -22,7 +22,7 @@ test("commenting on a task adds to its timeline and leaves the task as it is", a
   await detail.comments.expectTimeline([
     "Matt created this",
     "Rang the plumber: he'll come Thursday",
-    "Matt set priority to high",
+    "1 other change",
     "Bought the washers"
   ])
   await detail.expectAccessible()
@@ -30,7 +30,7 @@ test("commenting on a task adds to its timeline and leaves the task as it is", a
   await taxa.expectTask("H-1", { notes: "The kitchen one", version: 2 })
 })
 
-test("an agent's comment shows under its name, and only your own can be changed", async ({ taxa }) => {
+test("an agent's comment shows under its name, and is yours to edit or delete", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Research boiler engineers", { domain: "H" })
   const claude = await taxa.matt.agent("Claude Code", "boiler research")
@@ -42,7 +42,11 @@ test("an agent's comment shows under its name, and only your own can be changed"
       body: "Found three with good reviews:Ace HeatingBoilerworks"
     }
   ])
-  await detail.comments.expectNotChangeable("Found three")
+  await detail.comments.edit("Found three", "Found two with good reviews: Ace Heating, Boilerworks")
+  await detail.comments.expectEdited("Found two")
+  await taxa.expectComments("H-1", ["Found two with good reviews: Ace Heating, Boilerworks"])
+  await detail.comments.delete("Found two")
+  await taxa.expectComments("H-1", [])
 })
 
 test("editing a comment, deleting it, and undoing that", async ({ taxa }) => {

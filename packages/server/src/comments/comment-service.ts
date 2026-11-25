@@ -123,8 +123,12 @@ const changeComment = async (
     const task = await findTask(tx, caller.user.id, { type: "ID", id: row.taskId }).catch(() => {
       throw NOT_FOUND(id)
     })
-    if (row.userId !== caller.user.id || (row.agentId ?? undefined) !== caller.agent?.id)
-      throw new ProblemError(ProblemType.FORBIDDEN, "Only whoever wrote a comment can change it.")
+    // A person's comments are theirs, and so are their agents'; an agent can change only its own.
+    if (row.userId !== caller.user.id || (caller.agent && row.agentId !== caller.agent.id))
+      throw new ProblemError(
+        ProblemType.FORBIDDEN,
+        "Only whoever wrote a comment, or the person whose agent wrote it, can change it."
+      )
     if (ifMatch !== undefined && ifMatch !== row.version)
       throw new ProblemError(
         ProblemType.VERSION_CONFLICT,

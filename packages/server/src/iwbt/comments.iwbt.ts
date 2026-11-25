@@ -94,18 +94,22 @@ describe("comments", () => {
     ])
   })
 
-  it("lets no one else change it: not another person, nor the author's agents", async ({ server }) => {
+  it("is its author's to change, and the person's whose agent wrote it, but no other agent's", async ({ server }) => {
     const matt = await server.user("Matt")
     const anna = await server.user("Anna")
     const claude = await matt.agent("Claude Code")
+    const codex = await matt.agent("Codex")
     await matt.addDomain("Home", "H")
     const tap = await matt.addTask("Fix the tap", { domain: "H" })
     const mine = await matt.client.addComment(tap.ref, { body: "Rang the plumber" })
     const its = await claude.client.addComment(tap.ref, { body: "Found the part" })
     await expectProblem(claude.client.editComment(mine.id, { body: "Hacked" }), ProblemType.FORBIDDEN)
-    await expectProblem(matt.client.deleteComment(its.id), ProblemType.FORBIDDEN)
+    await expectProblem(codex.client.deleteComment(its.id), ProblemType.FORBIDDEN)
     await expectProblem(anna.client.deleteComment(mine.id), ProblemType.NOT_FOUND)
     expect(await claude.client.editComment(its.id, { body: "Found the part: 15mm" })).toMatchObject({ version: 2 })
+    expect(await matt.client.editComment(its.id, { body: "Found the part: 15mm washer" })).toMatchObject({ version: 3 })
+    await matt.client.deleteComment(its.id)
+    expect((await matt.client.comments(tap.ref)).map(({ body }) => body)).toEqual(["Rang the plumber"])
   })
 
   it("undoes a change by the version it brought the comment to, and undoing that redoes it", async ({ server }) => {

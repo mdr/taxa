@@ -1,6 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test"
 import { PageObject } from "./steps.ts"
-import { expectHolds } from "./holds.ts"
 import { activityListTestIds } from "../../src/tasks/detail/ActivityListTestIds.ts"
 import { commentCardTestIds } from "../../src/tasks/comments/CommentCardTestIds.ts"
 import { commentComposerTestIds } from "../../src/tasks/comments/CommentComposerTestIds.ts"
@@ -42,10 +41,14 @@ export class TaskComments extends PageObject {
     await expect(this.#page.getByTestId(commentCardTestIds.body)).toHaveText(comments.map(({ body }) => body))
   }
 
-  /** Changes and comments together, in the order the timeline shows them, each by what it says. */
+  /** Changes and comments together, in the order the timeline shows them, each by what it says, the folds too. */
   async expectTimeline(entries: string[]): Promise<void> {
     await expect(
-      this.#page.locator(`[data-testid="${activityListTestIds.text}"], [data-testid="${commentCardTestIds.body}"]`)
+      this.#page.locator(
+        [activityListTestIds.text, activityListTestIds.fold, commentCardTestIds.body]
+          .map((testId) => `[data-testid="${testId}"]`)
+          .join(", ")
+      )
     ).toHaveText(entries)
   }
 
@@ -86,15 +89,5 @@ export class TaskComments extends PageObject {
   /** Brings back the comment just deleted, from the notice offering it. */
   async undoDelete(): Promise<void> {
     await this.#page.getByTestId(commentComposerTestIds.restore).click()
-  }
-
-  /** It's someone else's: there's no way to edit or delete it here. */
-  async expectNotChangeable(body: string): Promise<void> {
-    const comment = this.#comment(body)
-    await expect(comment).toBeVisible()
-    const controls = comment.locator(
-      `[data-testid="${commentCardTestIds.edit}"], [data-testid="${commentCardTestIds.delete}"]`
-    )
-    await expectHolds(() => controls.count(), 0)
   }
 }

@@ -1,7 +1,6 @@
 import type { Comment } from "@taxa/shared/comments/comment"
 import { realClock } from "@taxa/shared/clock"
 import { actorText } from "@taxa/shared/identity/actor-text"
-import { EditorContent, useEditor } from "@tiptap/react"
 import { Bot, Pencil, Trash2 } from "lucide-react"
 import { useEffect, useRef } from "react"
 import styles from "./CommentCard.module.css"
@@ -9,25 +8,7 @@ import { commentCardTestIds } from "./CommentCardTestIds.ts"
 import { useCommentActions, useEditedBody } from "./comments-service.ts"
 import { browserTimeZone } from "../../dates/browser-time-zone.ts"
 import { relativeTime } from "../../dates/relative-time.ts"
-import { notesToDocument, NOTES_EXTENSIONS } from "../../notes/notes-markdown.ts"
-import prose from "../../notes/prose.module.css"
-
-/** What a comment says, formatted as notes are, and not editable here. */
-const CommentBody = ({ body }: { body: string }) => {
-  const editor = useEditor(
-    {
-      extensions: NOTES_EXTENSIONS,
-      content: notesToDocument(body),
-      editable: false,
-      editorProps: {
-        // Tiptap makes it a textbox unless told otherwise; here it's only text.
-        attributes: { class: `${prose.prose} ${styles.body}`, role: "none", "data-testid": commentCardTestIds.body }
-      }
-    },
-    [body]
-  )
-  return <EditorContent editor={editor} />
-}
+import { MarkdownView } from "../../notes/MarkdownView.tsx"
 
 /** One comment in a task's timeline: who wrote it and when, and, for its author, ways to edit or delete it. */
 export const CommentCard = ({ comment, mine }: { comment: Comment; mine: boolean }) => {
@@ -90,7 +71,7 @@ export const CommentCard = ({ comment, mine }: { comment: Comment; mine: boolean
           )}
         </div>
         {edited === undefined ? (
-          <CommentBody body={comment.body} />
+          <MarkdownView markdown={comment.body} className={styles.body} testId={commentCardTestIds.body} />
         ) : (
           <form
             className={styles.form}

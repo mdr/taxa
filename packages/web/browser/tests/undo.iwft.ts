@@ -55,24 +55,22 @@ test("saying why a change can't be undone, when it's been changed since", async 
   await inbox.undoNotice.expectSays("undo the later change first")
 })
 
-test("undoing an earlier change from a task's activity", async ({ taxa }) => {
+test("the timeline shows what matters, folds the rest, and can put back notes a change replaced", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
-  const tap = await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  const tap = await taxa.matt.addTask("Fix the tap", { domain: "H", notes: "Washer size **15mm**" })
   await taxa.matt.client.updateTask(tap.ref, { set: { priority: Priority.HIGH } })
+  await taxa.matt.client.updateTask(tap.ref, { set: { notes: "Oops" } })
+  await taxa.matt.client.changeStatus(tap.ref, { status: TaskStatus.IN_PROGRESS })
   await taxa.matt.client.updateTask(tap.ref, { set: { title: "Fix the kitchen tap" } })
   const detail = await (await taxa.openTab("Matt")).openTask("H-1")
-  await detail.expectRef("H-1")
+  await detail.expectTimelineShown(["Matt created this", "2 other changes", "Matt started it", "1 other change"])
 
-  await detail.undoFromActivity("set priority to high")
-  await detail.undoNotice.expectSays("Undid: Changed H-1")
-  await detail.expectPriority(Priority.NORMAL)
-  await detail.expectTitle("Fix the kitchen tap")
-  await detail.expectActivity([
-    "Matt created this",
-    "Matt set priority to high",
-    "Matt renamed it “Fix the kitchen tap”",
-    "Matt undid change 2: set priority to normal"
-  ])
+  await detail.expectNotesBefore("edited the notes", "Washer size 15mm")
+  await detail.restoreNotesFrom("edited the notes")
+  await detail.expectNotesText("Washer size 15mm")
+  await taxa.expectTask("H-1", { notes: "Washer size **15mm**" })
+  await detail.keyboard.press("mod+z")
+  await taxa.expectTask("H-1", { notes: "Oops" })
 })
 
 test("restoring a deleted task from the bin", async ({ taxa }) => {

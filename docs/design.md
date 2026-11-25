@@ -152,23 +152,32 @@ comments (what they did, what they found, what's left) rather than editing
 your notes.
 
 - A comment records its author (a person, or an agent with its context)
-  and when. Comments are flat: no replies and no kinds. Only its author can
-  edit or delete one (an agent's are its own, not its person's), and each
+  and when. Comments are flat: no replies and no kinds. A comment is its
+  person's to edit or delete, whether they or one of their agents wrote it;
+  an agent can change only its own. Each
   change is logged with the comment, not the task. A deleted comment can be
   restored; deleting a task for good wipes its comments too.
 - Changes to comments undo like changes to tasks: in the web app, posting,
   editing or deleting one is part of the tab's history, so ⌘Z deletes a
   comment just posted, puts back what one said, or restores one deleted,
   and ⇧⌘Z redoes it. The server undoes the change that brought a comment to
-  a version (`POST /api/comments/{id}/undo`), its author only, refusing to
+  a version (`POST /api/comments/{id}/undo`), by whoever can edit it, refusing to
   put back an edit made over since. The CLI doesn't undo comments: agents
   correct their own with `edit-comment` and `delete-comment`.
 - Adding a comment doesn't change the task's version, so it never conflicts
   with someone editing the task. It counts as activity on a claim.
 - A task's page has a **timeline**: its changes and its comments, oldest
   first, and a box for adding one (`⌘↵` posts it). Activity-log events aren't
-  stored as comments. Once timelines get long, smaller edits could be
-  collapsed.
+  stored as comments. It shows what mostly matters: made, started, waiting,
+  done, cancelled, deleted, restored, moved, set to repeat, and the
+  comments. Other changes (notes, title, dates, priority, tags, and each
+  time a repeating task is done or skipped) fold, each run of them into a
+  line such as "3 other changes" where they happened, opened with a click.
+- The timeline has no undo of its own: undo is ⌘Z, for what you've just
+  done. Taking back a change from days ago is rarely what's wanted; setting
+  the field again is clearer. The exception is notes, which an edit can
+  lose: a notes change shows the notes before it, and can restore them, as a
+  new change.
 - In the CLI, `taxa comment H-142 "…"` adds one, `taxa comments H-142` lists
   them with their ids, and `taxa show` shows the latest three. Their authors
   change them with `taxa edit-comment`, `delete-comment` and
@@ -361,8 +370,8 @@ the Zod schemas in `shared`.
 - **Assign vs delegate:** people are assigned tasks and stay accountable.
   Agents are delegated tasks to work on.
 - **The activity log** records every change with its actor (a person or an
-  agent). The UI marks automated changes clearly, and anything can be
-  undone from the log: each entry records the version it brought the task
+  agent). The UI marks automated changes clearly. The server can undo any
+  entry in the log (⌘Z and `taxa undo` use this): each records the version it brought the task
   to, and undoing it puts back each field it changed, unless one has been
   changed since. Undoing an addition deletes the task, undoing a deletion
   restores it, and an undo is itself an entry, so undoing it redoes.

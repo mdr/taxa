@@ -1,5 +1,8 @@
 export const activityListTestIds = {
   entry: "ActivityList.entry",
   text: "ActivityList.text",
-  undo: "ActivityList.undo"
+  fold: "ActivityList.fold",
+  notesBefore: "ActivityList.notesBefore",
+  notesBeforeText: "ActivityList.notesBeforeText",
+  restoreNotes: "ActivityList.restoreNotes"
 }

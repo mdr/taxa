@@ -422,16 +422,54 @@ export class TaskDetailPage extends PageObject {
       .click()
   }
 
-  /** Undoes a change from the activity, by what it says: `set priority to high`. */
-  async undoFromActivity(entry: string): Promise<void> {
-    const row = this.#page.getByTestId(activityListTestIds.entry).filter({ hasText: entry })
-    await row.hover()
-    await row.getByTestId(activityListTestIds.undo).click()
+  /**
+   * Opens the timeline's folds, as a click would, but leaving focus where it
+   * is, so notes being edited stay so.
+   */
+  async #openFolds(): Promise<void> {
+    const folds = this.#page.locator(`[data-testid="${activityListTestIds.fold}"][aria-expanded="false"]`)
+    // One at a time: once open, a fold no longer matches.
+    while ((await folds.count()) > 0) await folds.first().dispatchEvent("click")
   }
 
-  /** The activity log, oldest first, without times. */
+  /** A change in the timeline, by what it says, its fold opened. */
+  async #entry(entry: string): Promise<Locator> {
+    await this.#openFolds()
+    return this.#page.getByTestId(activityListTestIds.entry).filter({ hasText: entry })
+  }
+
+  /** The notes a change in the timeline replaced, by what it says, shown. */
+  async #notesBefore(entry: string): Promise<Locator> {
+    const shown = (await this.#entry(entry)).getByTestId(activityListTestIds.notesBefore)
+    if (!(await shown.evaluate((details) => (details as HTMLDetailsElement).open)))
+      await shown.getByText("Notes before this").click()
+    return shown
+  }
+
+  /** From a notes change in the timeline, by what it says, puts back the notes it replaced. */
+  async restoreNotesFrom(entry: string): Promise<void> {
+    await (await this.#notesBefore(entry)).getByTestId(activityListTestIds.restoreNotes).click()
+  }
+
+  /** What the notes were before a change in the timeline, by what it says, as text. */
+  async expectNotesBefore(entry: string, text: string): Promise<void> {
+    await expect((await this.#notesBefore(entry)).getByTestId(activityListTestIds.notesBeforeText)).toHaveText(text)
+  }
+
+  /** Every change in the timeline, oldest first, without times: the folded ones opened. */
   async expectActivity(entries: string[]): Promise<void> {
-    await expect(this.#page.getByTestId(activityListTestIds.text)).toHaveText(entries)
+    const texts = this.#page.getByTestId(activityListTestIds.text)
+    await expect(async () => {
+      await this.#openFolds()
+      await expect(texts).toHaveText(entries, { timeout: 1000 })
+    }).toPass()
+  }
+
+  /** The timeline as it first shows: the changes that matter, and a line for each run of the rest. */
+  async expectTimelineShown(entries: string[]): Promise<void> {
+    await expect(
+      this.#page.locator(`[data-testid="${activityListTestIds.text}"], [data-testid="${activityListTestIds.fold}"]`)
+    ).toHaveText(entries)
   }
 
   async expectConflictNotice(): Promise<void> {
