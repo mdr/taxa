@@ -181,6 +181,16 @@ export const movedOn = (before: TaskState, next: IsoDate): Outcome => {
   return { state: after, changes: changesBetween(before, after) }
 }
 
+/**
+ * What one change did, in two steps from `before`: each field from where it
+ * started to where it ended up, and what else either step logged (the
+ * occurrences recorded) alongside.
+ */
+export const changesAcross = (before: TaskState, first: Outcome, second: Outcome): Record<string, FieldChange> => ({
+  ...Object.fromEntries(Object.entries({ ...first.changes, ...second.changes }).filter(([key]) => !(key in before))),
+  ...changesBetween(before, second.state)
+})
+
 /** Every field a new task starts with, for the activity log. */
 export const changesFromNothing = (state: TaskState): Record<string, FieldChange> =>
   Object.fromEntries(

@@ -64,7 +64,7 @@ with `X` and `I`, replanning, and a summary at the end. Not yet in the CLI.
 - Today (Planned, Needs attention, carried over), Upcoming, Someday, per-project views
 - Focus
 - Time zones, and times pinned to a zone: first, each person's zone kept up to date from the browser and the CLI (done)
-- Repeating tasks: on a schedule or counted from completion, carrying missed ones over, with doing, skipping, undo, sessions, the CLI, and the web's Repeat setting and history (done); then skipping missed days, caught up on the next change
+- Repeating tasks: on a schedule or counted from completion, carrying missed ones over, with doing, skipping, undo, sessions, the CLI, and the web's Repeat setting and history, and skipping missed days, caught up on the next change (done)
 - Markdown normalisation in the API, whoever writes, and links for task references
 
 ## Stage 3: Agents as collaborators

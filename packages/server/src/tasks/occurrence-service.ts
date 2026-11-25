@@ -25,6 +25,7 @@ export const recordOccurrence = (
   changeTask(db, log, caller, ref, undefined, now, {
     type: ActivityType.TASK_OCCURRENCE_RECORDED,
     code: LOG_CODES.task.occurrenceRecorded,
+    catchesUp: true,
     apply: (state, row, tx) => occurrenceRecorded(tx, caller, now, state, row, ref, recording)
   })
 

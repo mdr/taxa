@@ -223,6 +223,12 @@ export class TaskDetailPage extends PageObject {
     await typed.press("Enter")
   }
 
+  /** What becomes of days it misses: `SKIP` or `CARRY_OVER`. */
+  async setMissedDays(missed: string): Promise<void> {
+    await this.#page.getByTestId(taskPropertiesTestIds.repeat).click()
+    await this.#page.locator(`[data-testid="${repeatPropertyTestIds.missed}"][data-value="${missed}"]`).click()
+  }
+
   async expectRepeat(shown: string): Promise<void> {
     await expect(this.#page.getByTestId(taskPropertiesTestIds.repeat)).toContainText(shown)
   }

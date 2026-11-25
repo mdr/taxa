@@ -3,13 +3,30 @@ import { z } from "zod"
 import { CreateTaskRequestSchema, UpdateTaskRequestSchema } from "@taxa/shared/tasks/task-requests"
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { ExitCode } from "../cli-io.ts"
-import { linked, oneArgument, print, stringOption, UsageError, type Command, type CommandContext } from "../command.ts"
+import {
+  linked,
+  oneArgument,
+  print,
+  stringOption,
+  UsageError,
+  type Command,
+  type CommandContext,
+  type OptionValues
+} from "../command.ts"
 import { activityLines } from "../format/activity-format.ts"
 import { taskDetail, taskLines } from "../format/task-format.ts"
 import { latestComments } from "../format/comment-format.ts"
 import { recentOccurrences } from "../format/occurrence-format.ts"
 import { readStdinJson, STDIN } from "../input/stdin-json.ts"
-import { clearedFrom, fieldsFrom, repeatedOption, TASK_FIELD_HELP, TASK_FIELD_OPTIONS } from "../input/task-input.ts"
+import {
+  clearedFrom,
+  fieldsFrom,
+  missedOption,
+  repeatedOption,
+  TASK_FIELD_HELP,
+  TASK_FIELD_OPTIONS
+} from "../input/task-input.ts"
+import type { RepeatRequest } from "@taxa/shared/tasks/repeat"
 import { ifVersion, VERSION_HELP, VERSION_OPTION } from "../input/version-option.ts"
 
 const ALL_WHENS = Object.values(When).join(",")
@@ -82,6 +99,8 @@ With -, stdin holds one task or an array of them, as the API's CreateTaskRequest
     }
     const title = positionals.join(" ").trim()
     if (title === "") throw new UsageError("Give the task a title.")
+    if (missedOption(values) && stringOption(values, "repeat") === undefined)
+      throw new UsageError("--missed goes with --repeat: say how it repeats.")
     const task = await context.client.createTask(
       { title, ...fieldsFrom(values, context.today()), tags: repeatedOption(values, "tag") },
       key
@@ -182,7 +201,8 @@ as the API's UpdateTaskRequest.`,
         : {
             set: {
               ...fieldsFrom(values, context.today()),
-              ...(stringOption(values, "title") !== undefined && { title: stringOption(values, "title") })
+              ...(stringOption(values, "title") !== undefined && { title: stringOption(values, "title") }),
+              ...(await missedOnly(context, ref, values))
             },
             clear: clearedFrom(values),
             addTags: repeatedOption(values, "tag"),
@@ -202,6 +222,19 @@ as the API's UpdateTaskRequest.`,
     await showTask(context, await context.client.updateTask(ref, request, ifVersion(values)))
     return ExitCode.OK
   }
+}
+
+/** --missed alone: the task's repeat as it is, but for what becomes of missed days. */
+const missedOnly = async (
+  context: CommandContext,
+  ref: string,
+  values: OptionValues
+): Promise<{ repeat?: RepeatRequest }> => {
+  const missed = missedOption(values)
+  if (!missed || stringOption(values, "repeat") !== undefined) return {}
+  const { repeat } = await context.client.task(ref)
+  if (!repeat) throw new UsageError(`${ref} doesn't repeat: say how with --repeat.`)
+  return { repeat: { ...repeat, missed } }
 }
 
 const log: Command = {

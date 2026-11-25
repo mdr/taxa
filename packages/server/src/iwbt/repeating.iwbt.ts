@@ -1,9 +1,9 @@
 import { describe, expect } from "vite-plus/test"
 import { ActivityType } from "@taxa/shared/activity/activity"
 import { ProblemType } from "@taxa/shared/api/problem"
-import { OccurrenceOutcome, RepeatFrom, RepeatUnit, Weekday } from "@taxa/shared/tasks/repeat"
+import { MissedDays, OccurrenceOutcome, RepeatFrom, RepeatUnit, Weekday } from "@taxa/shared/tasks/repeat"
 import { ClearableField } from "@taxa/shared/tasks/task-requests"
-import { Horizon, TaskStatus } from "@taxa/shared/tasks/task"
+import { Horizon, Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { expectProblem } from "../test-support/problems.ts"
 import { useInProcessServer } from "../test-support/use-in-process-server.ts"
 
@@ -135,6 +135,81 @@ describe("repeating tasks", () => {
     server.clock.advance(DAY_MS)
     await matt.client.changeStatus(anki.ref, { status: TaskStatus.DONE })
     await expectProblem(matt.client.undoTask(anki.ref, done.version), ProblemType.VERSION_CONFLICT)
+  })
+
+  it("skips missed days, by default for a daily one: recorded with the next change, which goes on from today", async ({
+    server
+  }) => {
+    const matt = await server.user("Matt")
+    const anki = await matt.addTask("Revise Anki cards", { repeat: DAILY, due: "2026-01-05" })
+    expect(anki.repeat?.missed).toBe(MissedDays.SKIP)
+    server.clock.advance(3 * DAY_MS)
+    // Until it's changed, it's just overdue: nothing runs to catch it up.
+    expect((await matt.client.task(anki.ref)).scheduled).toBe("2026-01-05")
+
+    // Done as the tab saw it, for Monday: it's Thursday's that's done.
+    const done = await matt.client.recordOccurrence(anki.ref, { outcome: OccurrenceOutcome.DONE, date: "2026-01-05" })
+    expect(done).toMatchObject({ scheduled: "2026-01-09", due: "2026-01-09" })
+    expect((await matt.client.occurrences(anki.ref)).map(({ date, outcome }) => [date, outcome])).toEqual([
+      ["2026-01-08", OccurrenceOutcome.DONE],
+      ["2026-01-07", OccurrenceOutcome.MISSED],
+      ["2026-01-06", OccurrenceOutcome.MISSED],
+      ["2026-01-05", OccurrenceOutcome.MISSED]
+    ])
+    const [entry] = (await matt.client.activity(anki.ref)).slice(-1)
+    expect(entry).toMatchObject({
+      type: ActivityType.TASK_OCCURRENCE_RECORDED,
+      changes: { scheduled: { from: "2026-01-05", to: "2026-01-09" } }
+    })
+    // A retry for Monday's is refused: it's moved on.
+    await expectProblem(
+      matt.client.recordOccurrence(anki.ref, { outcome: OccurrenceOutcome.DONE, date: "2026-01-05" }),
+      ProblemType.VERSION_CONFLICT
+    )
+
+    // Undone, Monday's back, and the days missed with it.
+    const undone = await matt.client.undoTask(anki.ref, done.version)
+    expect(undone.scheduled).toBe("2026-01-05")
+    expect(await matt.client.occurrences(anki.ref)).toEqual([])
+    const redone = await matt.client.undoTask(anki.ref, undone.version)
+    expect(redone.scheduled).toBe("2026-01-09")
+    expect(await matt.client.occurrences(anki.ref)).toHaveLength(4)
+  })
+
+  it("catches up missed days with any edit, but not while it's under way, nor when they're carried over", async ({
+    server
+  }) => {
+    const matt = await server.user("Matt")
+    const anki = await matt.addTask("Revise Anki cards", { repeat: DAILY })
+    const started = await matt.addTask("Practise piano", { repeat: DAILY })
+    await matt.client.changeStatus(started.ref, { status: TaskStatus.IN_PROGRESS })
+    const bins = await matt.addTask("Put the bins out", {
+      repeat: { every: 1, unit: RepeatUnit.WEEK, from: RepeatFrom.SCHEDULE }
+    })
+    expect(bins.repeat?.missed).toBe(MissedDays.CARRY_OVER)
+    server.clock.advance(8 * DAY_MS)
+
+    const edited = await matt.client.updateTask(anki.ref, { set: { title: "Revise Anki decks" } })
+    expect(edited.scheduled).toBe("2026-01-13")
+    expect(await matt.client.occurrences(anki.ref)).toHaveLength(8)
+    const [entry] = (await matt.client.activity(anki.ref)).slice(-1)
+    expect(entry?.changes).toMatchObject({ title: { to: "Revise Anki decks" }, scheduled: { to: "2026-01-13" } })
+
+    expect((await matt.client.updateTask(started.ref, { set: { priority: Priority.HIGH } })).scheduled).toBe(
+      "2026-01-05"
+    )
+    expect((await matt.client.updateTask(bins.ref, { set: { priority: Priority.HIGH } })).scheduled).toBe("2026-01-05")
+    const skipping = await matt.client.updateTask(bins.ref, {
+      set: { repeat: { ...bins.repeat!, missed: MissedDays.SKIP } }
+    })
+    expect(skipping.scheduled).toBe("2026-01-05")
+    const done = await matt.client.changeStatus(bins.ref, { status: TaskStatus.DONE })
+    // Done a day late on Tuesday the 13th, it's Monday the 12th's: the 5th was missed.
+    expect(done.scheduled).toBe("2026-01-19")
+    expect((await matt.client.occurrences(bins.ref)).map(({ date, outcome }) => [date, outcome])).toEqual([
+      ["2026-01-12", OccurrenceOutcome.DONE],
+      ["2026-01-05", OccurrenceOutcome.MISSED]
+    ])
   })
 
   it("forgets its occurrences when it's deleted for good", async ({ server }) => {

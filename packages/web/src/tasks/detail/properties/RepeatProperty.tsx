@@ -1,5 +1,7 @@
 import { weekdayOf, type IsoDate } from "@taxa/shared/dates/plain-date"
 import {
+  MissedDays,
+  missedDaysOf,
   ordinal,
   RepeatFrom,
   repeatOf,
@@ -57,6 +59,11 @@ const presets = (from: IsoDate): Preset[] => {
 }
 
 const STOP = "stop"
+
+const MISSED_CHOICES = [
+  { value: MissedDays.SKIP, label: "Skip" },
+  { value: MissedDays.CARRY_OVER, label: "Carry over" }
+]
 
 /** How a task repeats: one of the usual ways, or any typed (every 2 weeks on friday, 3 days after done), or not at all. */
 export const RepeatProperty = ({
@@ -125,6 +132,25 @@ export const RepeatProperty = ({
               selected={selected}
               onChoose={(value) => choose(usual.find((preset) => preset.value === value)?.request)}
             />
+            {repeat && (
+              <div className={styles.missed} role="group" aria-label="Missed days">
+                <span className={styles.missedLabel}>Missed days</span>
+                {MISSED_CHOICES.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={styles.missedChoice}
+                    aria-pressed={missedDaysOf(repeat) === value}
+                    onClick={() => choose({ ...repeat, missed: value })}
+                    data-testid={repeatPropertyTestIds.missed}
+                    data-value={value}
+                    data-track={`RepeatProperty.missed.${value}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )
       }}

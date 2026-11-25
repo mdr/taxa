@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vite-plus/test"
 import {
+  caughtUp,
   firstOccurrence,
+  MissedDays,
+  missedDaysOf,
   nextOccurrence,
   OccurrenceOutcome,
   ordinal,
@@ -27,6 +30,7 @@ describe("repeatOf", () => {
       unit: RepeatUnit.WEEK,
       from: RepeatFrom.SCHEDULE,
       weekdays: [Weekday.MONDAY],
+      missed: MissedDays.CARRY_OVER,
       starts: "2026-11-02"
     })
     expect(schedule({ every: 1, unit: RepeatUnit.MONTH }, "2026-01-31")).toMatchObject({ monthDay: 31 })
@@ -42,6 +46,46 @@ describe("repeatOf", () => {
     expect(JSON.stringify(repeat)).toBe(
       JSON.stringify(schedule({ every: 1, unit: RepeatUnit.WEEK, weekdays: [Weekday.MONDAY, Weekday.THURSDAY] }))
     )
+  })
+})
+
+describe("missed days", () => {
+  it("are skipped by default only for a daily task on a schedule", () => {
+    expect(schedule({ every: 1, unit: RepeatUnit.DAY }).missed).toBe(MissedDays.SKIP)
+    expect(schedule({ every: 1, unit: RepeatUnit.WEEK }).missed).toBe(MissedDays.CARRY_OVER)
+    expect(repeatOf({ every: 2, unit: RepeatUnit.DAY, from: RepeatFrom.COMPLETION }, "2026-11-02").missed).toBe(
+      MissedDays.CARRY_OVER
+    )
+    const { missed: _, ...older } = schedule({ every: 1, unit: RepeatUnit.DAY })
+    expect(missedDaysOf(older)).toBe(MissedDays.SKIP)
+  })
+
+  it("are each missed once the next has come round, and it's caught up to the latest", () => {
+    const daily = schedule({ every: 1, unit: RepeatUnit.DAY })
+    expect(caughtUp(daily, "2026-11-02", "2026-11-05")).toEqual({
+      missed: ["2026-11-02", "2026-11-03", "2026-11-04"],
+      next: "2026-11-05"
+    })
+    expect(caughtUp(daily, "2026-11-05", "2026-11-05")).toBeUndefined()
+    const mondays = schedule({ every: 1, unit: RepeatUnit.WEEK, missed: MissedDays.SKIP })
+    expect(caughtUp(mondays, "2026-11-02", "2026-11-17")).toEqual({
+      missed: ["2026-11-02", "2026-11-09"],
+      next: "2026-11-16"
+    })
+    expect(caughtUp(mondays, "2026-11-02", "2026-11-08")).toBeUndefined()
+    expect(caughtUp(schedule({ every: 1, unit: RepeatUnit.WEEK }), "2026-11-02", "2026-11-17")).toBeUndefined()
+    const afterDone = repeatOf(
+      { every: 3, unit: RepeatUnit.DAY, from: RepeatFrom.COMPLETION, missed: MissedDays.SKIP },
+      "2026-11-02"
+    )
+    expect(caughtUp(afterDone, "2026-11-02", "2026-11-05")).toEqual({ missed: ["2026-11-02"], next: "2026-11-05" })
+  })
+
+  it("are only the latest hundred, however long it's gone", () => {
+    const daily = schedule({ every: 1, unit: RepeatUnit.DAY }, "2025-01-01")
+    const { missed } = caughtUp(daily, "2025-01-01", "2026-11-02")!
+    expect(missed).toHaveLength(100)
+    expect(missed.at(-1)).toBe("2026-11-01")
   })
 })
 

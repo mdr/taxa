@@ -193,10 +193,12 @@ Each time it comes round is an **occurrence**, kept as its history.
   repeating task is refused, with a hint to skip this one or stop it
   repeating, so an agent cancelling it doesn't just skip a day. Taking it
   out of today's plan skips today's.
-- **Missed days**, by its setting: _carried over_ (the default for weekly
-  and longer), it stays, overdue, until it's done, and doing it late
-  records the one occurrence; _skipped_ (the default for daily), each day
-  that went by is recorded as missed and it moves on to today. Nothing runs
+- **Missed days**, by its setting: _carried over_ (the default for all but
+  daily on a schedule), it stays, overdue, until it's done, and doing it
+  late records the one occurrence; _skipped_ (the default for daily on a
+  schedule), each occurrence is missed once the next has come round: those
+  are recorded as missed and it moves on to the latest, today's for a daily
+  one, so the bins put out a day late are still Monday's. Nothing runs
   overnight to do this: until it's next changed, it simply counts as
   today's, as anything scheduled in the past does, and its page shows the
   days missed. The next change to it (doing it, skipping it, any edit)

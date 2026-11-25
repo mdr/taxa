@@ -1,5 +1,7 @@
 import { daysBetween, type IsoDate } from "../dates/plain-date.ts"
-import { Horizon, type Task } from "./task.ts"
+import { formatDay } from "../dates/date-format.ts"
+import { caughtUp, type CaughtUp } from "./repeat.ts"
+import { Horizon, TaskStatus, type Task } from "./task.ts"
 import { ClearableField, type UpdateTaskRequest } from "./task-requests.ts"
 
 /**
@@ -46,6 +48,26 @@ export const weeksInSoon = (task: Pick<Task, "horizon" | "horizonSetAt">, today:
 /** Whether a task scheduled for today was meant for an earlier day, and is still to do. */
 export const isCarriedOver = (task: Pick<Task, "scheduled">, today: IsoDate): boolean =>
   task.scheduled !== undefined && task.scheduled < today
+
+/** The days a repeating task that skips them has missed, until its next change records them; none if it's under way. */
+export const daysMissed = (
+  task: Pick<Task, "scheduled" | "repeat" | "status">,
+  today: IsoDate
+): CaughtUp | undefined =>
+  task.repeat && task.scheduled && task.status === TaskStatus.OPEN
+    ? caughtUp(task.repeat, task.scheduled, today)
+    : undefined
+
+/** What a row says of a task carried over: from when, or for a repeating one that skips them, the days it's missed. */
+export const carriedOverText = (
+  task: Pick<Task, "scheduled" | "repeat" | "status">,
+  today: IsoDate
+): string | undefined => {
+  if (task.scheduled === undefined || !isCarriedOver(task, today)) return undefined
+  const missed = daysMissed(task, today)?.missed ?? []
+  if (missed.length === 0) return `Carried over from ${formatDay(task.scheduled, today)}`
+  return missed.length === 1 ? `Missed ${formatDay(missed[0]!, today)}` : `Missed ${missed.length} days`
+}
 
 /**
  * The change that makes a task's When the one chosen: a date or a horizon,

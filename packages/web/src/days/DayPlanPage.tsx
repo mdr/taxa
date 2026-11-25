@@ -1,6 +1,5 @@
-import { formatDay } from "@taxa/shared/dates/date-format"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
-import { isCarriedOver, When } from "@taxa/shared/tasks/when"
+import { carriedOverText, When } from "@taxa/shared/tasks/when"
 import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { Link } from "wouter"
@@ -29,8 +28,7 @@ const dayRows = (entries: readonly PlannedEntry[], today: IsoDate): PlanRow[] =>
     minutes,
     span: String(index + 1),
     locked: false,
-    detail:
-      task.scheduled && isCarriedOver(task, today) ? `Carried over from ${formatDay(task.scheduled, today)}` : undefined
+    detail: carriedOverText(task, today)
   }))
 
 /** How long today's tasks are reckoned to take, by those with estimates. */

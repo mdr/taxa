@@ -1,3 +1,4 @@
 export const repeatPropertyTestIds = {
-  typed: "RepeatProperty.typed"
+  typed: "RepeatProperty.typed",
+  missed: "RepeatProperty.missed"
 }

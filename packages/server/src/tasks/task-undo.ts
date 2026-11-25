@@ -11,7 +11,7 @@ import { changeTask, deletion, restoration, type Applied } from "./task-service.
 import { revertedState, RevertType } from "./task-state.ts"
 import type { TaskRow } from "./task-rows.ts"
 import type { TaskState } from "./task-state.ts"
-import { occurrenceRestored, occurrenceVoided } from "./repeating.ts"
+import { occurrencesReverted } from "./repeating.ts"
 
 /**
  * Takes back the change that brought a task to `version`, whoever made it:
@@ -50,6 +50,18 @@ const reverted = (state: TaskState, changes: Parameters<typeof revertedState>[1]
   return result.outcome
 }
 
+/** Fields put back, and the occurrences the change recorded taken back too, or those it took back brought back. */
+const withOccurrences = async (
+  tx: Db,
+  now: Instant,
+  row: TaskRow,
+  outcome: Applied,
+  changes: Parameters<typeof revertedState>[1]
+): Promise<Applied> => ({
+  ...outcome,
+  changes: { ...outcome.changes, ...(await occurrencesReverted(tx, now, row, changes)) }
+})
+
 const undone = async (
   tx: Db,
   type: ActivityType,
@@ -67,17 +79,18 @@ const undone = async (
       return { ...restoration(state, row), type: ActivityType.TASK_RESTORED }
     case ActivityType.TASK_UPDATED:
     case ActivityType.TASK_STATUS_CHANGED:
-      return reverted(state, changes, ref)
-    case ActivityType.TASK_OCCURRENCE_RECORDED: {
-      const outcome = reverted(state, changes, ref)
-      const voided = await occurrenceVoided(tx, now, changes)
-      return { ...outcome, changes: { ...outcome.changes, ...voided }, type: ActivityType.TASK_OCCURRENCE_UNDONE }
-    }
-    case ActivityType.TASK_OCCURRENCE_UNDONE: {
-      const outcome = reverted(state, changes, ref)
-      const restored = await occurrenceRestored(tx, row, changes)
-      return { ...outcome, changes: { ...outcome.changes, ...restored }, type: ActivityType.TASK_OCCURRENCE_RECORDED }
-    }
+      // Either may have caught up missed days too.
+      return withOccurrences(tx, now, row, reverted(state, changes, ref), changes)
+    case ActivityType.TASK_OCCURRENCE_RECORDED:
+      return {
+        ...(await withOccurrences(tx, now, row, reverted(state, changes, ref), changes)),
+        type: ActivityType.TASK_OCCURRENCE_UNDONE
+      }
+    case ActivityType.TASK_OCCURRENCE_UNDONE:
+      return {
+        ...(await withOccurrences(tx, now, row, reverted(state, changes, ref), changes)),
+        type: ActivityType.TASK_OCCURRENCE_RECORDED
+      }
     case ActivityType.DOMAIN_CREATED:
     case ActivityType.COMMENT_ADDED:
     case ActivityType.COMMENT_EDITED:

@@ -8,3 +8,35 @@
 .editor input {
   font-size: 0.9rem;
 }
+
+/* Whether days that go by undone are skipped or carried over. */
+.missed {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.25rem 0.1rem;
+  border-top: 1px solid var(--border);
+}
+
+.missedLabel {
+  flex: 1;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.missedChoice {
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.missedChoice[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--text);
+  font-weight: 500;
+}

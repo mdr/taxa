@@ -1,3 +1,4 @@
+import { daysMissed } from "@taxa/shared/tasks/when"
 import { DATE_INPUT_HELP, parseDateInput } from "@taxa/shared/dates/date-input"
 import { ClearableField, type ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
 import { formatDay } from "@taxa/shared/dates/date-format"
@@ -84,7 +85,11 @@ const recorded = async (
   const today = context.today()
   const verb = outcome === OccurrenceOutcome.DONE ? "Done" : "Skipped"
   const next = moved.scheduled === undefined ? "" : `; next ${formatDay(moved.scheduled, today)}`
-  const when = task.scheduled === undefined ? "" : ` for ${formatDay(task.scheduled, today)}`
+  // Days it skips that went by were recorded as missed first, and it's the latest that's done.
+  const caught = daysMissed(task, today)
+  const date = caught?.next ?? task.scheduled
+  const missed = caught ? `, after missing ${caught.missed.length === 1 ? "one" : caught.missed.length}` : ""
+  const when = date === undefined ? "" : ` for ${formatDay(date, today)}${missed}`
   print(context, linked(context, moved), () => `${verb} ${moved.ref}${when}${next}  ${moved.title}`)
   return ExitCode.OK
 }

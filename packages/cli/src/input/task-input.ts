@@ -3,7 +3,7 @@ import { isIsoTime, type IsoDate } from "@taxa/shared/dates/plain-date"
 import { parseEstimate } from "@taxa/shared/tasks/estimate"
 import { ClearableField, type UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import { Energy, Horizon, Priority } from "@taxa/shared/tasks/task"
-import type { RepeatRequest } from "@taxa/shared/tasks/repeat"
+import { MissedDays, type RepeatRequest } from "@taxa/shared/tasks/repeat"
 import { REPEAT_EXAMPLES, repeatFromPhrase } from "@taxa/shared/tasks/repeat-phrases"
 import { stringOption, UsageError, type OptionValues } from "../command.ts"
 
@@ -22,7 +22,8 @@ export const TASK_FIELD_OPTIONS = {
   "follows-on": { type: "string" },
   tag: { type: "string", multiple: true },
   inbox: { type: "boolean" },
-  repeat: { type: "string" }
+  repeat: { type: "string" },
+  missed: { type: "string" }
 } as const
 
 /** Every value given for an option that can be given more than once. */
@@ -46,6 +47,9 @@ export const TASK_FIELD_HELP = `  --domain PREFIX       File it in this domain, 
   --inbox               Put it back in the Inbox, out of its domain
   --repeat HOW          Make it repeat: daily, every weekday, every monday and thursday,
                         monthly on the 1st, 3 days after done (none: stop it repeating)
+  --missed WHAT         For a repeating task, days that go by undone: skip (each recorded
+                        as missed, and it moves on) or carry-over (it waits till it's done).
+                        By default, skipped if it's daily, otherwise carried over
 DATE is ${DATE_INPUT_HELP}.`
 
 const choice = <T extends string>(choices: Record<string, T>, text: string, what: string): T => {
@@ -70,16 +74,27 @@ const optional = <T>(text: string | undefined, read: (text: string) => T): T | u
 
 const STOP_REPEATING = "none"
 
-/** How --repeat says it repeats; undefined for none, which stops it. */
+const MISSED_CHOICES: Record<string, MissedDays> = { skip: MissedDays.SKIP, "carry-over": MissedDays.CARRY_OVER }
+
+/** What --missed says becomes of days missed. */
+export const missedOption = (values: OptionValues): MissedDays | undefined =>
+  optional(stringOption(values, "missed"), (text) => {
+    const missed = MISSED_CHOICES[text.trim().toLowerCase()]
+    if (!missed) throw new UsageError(`--missed must be skip or carry-over, not ${JSON.stringify(text)}.`)
+    return missed
+  })
+
+/** How --repeat says it repeats, with --missed; undefined for none, which stops it. */
 const repeatOption = (values: OptionValues): RepeatRequest | undefined => {
   const text = stringOption(values, "repeat")
   if (text === undefined || text.trim().toLowerCase() === STOP_REPEATING) return undefined
+  const missed = missedOption(values)
   const repeat = repeatFromPhrase(text)
   if (!repeat)
     throw new UsageError(
       `--repeat must say how often, such as ${REPEAT_EXAMPLES.map((example) => JSON.stringify(example)).join(", ")}; not ${JSON.stringify(text)}.`
     )
-  return repeat
+  return missed ? { ...repeat, missed } : repeat
 }
 
 /** The fields the options set, as an update's `set`. */

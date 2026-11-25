@@ -1,7 +1,8 @@
-import { RepeatFrom, RepeatUnit } from "@taxa/shared/tasks/repeat"
+import { MissedDays, RepeatFrom, RepeatUnit } from "@taxa/shared/tasks/repeat"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
+const DAY = 24 * 60 * 60 * 1000
 const DAILY = { every: 1, unit: RepeatUnit.DAY, from: RepeatFrom.SCHEDULE }
 
 // The clock starts on Monday 5 January 2026.
@@ -67,4 +68,36 @@ test("taking a repeating task out of today's plan skips it this time", async ({ 
   await planning.plan.expectPlan(["1 Fix the tap"])
   await taxa.expectTask("H-1", { scheduled: "2026-01-06" })
   await taxa.expectOccurrences("H-1", ["2026-01-05 SKIPPED"])
+})
+
+test("days missed show on Today and in the history, and are recorded with its next change", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Revise Anki cards", { domain: "H", repeat: DAILY })
+  await taxa.matt.addTask("Put the bins out", {
+    domain: "H",
+    repeat: { every: 1, unit: RepeatUnit.WEEK, from: RepeatFrom.SCHEDULE }
+  })
+  taxa.server.advance(3 * DAY)
+  const tab = await taxa.openTab("Matt")
+  const today = await tab.openInbox().then((inbox) => inbox.sidebar.openList("Today"))
+  await today.expectHighlights("Revise Anki cards", "Missed 3 daysEvery day")
+  await today.expectHighlights("Put the bins out", "Carried over from Mon 5 JanEvery Monday")
+
+  const detail = await tab.openTask("H-1")
+  await detail.expectHistory(
+    ["Mon 5 Jan: missed", "Tue 6 Jan: missed", "Wed 7 Jan: missed", "Thu 8 Jan: next"],
+    "0 of the last 3 done · next today"
+  )
+  await detail.setStatus(TaskStatus.DONE)
+  await detail.expectHistory(
+    ["Mon 5 Jan: missed", "Tue 6 Jan: missed", "Wed 7 Jan: missed", "Thu 8 Jan: done", "Fri 9 Jan: next"],
+    "1 of the last 4 done · next tomorrow"
+  )
+  await detail.setMissedDays("CARRY_OVER")
+  await taxa.expectTask("H-1", { repeat: { ...DAILY, missed: MissedDays.CARRY_OVER, starts: "2026-01-05" } })
+  await detail.expectActivity([
+    "Matt created this",
+    "Matt did Thu 8 Jan, and moved it to Fri 9 Jan; recorded 3 days, Mon 5 Jan to Wed 7 Jan as missed",
+    "Matt set it to carry missed days over"
+  ])
 })

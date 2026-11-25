@@ -1,16 +1,14 @@
 import { formatDay } from "@taxa/shared/dates/date-format"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import type { Task } from "@taxa/shared/tasks/task"
-import { isCarriedOver, weeksInSoon, When, whenOf } from "@taxa/shared/tasks/when"
+import { carriedOverText, isCarriedOver, weeksInSoon, When, whenOf } from "@taxa/shared/tasks/when"
 import { WHEN_ICONS } from "./when-choices.tsx"
 
 /** What a row says of when its task's meant for. */
 const whenText = (task: Task, when: When, today: IsoDate): string | undefined => {
   switch (when) {
     case When.TODAY:
-      return task.scheduled && isCarriedOver(task, today)
-        ? `Carried over from ${formatDay(task.scheduled, today)}`
-        : "Today"
+      return carriedOverText(task, today) ?? "Today"
     case When.ON_A_DAY:
       return task.scheduled && formatDay(task.scheduled, today)
     case When.SOON: {

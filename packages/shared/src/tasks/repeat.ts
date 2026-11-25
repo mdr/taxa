@@ -15,6 +15,14 @@ export enum RepeatFrom {
 }
 
 /** In order, Monday first, as `weekdayOf` counts them. */
+/** What becomes of the days that go by while it isn't done. */
+export enum MissedDays {
+  /** It stays, overdue, until it's done; done late, it's the one occurrence. */
+  CARRY_OVER = "CARRY_OVER",
+  /** Each is recorded as missed, and it moves on to today, or the next time it comes round. */
+  SKIP = "SKIP"
+}
+
 export enum Weekday {
   MONDAY = "MONDAY",
   TUESDAY = "TUESDAY",
@@ -39,7 +47,9 @@ const RepeatFieldsSchema = z.object({
   /** Weekly on a schedule: the days of the week; by default, the start date's. */
   weekdays: z.array(z.enum(Weekday)).min(1).max(7).optional(),
   /** Monthly on a schedule: the day of the month, or the month's last day if it's shorter; by default, the start date's. */
-  monthDay: z.number().int().min(1).max(31).optional()
+  monthDay: z.number().int().min(1).max(31).optional(),
+  /** What becomes of days missed; by default, skipped if it's daily on a schedule, otherwise carried over. */
+  missed: z.enum(MissedDays).optional()
 })
 
 type RepeatFields = z.infer<typeof RepeatFieldsSchema>
@@ -91,6 +101,9 @@ const addMonths = (date: IsoDate, months: number, day = parts(date).day): IsoDat
   return dateOf(Math.floor(index / 12), (index % 12) + 1, day)
 }
 
+const defaultMissedDays = ({ unit, from }: Pick<RepeatRequest, "unit" | "from">): MissedDays =>
+  unit === RepeatUnit.DAY && from === RepeatFrom.SCHEDULE ? MissedDays.SKIP : MissedDays.CARRY_OVER
+
 const weekdayName = (date: IsoDate): Weekday => WEEKDAYS[weekdayOf(date)]!
 
 /**
@@ -112,9 +125,13 @@ export const repeatOf = (request: RepeatRequest, starts: IsoDate): Repeat => {
     from: request.from,
     ...(weekdays && { weekdays }),
     ...(monthDay !== undefined && { monthDay }),
+    missed: request.missed ?? defaultMissedDays(request),
     starts: from
   }
 }
+
+/** What becomes of its missed days: as set, or for a rule from before there was a choice, the default. */
+export const missedDaysOf = (repeat: Repeat): MissedDays => repeat.missed ?? defaultMissedDays(repeat)
 
 /** Whether a repeat on a schedule comes round on `date`. */
 const comesRoundOn = (repeat: Repeat, date: IsoDate): boolean => {
@@ -183,6 +200,32 @@ const afterInterval = (repeat: Repeat, date: IsoDate): IsoDate => {
 /** The first day on or after `date` that it comes round: for a repeating task with no date yet. */
 export const firstOccurrence = (repeat: Repeat, date: IsoDate): IsoDate =>
   repeat.from === RepeatFrom.SCHEDULE ? nextOnSchedule(repeat, addDays(date, -1)) : date
+
+/** The most missed days caught up at once, the latest: enough to show, without a year's worth. */
+const MOST_MISSED = 100
+
+export interface CaughtUp {
+  /** The days it came round and went by, oldest first. */
+  missed: IsoDate[]
+  /** The day it's for now: the latest it's come round, today for a daily one. */
+  next: IsoDate
+}
+
+/**
+ * For a repeating task that skips missed days, those that went by while it
+ * was at `scheduled`, each missed once the next has come round, and the day
+ * it's for now, the latest that has; undefined if it carries them over, or
+ * none have been missed.
+ */
+export const caughtUp = (repeat: Repeat, scheduled: IsoDate, today: IsoDate): CaughtUp | undefined => {
+  if (scheduled >= today || missedDaysOf(repeat) !== MissedDays.SKIP) return undefined
+  if (repeat.from === RepeatFrom.COMPLETION) return { missed: [scheduled], next: today }
+  const missed = [scheduled]
+  let next = nextOnSchedule(repeat, scheduled)
+  if (next > today) return undefined
+  for (; nextOnSchedule(repeat, next) <= today; next = nextOnSchedule(repeat, next)) missed.push(next)
+  return { missed: missed.slice(-MOST_MISSED), next }
+}
 
 export interface Occurred {
   /** The date the occurrence was for: the task's scheduled date. */

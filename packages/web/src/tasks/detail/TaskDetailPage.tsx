@@ -133,7 +133,7 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
         <TitleField key={task.title} title={task.title} change={change} />
         <TaskProperties task={task} domains={domains.data ?? []} change={change} />
         <FollowOnLinks task={task} change={change} />
-        {task.repeat && task.scheduled && <OccurrenceStrip task={task} next={task.scheduled} />}
+        {task.repeat && <OccurrenceStrip task={task} />}
         {problem && (
           <p className={styles.problem} role="alert" data-testid={taskDetailPageTestIds.problem}>
             {problem}

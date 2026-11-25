@@ -1,7 +1,7 @@
 import { formatDay } from "../dates/date-format.ts"
 import { z } from "zod"
 import { IsoDateSchema, type IsoDate } from "../dates/plain-date.ts"
-import { OccurrenceOutcome, RepeatSchema, repeatText } from "../tasks/repeat.ts"
+import { MissedDays, missedDaysOf, OccurrenceOutcome, RepeatSchema, repeatText } from "../tasks/repeat.ts"
 import { actorText } from "../identity/actor-text.ts"
 import { formatEstimate } from "../tasks/estimate.ts"
 import { Energy, Horizon, Priority, TaskStatus } from "../tasks/task.ts"
@@ -58,6 +58,31 @@ const tagsPhrase: Phrase = ({ from, to }) => {
   return parts.length ? parts.join(" and ") : "renamed a tag"
 }
 
+const MISSED_DAYS_ACTION: Record<MissedDays, string> = {
+  [MissedDays.SKIP]: "set it to skip missed days",
+  [MissedDays.CARRY_OVER]: "set it to carry missed days over"
+}
+
+const missedDates = (value: unknown): IsoDate[] => {
+  const parsed = z.array(z.object({ date: IsoDateSchema })).safeParse(value)
+  return parsed.success ? parsed.data.map(({ date }) => date) : []
+}
+
+/** `Mon 5 Jan`, `Mon 5 and Mon 12 Jan`, `3 days, Mon 5 Jan to Wed 7 Jan`. */
+const daysText = (dates: readonly IsoDate[], today: IsoDate): string => {
+  const [first, last] = [dates[0], dates.at(-1)]
+  if (first === undefined || last === undefined) return "the days"
+  if (dates.length === 1) return formatDay(first, today)
+  if (dates.length === 2) return `${formatDay(first, today)} and ${formatDay(last, today)}`
+  return `${dates.length} days, ${formatDay(first, today)} to ${formatDay(last, today)}`
+}
+
+/** Days missed, caught up by a change to it: `recorded Mon 5 Jan as missed`, or taken back. */
+const missedPhrase: Phrase = ({ from, to }, { today }) =>
+  to === undefined
+    ? `took back ${daysText(missedDates(from), today)} as missed`
+    : `recorded ${daysText(missedDates(to), today)} as missed`
+
 /** What each field's change says. Fields not here are bookkeeping that goes without saying. */
 const PHRASES: Record<string, Phrase> = {
   due: datePhrase("due"),
@@ -78,10 +103,16 @@ const PHRASES: Record<string, Phrase> = {
   followsOnId: ({ to }) =>
     typeof to === "string" ? "linked it as a follow-on" : "unlinked it from the task it followed on from",
   tags: tagsPhrase,
-  repeat: ({ to }) => {
-    const repeat = RepeatSchema.safeParse(to)
-    return repeat.success ? `set it to repeat ${lowerFirst(repeatText(repeat.data))}` : "stopped it repeating"
+  repeat: ({ from, to }) => {
+    const before = RepeatSchema.safeParse(from)
+    const after = RepeatSchema.safeParse(to)
+    if (!after.success) return "stopped it repeating"
+    const text = repeatText(after.data)
+    if (before.success && repeatText(before.data) === text && missedDaysOf(before.data) !== missedDaysOf(after.data))
+      return MISSED_DAYS_ACTION[missedDaysOf(after.data)]
+    return `set it to repeat ${lowerFirst(text)}`
   },
+  missed: missedPhrase,
   scheduledTime: ({ to }) => (typeof to === "string" ? `set the time to ${to}` : "cleared the time"),
   domainId: ({ from, to }, { domainName }) => {
     if (typeof to !== "string") return "put it back in the Inbox"
@@ -131,7 +162,8 @@ const occurrenceAction = (changes: Activity["changes"], context: ActivityContext
   const { date, outcome } = occurrence.data
   const next = changes["scheduled"]?.to
   const moved = typeof next === "string" ? `, and moved it to ${formatDay(next, context.today)}` : ""
-  return `${OUTCOME_DONE[outcome]} ${formatDay(date, context.today)}${moved}`
+  const missed = changes["missed"] ? `; ${missedPhrase(changes["missed"], context)}` : ""
+  return `${OUTCOME_DONE[outcome]} ${formatDay(date, context.today)}${moved}${missed}`
 }
 
 const actionOf = ({ type, changes }: Activity, context: ActivityContext): string => {
@@ -157,9 +189,10 @@ const actionOf = ({ type, changes }: Activity, context: ActivityContext): string
     case ActivityType.TASK_OCCURRENCE_RECORDED:
       return occurrenceAction(changes, context)
     case ActivityType.TASK_OCCURRENCE_UNDONE: {
-      const occurrence = OccurrenceChangeSchema.safeParse(changes["occurrence"]?.from)
       // Always an undo, which says so: `undid change 4: put it back to Tue 6 Jan`.
-      return occurrence.success ? `put it back to ${formatDay(occurrence.data.date, context.today)}` : "put it back"
+      const back = IsoDateSchema.safeParse(changes["scheduled"]?.to)
+      const missed = changes["missed"] ? `; ${missedPhrase(changes["missed"], context)}` : ""
+      return `${back.success ? `put it back to ${formatDay(back.data, context.today)}` : "put it back"}${missed}`
     }
     case ActivityType.TASK_UPDATED: {
       // An undo can put a status back along with other fields.

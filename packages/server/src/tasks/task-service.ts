@@ -22,7 +22,7 @@ import { ACTIVE_STATUSES, Priority, TaskStatus, type Task } from "@taxa/shared/t
 import type { Instant, Version } from "@taxa/shared/units"
 import { activityOf, recordActivity } from "../activity/activity-store.ts"
 import { OccurrenceOutcome } from "@taxa/shared/tasks/repeat"
-import { occurrenceRecorded, refuseCancelling, repeating } from "./repeating.ts"
+import { missedCaughtUp, occurrenceRecorded, refuseCancelling, repeating } from "./repeating.ts"
 import { actorsNamed, type ActorIds } from "../activity/actor-names.ts"
 import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
@@ -41,7 +41,15 @@ import {
   valuesOf,
   type TaskRow
 } from "./task-rows.ts"
-import { changeStatus, changesFromNothing, editTask, outcomeOf, type Outcome, type TaskState } from "./task-state.ts"
+import {
+  changesAcross,
+  changeStatus,
+  changesFromNothing,
+  editTask,
+  outcomeOf,
+  type Outcome,
+  type TaskState
+} from "./task-state.ts"
 import { followsOnIdFor } from "./follow-ons.ts"
 import { logStopped, stopDeletedTask } from "../sessions/deleted-tasks.ts"
 import { findTask, findTasks, findTasksWithIds, taskIdExists, type FoundTask } from "./task-store.ts"
@@ -250,6 +258,8 @@ export interface Change {
    * restores it; an undo also says what the change is, and which it undoes.
    */
   apply: (state: TaskState, row: TaskRow, tx: Db) => Promise<Applied>
+  /** A repeating task that skips missed days is caught up first, in the same change: so do edits, not undo. */
+  catchesUp?: boolean
 }
 
 export type Applied = Outcome & { deletion?: Deletion; type?: ActivityType; undoesVersion?: Version }
@@ -266,7 +276,7 @@ export const changeTask = async (
   ref: string,
   ifMatch: number | undefined,
   now: Instant,
-  { type: changeType, code, apply }: Change
+  { type: changeType, code, apply, catchesUp = false }: Change
 ): Promise<Task> => {
   const { task, changes, stopped } = await db.transaction(async (tx) => {
     const found = await findTask(tx, caller.user.id, lookupOf(ref), true)
@@ -278,7 +288,11 @@ export const changeTask = async (
         await taskFrom(tx, found)
       )
     }
-    const { state, changes, deletion, type = changeType, undoesVersion } = await apply(stateOf(row), row, tx)
+    const original = stateOf(row)
+    const caught = catchesUp ? await missedCaughtUp(tx, caller, now, original, row) : undefined
+    const applied = await apply(caught?.state ?? original, row, tx)
+    const { state, deletion, type = changeType, undoesVersion } = applied
+    const changes = caught ? changesAcross(original, caught, applied) : applied.changes
     if (Object.keys(changes).length === 0) return { task: await taskFrom(tx, found), changes, stopped: [] }
     await tx
       .update(tasks)
@@ -329,6 +343,7 @@ export const updateTask = (
   changeTask(db, log, caller, ref, ifMatch, now, {
     type: ActivityType.TASK_UPDATED,
     code: LOG_CODES.task.updated,
+    catchesUp: true,
     apply: async (state, row, tx) => {
       if (domain !== undefined && inbox)
         throw new ProblemError(ProblemType.INVALID_REQUEST, "A task is either in a domain or in the Inbox, not both.")
@@ -364,6 +379,7 @@ export const changeTaskStatus = (
   changeTask(db, log, caller, ref, ifMatch, now, {
     type: ActivityType.TASK_STATUS_CHANGED,
     code: LOG_CODES.task.statusChanged,
+    catchesUp: true,
     apply: async (state, row, tx) => {
       // Done, a repeating task is done this time, and moves on.
       if (state.repeat && request.status === TaskStatus.DONE)

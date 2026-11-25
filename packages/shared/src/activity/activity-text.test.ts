@@ -94,15 +94,41 @@ describe("activityText", () => {
     expect(
       said(ActivityType.TASK_OCCURRENCE_RECORDED, { occurrence: { to: { ...occurrence, outcome: "SKIPPED" } } })
     ).toBe("Matt skipped Mon 5 Jan")
-    expect(said(ActivityType.TASK_OCCURRENCE_UNDONE, { occurrence: { from: occurrence } })).toBe(
-      "Matt put it back to Mon 5 Jan"
-    )
+    expect(
+      said(ActivityType.TASK_OCCURRENCE_UNDONE, {
+        occurrence: { from: occurrence },
+        scheduled: { from: "2026-01-06", to: "2026-01-05" }
+      })
+    ).toBe("Matt put it back to Mon 5 Jan")
     expect(
       said(ActivityType.TASK_UPDATED, {
         repeat: { to: { every: 1, unit: "WEEK", from: "SCHEDULE", weekdays: ["MONDAY"], starts: "2026-01-05" } }
       })
     ).toBe("Matt set it to repeat every Monday")
     expect(said(ActivityType.TASK_UPDATED, { repeat: { from: { every: 1 } } })).toBe("Matt stopped it repeating")
+
+    const daily = { every: 1, unit: "DAY", from: "SCHEDULE", starts: "2026-01-05" }
+    expect(said(ActivityType.TASK_UPDATED, { repeat: { from: daily, to: { ...daily, missed: "CARRY_OVER" } } })).toBe(
+      "Matt set it to carry missed days over"
+    )
+  })
+
+  it("says which days were missed, caught up along with a change", () => {
+    const missed = (dates: string[]): { id: string; date: string }[] =>
+      dates.map((date, i) => ({ id: `0190a1b2-0000-7000-8000-00000000000${i}`, date }))
+    expect(
+      said(ActivityType.TASK_OCCURRENCE_RECORDED, {
+        missed: { to: missed(["2026-01-01", "2026-01-02", "2026-01-03"]) },
+        occurrence: { to: { id: "0190a1b2-0000-7000-8000-0000000000aa", date: "2026-01-04", outcome: "DONE" } },
+        scheduled: { from: "2026-01-01", to: "2026-01-05" }
+      })
+    ).toBe("Matt did Sun 4 Jan, and moved it to Mon 5 Jan; recorded 3 days, Thu 1 Jan to Sat 3 Jan as missed")
+    expect(said(ActivityType.TASK_UPDATED, { missed: { to: missed(["2025-12-29"]) } })).toBe(
+      "Matt recorded Mon 29 Dec 2025 as missed"
+    )
+    expect(said(ActivityType.TASK_UPDATED, { missed: { from: missed(["2025-12-29", "2026-01-01"]) } })).toBe(
+      "Matt took back Mon 29 Dec 2025 and Thu 1 Jan as missed"
+    )
   })
 
   it("says which tags were added and taken off", () => {

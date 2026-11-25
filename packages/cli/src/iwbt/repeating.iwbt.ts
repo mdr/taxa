@@ -2,7 +2,7 @@ import { describe, expect } from "vite-plus/test"
 import type { InProcessServer } from "@taxa/server/src/test-support/in-process-server"
 import { useInProcessServer } from "@taxa/server/src/test-support/use-in-process-server"
 import { TaskStatus } from "@taxa/shared/tasks/task"
-import { RepeatFrom, RepeatUnit } from "@taxa/shared/tasks/repeat"
+import { MissedDays, RepeatFrom, RepeatUnit } from "@taxa/shared/tasks/repeat"
 import { ExitCode } from "../cli-io.ts"
 import { runTaxaAs, type CliRun } from "../test-support/test-cli.ts"
 
@@ -33,6 +33,25 @@ describe("repeating tasks in the CLI", () => {
     const cancelled = await taxaAs(server, matt.secret, ["cancel", "IN-1"])
     expect(cancelled.exitCode).not.toBe(ExitCode.OK)
     expect(cancelled.stderr).toContain("taxa skip IN-1")
+  })
+
+  it("skip missed days, or carry them over, as --missed says", async ({ server }) => {
+    const matt = await server.user("Matt")
+    await taxaAs(server, matt.secret, ["add", "Revise Anki cards", "--repeat", "daily"])
+    await taxaAs(server, matt.secret, ["add", "Put the bins out", "--repeat", "weekly", "--missed", "skip"])
+    expect((await matt.client.task("IN-2")).repeat?.missed).toBe(MissedDays.SKIP)
+    await taxaAs(server, matt.secret, ["edit", "IN-1", "--missed", "carry-over"])
+    expect((await taxaAs(server, matt.secret, ["show", "IN-1"])).stdout).toContain(
+      "Repeats   Every day; missed days carried over"
+    )
+    await taxaAs(server, matt.secret, ["edit", "IN-1", "--missed", "skip"])
+
+    server.clock.advance(3 * 86_400_000)
+    expect((await taxaAs(server, matt.secret, ["done", "IN-1"])).stdout).toBe(
+      "Done IN-1 for Thu 8 Jan, after missing 3; next Fri 9 Jan  Revise Anki cards\n"
+    )
+    const wrong = await taxaAs(server, matt.secret, ["add", "Floss", "--missed", "skip"])
+    expect(wrong.exitCode).toBe(ExitCode.USAGE)
   })
 
   it("stop repeating with --repeat none, or when done for good", async ({ server }) => {
