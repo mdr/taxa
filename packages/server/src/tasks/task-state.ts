@@ -1,10 +1,11 @@
 import type { Minutes } from "@taxa/shared/units"
 import type { DomainId, TaskId, UserId } from "@taxa/shared/ids"
 import type { FieldChange } from "@taxa/shared/activity/activity"
-import { addDays, type IsoDate, type IsoTime } from "@taxa/shared/dates/plain-date"
+import { addDays, daysBetween, type IsoDate, type IsoTime } from "@taxa/shared/dates/plain-date"
 import type { ClearableField, ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
 import { DEFAULT_FOLLOW_UP_DAYS, TaskStatus, type Energy, type Horizon, type Priority } from "@taxa/shared/tasks/task"
 import type { Instant } from "@taxa/shared/units"
+import type { Repeat } from "@taxa/shared/tasks/repeat"
 import { definedFields } from "@taxa/shared/objects"
 import type { ActorIds } from "../activity/actor-names.ts"
 
@@ -25,6 +26,7 @@ export interface TaskState {
   energy: Energy | undefined
   horizon: Horizon | undefined
   tags: readonly string[]
+  repeat: Repeat | undefined
   followsOnId: TaskId | undefined
   inProgressBy: ActorIds | undefined
   waitingOn: string | undefined
@@ -85,6 +87,12 @@ export const revertedState = (state: TaskState, changes: Record<string, FieldCha
   const reverted = after as unknown as TaskState
   return { type: RevertType.REVERTED, outcome: { state: reverted, changes: changesBetween(state, reverted) } }
 }
+
+/** A change from one state to another, with what it changed. */
+export const outcomeOf = (before: TaskState, after: TaskState): Outcome => ({
+  state: after,
+  changes: changesBetween(before, after)
+})
 
 const changesBetween = (before: TaskState, after: TaskState): Record<string, FieldChange> => {
   const changes: Record<string, FieldChange> = {}
@@ -153,6 +161,23 @@ export const changeStatus = (
         }
     }
   })()
+  return { state: after, changes: changesBetween(before, after) }
+}
+
+/**
+ * A repeating task once an occurrence is done or skipped: open, at its next
+ * date, its due and start dates moved by as much.
+ */
+export const movedOn = (before: TaskState, next: IsoDate): Outcome => {
+  const shift = before.scheduled === undefined ? 0 : daysBetween(before.scheduled, next)
+  const shifted = (date: IsoDate | undefined): IsoDate | undefined => date && addDays(date, shift)
+  const after: TaskState = {
+    ...leavingStatus(before),
+    status: TaskStatus.OPEN,
+    scheduled: next,
+    due: shifted(before.due),
+    start: shifted(before.start)
+  }
   return { state: after, changes: changesBetween(before, after) }
 }
 

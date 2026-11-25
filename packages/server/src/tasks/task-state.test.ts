@@ -30,6 +30,7 @@ const makeState = (overrides: Partial<TaskState> = {}): TaskState => ({
   energy: undefined,
   horizon: undefined,
   tags: [],
+  repeat: undefined,
   followsOnId: undefined,
   inProgressBy: undefined,
   waitingOn: undefined,

@@ -6,7 +6,7 @@ import { TaskStatus } from "@taxa/shared/tasks/task"
 import type { Instant } from "@taxa/shared/units"
 import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
-import { activity, comments, idempotencyKeys, tasks } from "../database/schema.ts"
+import { activity, comments, idempotencyKeys, occurrences, tasks } from "../database/schema.ts"
 import { PURGED_COMMENT } from "../comments/comment-rows.ts"
 import { ProblemError } from "../http/problem-error.ts"
 import { callerFields } from "../telemetry/change-fields.ts"
@@ -27,6 +27,7 @@ const purge = async (tx: Db, ids: readonly TaskId[], now: Instant): Promise<void
     .update(tasks)
     .set(purgedValues(now))
     .where(inArray(tasks.id, [...ids]))
+  await tx.delete(occurrences).where(inArray(occurrences.taskId, [...ids]))
   const commented = await tx
     .update(comments)
     .set(PURGED_COMMENT)

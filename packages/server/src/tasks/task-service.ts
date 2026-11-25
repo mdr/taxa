@@ -21,6 +21,8 @@ import type {
 import { ACTIVE_STATUSES, Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import type { Instant, Version } from "@taxa/shared/units"
 import { activityOf, recordActivity } from "../activity/activity-store.ts"
+import { OccurrenceOutcome } from "@taxa/shared/tasks/repeat"
+import { occurrenceRecorded, refuseCancelling, repeating } from "./repeating.ts"
 import { actorsNamed, type ActorIds } from "../activity/actor-names.ts"
 import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
@@ -39,7 +41,7 @@ import {
   valuesOf,
   type TaskRow
 } from "./task-rows.ts"
-import { changeStatus, changesFromNothing, editTask, type Outcome, type TaskState } from "./task-state.ts"
+import { changeStatus, changesFromNothing, editTask, outcomeOf, type Outcome, type TaskState } from "./task-state.ts"
 import { followsOnIdFor } from "./follow-ons.ts"
 import { logStopped, stopDeletedTask } from "../sessions/deleted-tasks.ts"
 import { findTask, findTasks, findTasksWithIds, taskIdExists, type FoundTask } from "./task-store.ts"
@@ -171,7 +173,7 @@ export const createTask = async (
   db: Db,
   log: ServerLogger,
   caller: Caller,
-  { id, domain, title, followsOn, tags, ...fields }: z.infer<typeof CreateTaskRequestSchema>,
+  { id, domain, title, followsOn, tags, repeat, ...fields }: z.infer<typeof CreateTaskRequestSchema>,
   now: Instant
 ): Promise<Task> => {
   const { task, changes } = await db.transaction(async (tx) => {
@@ -181,10 +183,12 @@ export const createTask = async (
     const domainId = domain === undefined ? undefined : (await findDomain(tx, caller.user.id, domain)).id
     const inboxUserId = domainId === undefined ? caller.user.id : undefined
     const followsOnId = followsOn === undefined ? undefined : await followsOnIdFor(tx, caller, followsOn, taskId)
-    const state = editTask(blankState(domainId, inboxUserId, title), {
+    const blank = blankState(domainId, inboxUserId, title)
+    const edited = editTask(blank, {
       set: { ...fields, tags: withTags([], tags ?? []), ...(followsOnId && { followsOnId }) },
       clear: []
     }).state
+    const state = repeating(blank, edited, repeat, dateIn(caller.user.timeZone, now))
     const at = new Date(now)
     await tx.insert(tasks).values({
       id: taskId,
@@ -226,6 +230,7 @@ const blankState = (domainId: DomainId | undefined, inboxUserId: UserId | undefi
   energy: undefined,
   horizon: undefined,
   tags: [],
+  repeat: undefined,
   followsOnId: undefined,
   inProgressBy: undefined,
   waitingOn: undefined,
@@ -312,7 +317,7 @@ export const updateTask = (
   caller: Caller,
   ref: string,
   {
-    set: { domain, inbox, followsOn, ...set },
+    set: { domain, inbox, followsOn, repeat, ...set },
     clear,
     addTags,
     removeTags,
@@ -332,7 +337,7 @@ export const updateTask = (
       const domainId = domain === undefined ? undefined : (await findDomain(tx, caller.user.id, domain)).id
       const inboxUserId = inbox && state.inboxUserId === undefined ? caller.user.id : undefined
       const followsOnId = followsOn === undefined ? undefined : await followsOnIdFor(tx, caller, followsOn, row.id)
-      return editTask(state, {
+      const edited = editTask(state, {
         set: {
           ...set,
           ...(domainId && { domainId }),
@@ -342,7 +347,8 @@ export const updateTask = (
           ...(appendNotes !== undefined && { notes: appendedNotes(state.notes, appendNotes) })
         },
         clear
-      })
+      }).state
+      return outcomeOf(state, repeating(state, edited, repeat, dateIn(caller.user.timeZone, now)))
     }
   })
 
@@ -358,8 +364,19 @@ export const changeTaskStatus = (
   changeTask(db, log, caller, ref, ifMatch, now, {
     type: ActivityType.TASK_STATUS_CHANGED,
     code: LOG_CODES.task.statusChanged,
-    apply: async (state) =>
-      changeStatus(state, request, { actor: idsOf(caller), today: dateIn(caller.user.timeZone, now), now })
+    apply: async (state, row, tx) => {
+      // Done, a repeating task is done this time, and moves on.
+      if (state.repeat && request.status === TaskStatus.DONE)
+        return {
+          ...(await occurrenceRecorded(tx, caller, now, state, row, ref, {
+            outcome: OccurrenceOutcome.DONE,
+            date: undefined
+          })),
+          type: ActivityType.TASK_OCCURRENCE_RECORDED
+        }
+      if (request.status === TaskStatus.CANCELLED) refuseCancelling(state, ref)
+      return changeStatus(state, request, { actor: idsOf(caller), today: dateIn(caller.user.timeZone, now), now })
+    }
   })
 
 export const deleteTask = (

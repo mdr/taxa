@@ -1,3 +1,4 @@
+import { RepeatSchema } from "./repeat.ts"
 import { z } from "zod"
 import { IsoDateSchema, IsoTimeSchema } from "../dates/plain-date.ts"
 import { ActorSchema } from "../identity/actor.ts"
@@ -69,6 +70,8 @@ export const TaskSchema = z.object({
   horizonSetAt: z.iso.datetime().optional(),
   /** Labels, in the order they were added: `Life Admin`, `errand`. */
   tags: z.array(z.string()),
+  /** How it repeats, if it does: it then always has a scheduled date, its next occurrence. */
+  repeat: RepeatSchema.optional(),
   /** The task it follows on from: what it came out of, done or not. */
   followsOnId: TaskIdSchema.optional(),
   /** While IN_PROGRESS: who is working on it. */

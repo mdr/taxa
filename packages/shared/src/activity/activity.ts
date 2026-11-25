@@ -12,7 +12,11 @@ export enum ActivityType {
   COMMENT_ADDED = "COMMENT_ADDED",
   COMMENT_EDITED = "COMMENT_EDITED",
   COMMENT_DELETED = "COMMENT_DELETED",
-  COMMENT_RESTORED = "COMMENT_RESTORED"
+  COMMENT_RESTORED = "COMMENT_RESTORED",
+  /** A repeating task done or skipped, and moved on to its next date. */
+  TASK_OCCURRENCE_RECORDED = "TASK_OCCURRENCE_RECORDED",
+  /** That taken back: its dates put back, and the occurrence voided. */
+  TASK_OCCURRENCE_UNDONE = "TASK_OCCURRENCE_UNDONE"
 }
 
 const FieldChangeSchema = z.object({ from: z.unknown().optional(), to: z.unknown().optional() })

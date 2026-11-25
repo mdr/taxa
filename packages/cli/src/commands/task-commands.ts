@@ -7,6 +7,7 @@ import { linked, oneArgument, print, stringOption, UsageError, type Command, typ
 import { activityLines } from "../format/activity-format.ts"
 import { taskDetail, taskLines } from "../format/task-format.ts"
 import { latestComments } from "../format/comment-format.ts"
+import { recentOccurrences } from "../format/occurrence-format.ts"
 import { readStdinJson, STDIN } from "../input/stdin-json.ts"
 import { clearedFrom, fieldsFrom, repeatedOption, TASK_FIELD_HELP, TASK_FIELD_OPTIONS } from "../input/task-input.ts"
 import { ifVersion, VERSION_HELP, VERSION_OPTION } from "../input/version-option.ts"
@@ -16,7 +17,7 @@ const ALL_WHENS = Object.values(When).join(",")
 const NewTasksSchema = z.union([CreateTaskRequestSchema, z.array(CreateTaskRequestSchema).min(1)])
 
 const showTask = async (context: CommandContext, task: Task): Promise<void> => {
-  const [domains, followsOn, ledTo, comments] = await Promise.all([
+  const [domains, followsOn, ledTo, comments, occurrences] = await Promise.all([
     context.client.domains(),
     task.followsOnId === undefined ? undefined : context.client.task(task.followsOnId).catch(() => undefined),
     context.client.tasks({
@@ -25,7 +26,8 @@ const showTask = async (context: CommandContext, task: Task): Promise<void> => {
       when: ALL_WHENS,
       includeNotStarted: "true"
     }),
-    context.client.comments(task.id)
+    context.client.comments(task.id),
+    task.repeat ? context.client.occurrences(task.id) : []
   ])
   const shown = linked(context, task)
   print(
@@ -41,7 +43,9 @@ const showTask = async (context: CommandContext, task: Task): Promise<void> => {
           followsOn,
           ledTo
         }
-      ) + latestComments(comments, task.ref, context.io.timeZone)
+      ) +
+      recentOccurrences(occurrences, context.today()) +
+      latestComments(comments, task.ref, context.io.timeZone)
   )
 }
 
@@ -154,7 +158,7 @@ const edit: Command = {
 ${TASK_FIELD_HELP}
   --untag NAME          Take a tag off; again for more
   --append-notes TEXT   Add to the end of the notes, keeping what's there (for progress, taxa comment)
-  --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, energy, horizon, follows-on)
+  --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, energy, horizon, follows-on, repeat)
 ${VERSION_HELP}
 With -, stdin holds {"set": {...}, "clear": [...], "addTags": [...], "removeTags": [...], "appendNotes": "..."},
 as the API's UpdateTaskRequest.`,

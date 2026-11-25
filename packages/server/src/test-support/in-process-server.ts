@@ -12,7 +12,7 @@ import { createKey } from "../agents/agent-store.ts"
 import { createApp, type DevLogin } from "../app.ts"
 import { eq } from "drizzle-orm"
 import type { TaskId } from "@taxa/shared/ids"
-import { activity, comments, tasks } from "../database/schema.ts"
+import { activity, comments, occurrences, tasks } from "../database/schema.ts"
 import { clearOldBin } from "../tasks/task-purge.ts"
 import type { Database } from "../database/database.ts"
 import { createLogger, type LogRecord } from "@taxa/shared/telemetry/log"
@@ -145,6 +145,12 @@ export class InProcessServer {
   }
 
   /** What's stored of a task's comments and their log, deleted or not. */
+  /** The dates of a task's occurrences as stored, taken back or not. */
+  async storedOccurrences(taskId: TaskId): Promise<string[]> {
+    const rows = await this.#database.db.select().from(occurrences).where(eq(occurrences.taskId, taskId))
+    return rows.map(({ date }) => date)
+  }
+
   async storedComments(taskId: TaskId): Promise<{ body: string; logged: unknown[] }[]> {
     const db = this.#database.db
     const rows = await db.select().from(comments).where(eq(comments.taskId, taskId))

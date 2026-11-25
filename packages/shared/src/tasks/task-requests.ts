@@ -2,6 +2,7 @@ import { z } from "zod"
 import { IsoDateSchema, IsoTimeSchema } from "../dates/plain-date.ts"
 import { Energy, Horizon, Priority, TaskStatus } from "./task.ts"
 import { TaskIdSchema } from "../ids.ts"
+import { OccurrenceOutcome, RepeatRequestSchema } from "./repeat.ts"
 import { flavoured, type Minutes } from "../units.ts"
 import { MAX_TAGS, TagSchema } from "./tags.ts"
 
@@ -24,7 +25,9 @@ const EditableFieldsSchema = z.object({
   /** File it in this domain, by prefix or id. */
   domain: z.string(),
   /** The task it follows on from, by ref or id. */
-  followsOn: z.string()
+  followsOn: z.string(),
+  /** Makes it repeat; with no scheduled date, it gets the first it comes round on, from today. */
+  repeat: RepeatRequestSchema
 })
 
 /** Fields that can be emptied. */
@@ -36,7 +39,9 @@ export enum ClearableField {
   ESTIMATE_MINUTES = "estimateMinutes",
   ENERGY = "energy",
   HORIZON = "horizon",
-  FOLLOWS_ON = "followsOnId"
+  FOLLOWS_ON = "followsOnId",
+  /** Stops it repeating. */
+  REPEAT = "repeat"
 }
 
 /** Without a domain, it goes in your Inbox. */
@@ -76,6 +81,15 @@ export const ChangeStatusRequestSchema = z.object({
 })
 
 export type ChangeStatusRequest = z.input<typeof ChangeStatusRequestSchema>
+
+/** Doing or skipping a repeating task's occurrence: missed ones aren't recorded this way. */
+export const RecordOccurrenceRequestSchema = z.object({
+  outcome: z.enum([OccurrenceOutcome.DONE, OccurrenceOutcome.SKIPPED]),
+  /** The date it's for, which must be the task's scheduled date, so a retry, or another tab, can't do it twice. By default, whatever it's at. */
+  date: IsoDateSchema.optional()
+})
+
+export type RecordOccurrenceRequest = z.input<typeof RecordOccurrenceRequestSchema>
 
 export const UndoTaskRequestSchema = z.object({
   /** The version the change to undo brought the task to, as its activity says. */

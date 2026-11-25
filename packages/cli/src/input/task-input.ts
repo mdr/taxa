@@ -3,6 +3,8 @@ import { isIsoTime, type IsoDate } from "@taxa/shared/dates/plain-date"
 import { parseEstimate } from "@taxa/shared/tasks/estimate"
 import { ClearableField, type UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import { Energy, Horizon, Priority } from "@taxa/shared/tasks/task"
+import type { RepeatRequest } from "@taxa/shared/tasks/repeat"
+import { REPEAT_EXAMPLES, repeatFromPhrase } from "@taxa/shared/tasks/repeat-phrases"
 import { stringOption, UsageError, type OptionValues } from "../command.ts"
 
 /** The options that set a task's fields, shared by `add` and `edit`. */
@@ -19,7 +21,8 @@ export const TASK_FIELD_OPTIONS = {
   horizon: { type: "string" },
   "follows-on": { type: "string" },
   tag: { type: "string", multiple: true },
-  inbox: { type: "boolean" }
+  inbox: { type: "boolean" },
+  repeat: { type: "string" }
 } as const
 
 /** Every value given for an option that can be given more than once. */
@@ -41,6 +44,8 @@ export const TASK_FIELD_HELP = `  --domain PREFIX       File it in this domain, 
   --follows-on TASK     The task it follows on from, by ref or id
   --tag NAME            Tag it; again for more, e.g. --tag "Life Admin" --tag errand
   --inbox               Put it back in the Inbox, out of its domain
+  --repeat HOW          Make it repeat: daily, every weekday, every monday and thursday,
+                        monthly on the 1st, 3 days after done (none: stop it repeating)
 DATE is ${DATE_INPUT_HELP}.`
 
 const choice = <T extends string>(choices: Record<string, T>, text: string, what: string): T => {
@@ -62,6 +67,20 @@ const dateOption = (values: OptionValues, name: string, today: IsoDate): IsoDate
 
 const optional = <T>(text: string | undefined, read: (text: string) => T): T | undefined =>
   text === undefined ? undefined : read(text)
+
+const STOP_REPEATING = "none"
+
+/** How --repeat says it repeats; undefined for none, which stops it. */
+const repeatOption = (values: OptionValues): RepeatRequest | undefined => {
+  const text = stringOption(values, "repeat")
+  if (text === undefined || text.trim().toLowerCase() === STOP_REPEATING) return undefined
+  const repeat = repeatFromPhrase(text)
+  if (!repeat)
+    throw new UsageError(
+      `--repeat must say how often, such as ${REPEAT_EXAMPLES.map((example) => JSON.stringify(example)).join(", ")}; not ${JSON.stringify(text)}.`
+    )
+  return repeat
+}
 
 /** The fields the options set, as an update's `set`. */
 export const fieldsFrom = (values: OptionValues, today: IsoDate): NonNullable<UpdateTaskRequest["set"]> => {
@@ -85,7 +104,8 @@ export const fieldsFrom = (values: OptionValues, today: IsoDate): NonNullable<Up
         throw new UsageError(`--estimate must be like 30m, 1h or 1h30m, not ${JSON.stringify(text)}.`)
       return minutes
     }),
-    inbox: values["inbox"] === true ? true : undefined
+    inbox: values["inbox"] === true ? true : undefined,
+    repeat: repeatOption(values)
   }
   return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined))
 }
@@ -100,8 +120,12 @@ const CLEAR_ALIASES: Record<string, ClearableField> = {
 /** The fields --clear names. */
 export const clearedFrom = (values: OptionValues): ClearableField[] => {
   const text = stringOption(values, "clear")
-  if (text === undefined) return []
-  return text
-    .split(",")
-    .map((name) => CLEAR_ALIASES[name.trim().toLowerCase()] ?? choice(ClearableField, name, "--clear"))
+  const stops = stringOption(values, "repeat")?.trim().toLowerCase() === STOP_REPEATING ? [ClearableField.REPEAT] : []
+  if (text === undefined) return stops
+  return [
+    ...text
+      .split(",")
+      .map((name) => CLEAR_ALIASES[name.trim().toLowerCase()] ?? choice(ClearableField, name, "--clear")),
+    ...stops
+  ]
 }

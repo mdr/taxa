@@ -238,6 +238,8 @@ const undone = (type: ActivityType, changes: Record<string, FieldChange>, row: C
     case ActivityType.TASK_CREATED:
     case ActivityType.TASK_UPDATED:
     case ActivityType.TASK_STATUS_CHANGED:
+    case ActivityType.TASK_OCCURRENCE_RECORDED:
+    case ActivityType.TASK_OCCURRENCE_UNDONE:
     case ActivityType.TASK_DELETED:
     case ActivityType.TASK_RESTORED:
       throw new ProblemError(ProblemType.INVALID_REQUEST, "That change isn't to a comment.")

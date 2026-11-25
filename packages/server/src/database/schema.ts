@@ -19,7 +19,8 @@ import type { SessionOutcome } from "@taxa/shared/sessions/session"
 import type { ActivityType, FieldChange } from "@taxa/shared/activity/activity"
 import type { IsoDate, IsoTime, TimeZone } from "@taxa/shared/dates/plain-date"
 import type { DomainPrefix } from "@taxa/shared/domains/domain"
-import type { AgentId, ApiKeyId, CommentId, DomainId, SessionId, TaskId, UserId } from "@taxa/shared/ids"
+import type { AgentId, ApiKeyId, CommentId, DomainId, OccurrenceId, SessionId, TaskId, UserId } from "@taxa/shared/ids"
+import type { OccurrenceOutcome, Repeat } from "@taxa/shared/tasks/repeat"
 import type { Energy, Horizon, Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import type { ActivitySequence, Minutes, Ms, TaskNumber, Version } from "@taxa/shared/units"
 
@@ -126,6 +127,8 @@ export const tasks = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'::text[]`),
+    /** How it repeats, if it does: every field filled in, always in the same order. */
+    repeat: jsonb("repeat").$type<Repeat>(),
     /** The task it follows on from. */
     followsOnId: uuid("follows_on_id")
       .$type<TaskId>()
@@ -198,6 +201,38 @@ export const comments = pgTable(
     version: version()
   },
   (table) => [index("comments_task").on(table.taskId, table.createdAt)]
+)
+
+/** Each time a repeating task came round and was done or skipped: its history. */
+export const occurrences = pgTable(
+  "occurrences",
+  {
+    id: uuid("id").$type<OccurrenceId>().primaryKey(),
+    taskId: uuid("task_id")
+      .$type<TaskId>()
+      .notNull()
+      .references(() => tasks.id),
+    /** The date it was for: the task's scheduled date then. */
+    date: plainDate("date").notNull(),
+    outcome: text("outcome").$type<OccurrenceOutcome>().notNull(),
+    /** The day it was done or skipped, in the time zone of whoever did it. */
+    on: plainDate("on").notNull(),
+    at: instant("at").notNull(),
+    userId: userId("user_id")
+      .notNull()
+      .references(() => users.id),
+    agentId: agentId("agent_id").references(() => agents.id),
+    agentContext: text("agent_context"),
+    /** The version of the task that recording it brought it to. */
+    taskVersion: integer("task_version").$type<Version>().notNull(),
+    /** When undoing it took it back: kept, so redoing it can bring it back. */
+    voidedAt: instant("voided_at")
+  },
+  (table) => [
+    uniqueIndex("occurrences_task_date")
+      .on(table.taskId, table.date)
+      .where(sql`${table.voidedAt} is null`)
+  ]
 )
 
 /** Answers already given to requests that carried an Idempotency-Key, so a retry gets the same answer. */

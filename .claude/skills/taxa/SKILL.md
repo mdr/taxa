@@ -74,6 +74,19 @@ taxa delete H-142                   # soft: taxa restore brings it back; taxa li
 taxa undo H-142 --version 3         # takes back change 3 from taxa log (find your own there first)
 ```
 
+Repeating tasks keep one ref for good. `taxa done` on one does it this
+time: it records that occurrence and moves the task on to its next date,
+still open. Don't cancel one (it's refused): skip this time, or stop it
+repeating.
+
+```sh
+taxa add "Revise Anki cards" --repeat daily     # or: every weekday, every monday and thursday,
+                                                # monthly on the 1st, 3 days after done
+taxa done H-142                     # done this time; taxa show lists what's happened lately
+taxa skip H-142                     # not this time
+taxa edit H-142 --repeat none       # stop it repeating; taxa done H-142 --stop-repeating ends it
+```
+
 Dates are `YYYY-MM-DD`, `today`, `tomorrow`, a weekday (`fri`), `+3d` or
 `+2w`. Without `--domain`, a new task goes into the Inbox of your
 user's default domain.

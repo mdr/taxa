@@ -1,5 +1,7 @@
 import { formatDay } from "../dates/date-format.ts"
-import type { IsoDate } from "../dates/plain-date.ts"
+import { z } from "zod"
+import { IsoDateSchema, type IsoDate } from "../dates/plain-date.ts"
+import { OccurrenceOutcome, RepeatSchema, repeatText } from "../tasks/repeat.ts"
 import { actorText } from "../identity/actor-text.ts"
 import { formatEstimate } from "../tasks/estimate.ts"
 import { Energy, Horizon, Priority, TaskStatus } from "../tasks/task.ts"
@@ -20,6 +22,9 @@ export interface ActivityParts {
 
 const isOneOf = <T extends string>(values: Record<string, T>, value: unknown): value is T =>
   Object.values(values).includes(value as T)
+
+/** `Every Monday` as `every Monday`, mid-sentence. */
+const lowerFirst = (text: string): string => text.charAt(0).toLowerCase() + text.slice(1)
 
 const quoted = (value: unknown): string => {
   const text = String(value)
@@ -73,6 +78,10 @@ const PHRASES: Record<string, Phrase> = {
   followsOnId: ({ to }) =>
     typeof to === "string" ? "linked it as a follow-on" : "unlinked it from the task it followed on from",
   tags: tagsPhrase,
+  repeat: ({ to }) => {
+    const repeat = RepeatSchema.safeParse(to)
+    return repeat.success ? `set it to repeat ${lowerFirst(repeatText(repeat.data))}` : "stopped it repeating"
+  },
   scheduledTime: ({ to }) => (typeof to === "string" ? `set the time to ${to}` : "cleared the time"),
   domainId: ({ from, to }, { domainName }) => {
     if (typeof to !== "string") return "put it back in the Inbox"
@@ -106,6 +115,31 @@ const statusAction = (changes: Activity["changes"]): string => {
   return STATUS_ACTION[to]
 }
 
+/** An occurrence as the log keeps it. */
+const OccurrenceChangeSchema = z.object({ date: IsoDateSchema, outcome: z.enum(OccurrenceOutcome) })
+
+const OUTCOME_VERB: Record<OccurrenceOutcome, string> = {
+  [OccurrenceOutcome.DONE]: "doing",
+  [OccurrenceOutcome.SKIPPED]: "skipping",
+  [OccurrenceOutcome.MISSED]: "missing"
+}
+
+const OUTCOME_DONE: Record<OccurrenceOutcome, string> = {
+  [OccurrenceOutcome.DONE]: "did",
+  [OccurrenceOutcome.SKIPPED]: "skipped",
+  [OccurrenceOutcome.MISSED]: "missed"
+}
+
+/** `did 25 Nov, and moved it to 26 Nov`. */
+const occurrenceAction = (changes: Activity["changes"], context: ActivityContext): string => {
+  const occurrence = OccurrenceChangeSchema.safeParse(changes["occurrence"]?.to)
+  if (!occurrence.success) return "did it"
+  const { date, outcome } = occurrence.data
+  const next = changes["scheduled"]?.to
+  const moved = typeof next === "string" ? `, and moved it to ${formatDay(next, context.today)}` : ""
+  return `${OUTCOME_DONE[outcome]} ${formatDay(date, context.today)}${moved}`
+}
+
 const actionOf = ({ type, changes }: Activity, context: ActivityContext): string => {
   switch (type) {
     case ActivityType.TASK_CREATED:
@@ -126,6 +160,14 @@ const actionOf = ({ type, changes }: Activity, context: ActivityContext): string
       return "restored a comment"
     case ActivityType.TASK_STATUS_CHANGED:
       return statusAction(changes)
+    case ActivityType.TASK_OCCURRENCE_RECORDED:
+      return occurrenceAction(changes, context)
+    case ActivityType.TASK_OCCURRENCE_UNDONE: {
+      const occurrence = OccurrenceChangeSchema.safeParse(changes["occurrence"]?.from)
+      return occurrence.success
+        ? `took back ${OUTCOME_VERB[occurrence.data.outcome]} ${formatDay(occurrence.data.date, context.today)}`
+        : "took that back"
+    }
     case ActivityType.TASK_UPDATED: {
       // An undo can put a status back along with other fields.
       const parts = [

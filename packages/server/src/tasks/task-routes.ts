@@ -5,11 +5,14 @@ import type { ServerLogger } from "../telemetry/log.ts"
 import {
   ChangeStatusRequestSchema,
   UndoTaskRequestSchema,
+  RecordOccurrenceRequestSchema,
   CreateTaskRequestSchema,
   ListTasksQuerySchema,
   UpdateTaskRequestSchema
 } from "@taxa/shared/tasks/task-requests"
 import { TASKS_PATH, TaskSchema } from "@taxa/shared/tasks/task"
+import { OccurrenceSchema } from "@taxa/shared/tasks/occurrence"
+import { listOccurrences, recordOccurrence } from "./occurrence-service.ts"
 import { BIN_PATH, PurgedSchema } from "@taxa/shared/tasks/bin"
 import type { Db } from "../database/database.ts"
 import { onceFor } from "../http/idempotency.ts"
@@ -75,6 +78,24 @@ const routes = {
     security: BEARER,
     request: { params: RefSchema, headers: IfMatchHeaderSchema, ...jsonBody(ChangeStatusRequestSchema) },
     responses: { 200: json(TaskSchema, "The task as it is now"), ...PROBLEMS }
+  }),
+  recordOccurrence: createRoute({
+    method: "post",
+    path: `${TASK_PATH}/occurrences`,
+    summary: "Do or skip a repeating task's occurrence, moving it on to its next date",
+    description:
+      "Give the date it's for, its scheduled date, so a retry can't do it twice: once it's moved on, that date is refused (409).",
+    security: BEARER,
+    request: { params: RefSchema, ...jsonBody(RecordOccurrenceRequestSchema) },
+    responses: { 200: json(TaskSchema, "The task, at its next date"), ...PROBLEMS }
+  }),
+  occurrences: createRoute({
+    method: "get",
+    path: `${TASK_PATH}/occurrences`,
+    summary: "A repeating task's occurrences, done or skipped: its history, the latest first",
+    security: BEARER,
+    request: { params: RefSchema },
+    responses: { 200: json(listOf(OccurrenceSchema), "Its occurrences"), ...PROBLEMS }
   }),
   delete: createRoute({
     method: "delete",
@@ -179,6 +200,15 @@ export const taskRoutes = (app: TaxaApp, db: Db, log: ServerLogger, clock: Clock
   })
   app.openapi(routes.emptyBin, async (context) =>
     context.json({ purged: await emptyBin(db, log, context.var.caller, clock.now()) }, 200)
+  )
+  app.openapi(routes.recordOccurrence, async (context) => {
+    const { ref } = context.req.valid("param")
+    const { outcome, date } = context.req.valid("json")
+    const task = await recordOccurrence(db, log, context.var.caller, ref, { outcome, date }, clock.now())
+    return context.json(task, 200, { etag: `"${task.version}"` })
+  })
+  app.openapi(routes.occurrences, async (context) =>
+    context.json({ items: await listOccurrences(db, context.var.caller, context.req.valid("param").ref) }, 200)
   )
   app.openapi(routes.undo, async (context) => {
     const { ref } = context.req.valid("param")

@@ -78,6 +78,33 @@ describe("activityText", () => {
     ).toBe("Matt cancelled it because “Kept it”")
   })
 
+  it("says when a repeating task was done or skipped, and taken back, and how it repeats", () => {
+    const occurrence = {
+      id: "0190a1b2-0000-7000-8000-0000000000aa",
+      date: "2026-01-05",
+      outcome: "DONE",
+      on: "2026-01-05"
+    }
+    expect(
+      said(ActivityType.TASK_OCCURRENCE_RECORDED, {
+        occurrence: { to: occurrence },
+        scheduled: { from: "2026-01-05", to: "2026-01-06" }
+      })
+    ).toBe("Matt did Mon 5 Jan, and moved it to Tue 6 Jan")
+    expect(
+      said(ActivityType.TASK_OCCURRENCE_RECORDED, { occurrence: { to: { ...occurrence, outcome: "SKIPPED" } } })
+    ).toBe("Matt skipped Mon 5 Jan")
+    expect(said(ActivityType.TASK_OCCURRENCE_UNDONE, { occurrence: { from: occurrence } })).toBe(
+      "Matt took back doing Mon 5 Jan"
+    )
+    expect(
+      said(ActivityType.TASK_UPDATED, {
+        repeat: { to: { every: 1, unit: "WEEK", from: "SCHEDULE", weekdays: ["MONDAY"], starts: "2026-01-05" } }
+      })
+    ).toBe("Matt set it to repeat every Monday")
+    expect(said(ActivityType.TASK_UPDATED, { repeat: { from: { every: 1 } } })).toBe("Matt stopped it repeating")
+  })
+
   it("says which tags were added and taken off", () => {
     expect(said(ActivityType.TASK_UPDATED, { tags: { from: [], to: ["Life Admin"] } })).toBe(
       "Matt tagged it Life Admin"

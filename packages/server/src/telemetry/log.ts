@@ -37,7 +37,8 @@ export const LOG_CODES = {
     deleted: "task.deleted",
     restored: "task.restored",
     undone: "task.undone",
-    purged: "task.purged"
+    purged: "task.purged",
+    occurrenceRecorded: "task.occurrenceRecorded"
   },
   comment: {
     added: "comment.added",

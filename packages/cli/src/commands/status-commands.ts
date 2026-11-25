@@ -1,5 +1,7 @@
 import { DATE_INPUT_HELP, parseDateInput } from "@taxa/shared/dates/date-input"
-import type { ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
+import { ClearableField, type ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
+import { formatDay } from "@taxa/shared/dates/date-format"
+import { OccurrenceOutcome } from "@taxa/shared/tasks/repeat"
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { ExitCode } from "../cli-io.ts"
 import {
@@ -72,6 +74,56 @@ const deletion = (name: string, summary: string, verb: string, versioned: boolea
   }
 })
 
+/** Does or skips a repeating task's occurrence, for the date it's at, so a retry can't do it twice. */
+const recorded = async (
+  context: CommandContext,
+  task: Task,
+  outcome: OccurrenceOutcome.DONE | OccurrenceOutcome.SKIPPED
+): Promise<ExitCode> => {
+  const moved = await context.client.recordOccurrence(task.ref, { outcome, date: task.scheduled })
+  const today = context.today()
+  const verb = outcome === OccurrenceOutcome.DONE ? "Done" : "Skipped"
+  const next = moved.scheduled === undefined ? "" : `; next ${formatDay(moved.scheduled, today)}`
+  const when = task.scheduled === undefined ? "" : ` for ${formatDay(task.scheduled, today)}`
+  print(context, linked(context, moved), () => `${verb} ${moved.ref}${when}${next}  ${moved.title}`)
+  return ExitCode.OK
+}
+
+const done: Command = {
+  name: "done",
+  summary: "Mark a task done; a repeating one, done this time",
+  usage: `<ref> [--stop-repeating]
+  --stop-repeating      A repeating task: stop it repeating, and mark it done for good
+${VERSION_HELP}`,
+  options: { "stop-repeating": { type: "boolean" }, ...VERSION_OPTION },
+  run: async (context, values, positionals) => {
+    const ref = oneArgument(positionals, "task")
+    const task = await context.client.task(ref)
+    if (task.repeat && values["stop-repeating"] !== true) return recorded(context, task, OccurrenceOutcome.DONE)
+    const stopped = task.repeat
+      ? await context.client.updateTask(ref, { clear: [ClearableField.REPEAT] }, ifVersion(values))
+      : task
+    const finished = await context.client.changeStatus(
+      ref,
+      { status: TaskStatus.DONE },
+      task.repeat ? stopped.version : ifVersion(values)
+    )
+    return changed(context, finished, "Done:")
+  }
+}
+
+const skip: Command = {
+  name: "skip",
+  summary: "Skip a repeating task this time, moving it on to its next date",
+  usage: "<ref>",
+  options: {},
+  run: async (context, _values, positionals) => {
+    const task = await context.client.task(oneArgument(positionals, "task"))
+    if (!task.repeat) throw new UsageError(`${task.ref} doesn't repeat: taxa cancel, to cancel it.`)
+    return recorded(context, task, OccurrenceOutcome.SKIPPED)
+  }
+}
+
 const undo: Command = {
   name: "undo",
   summary: "Undo a change to a task, by its number in taxa log",
@@ -112,7 +164,8 @@ export const STATUS_COMMANDS: Command[] = [
     options: { on: { type: "string" }, "follow-up": { type: "string" } },
     request: (values, context) => ({ waitingOn: stringOption(values, "on"), followUp: followUpFrom(values, context) })
   }),
-  statusCommand({ name: "done", summary: "Mark a task done", status: TaskStatus.DONE, verb: "Done:" }),
+  done,
+  skip,
   statusCommand({
     name: "cancel",
     summary: "Cancel a task, optionally saying why",

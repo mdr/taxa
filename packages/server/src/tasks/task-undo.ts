@@ -11,6 +11,7 @@ import { changeTask, deletion, restoration, type Applied } from "./task-service.
 import { revertedState, RevertType } from "./task-state.ts"
 import type { TaskRow } from "./task-rows.ts"
 import type { TaskState } from "./task-state.ts"
+import { occurrenceRestored, occurrenceVoided } from "./repeating.ts"
 
 /**
  * Takes back the change that brought a task to `version`, whoever made it:
@@ -32,18 +33,32 @@ export const undoTask = (
     apply: async (state, row, tx) => {
       const change = await changeTo(tx, row.id, version)
       if (!change) throw new ProblemError(ProblemType.NOT_FOUND, `${ref} has no change to version ${version} to undo.`)
-      return { ...undone(change.type, change.changes, state, row, now, ref), undoesVersion: version }
+      return { ...(await undone(tx, change.type, change.changes, state, row, now, ref)), undoesVersion: version }
     }
   })
 
-const undone = (
+const changedSince = (ref: string): ProblemError =>
+  new ProblemError(
+    ProblemType.VERSION_CONFLICT,
+    `What that change to ${ref} did has been changed since, so undoing it would lose that: undo the later change first.`
+  )
+
+/** Puts back what a change did to the task's fields, unless they've changed since. */
+const reverted = (state: TaskState, changes: Parameters<typeof revertedState>[1], ref: string): Applied => {
+  const result = revertedState(state, changes)
+  if (result.type === RevertType.CHANGED_SINCE) throw changedSince(ref)
+  return result.outcome
+}
+
+const undone = async (
+  tx: Db,
   type: ActivityType,
   changes: Parameters<typeof revertedState>[1],
   state: TaskState,
   row: TaskRow,
   now: Instant,
   ref: string
-): Applied => {
+): Promise<Applied> => {
   switch (type) {
     case ActivityType.TASK_CREATED:
     case ActivityType.TASK_RESTORED:
@@ -51,14 +66,17 @@ const undone = (
     case ActivityType.TASK_DELETED:
       return { ...restoration(state, row), type: ActivityType.TASK_RESTORED }
     case ActivityType.TASK_UPDATED:
-    case ActivityType.TASK_STATUS_CHANGED: {
-      const reverted = revertedState(state, changes)
-      if (reverted.type === RevertType.CHANGED_SINCE)
-        throw new ProblemError(
-          ProblemType.VERSION_CONFLICT,
-          `What that change to ${ref} did has been changed since, so undoing it would lose that: undo the later change first.`
-        )
-      return reverted.outcome
+    case ActivityType.TASK_STATUS_CHANGED:
+      return reverted(state, changes, ref)
+    case ActivityType.TASK_OCCURRENCE_RECORDED: {
+      const outcome = reverted(state, changes, ref)
+      const voided = await occurrenceVoided(tx, now, changes)
+      return { ...outcome, changes: { ...outcome.changes, ...voided }, type: ActivityType.TASK_OCCURRENCE_UNDONE }
+    }
+    case ActivityType.TASK_OCCURRENCE_UNDONE: {
+      const outcome = reverted(state, changes, ref)
+      const restored = await occurrenceRestored(tx, row, changes)
+      return { ...outcome, changes: { ...outcome.changes, ...restored }, type: ActivityType.TASK_OCCURRENCE_RECORDED }
     }
     case ActivityType.DOMAIN_CREATED:
     case ActivityType.COMMENT_ADDED:

@@ -1,3 +1,4 @@
+import { repeatText } from "@taxa/shared/tasks/repeat"
 import { formatDay } from "@taxa/shared/dates/date-format"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import type { Domain } from "@taxa/shared/domains/domain"
@@ -53,6 +54,7 @@ export const taskDetail = (
       task.scheduled && `${formatDay(task.scheduled, today)}${task.scheduledTime ? ` ${task.scheduledTime}` : ""}`
     ),
     ...row("Starts", day(task.start, today)),
+    ...row("Repeats", task.repeat && repeatText(task.repeat)),
     ...row("Estimate", task.estimateMinutes === undefined ? undefined : formatEstimate(task.estimateMinutes)),
     ...row("Energy", task.energy && ENERGY_TEXT[task.energy]),
     ...row("Horizon", task.horizon && HORIZON_TEXT[task.horizon]),

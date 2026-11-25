@@ -62,6 +62,10 @@ export const CommentIdSchema = z.uuid().brand<"CommentId">()
 export type CommentId = z.infer<typeof CommentIdSchema>
 export const commentId = (text: string): CommentId => CommentIdSchema.parse(text)
 
+export const OccurrenceIdSchema = z.uuid().brand<"OccurrenceId">()
+export type OccurrenceId = z.infer<typeof OccurrenceIdSchema>
+export const occurrenceId = (text: string): OccurrenceId => OccurrenceIdSchema.parse(text)
+
 export const SessionIdSchema = z.uuid().brand<"SessionId">()
 export type SessionId = z.infer<typeof SessionIdSchema>
 export const sessionId = (text: string): SessionId => SessionIdSchema.parse(text)

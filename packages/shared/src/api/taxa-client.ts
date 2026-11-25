@@ -27,11 +27,13 @@ import {
 } from "../identity/agent.ts"
 import {
   type ChangeStatusRequest,
+  type RecordOccurrenceRequest,
   type CreateTaskRequest,
   type ListTasksQuery,
   type UpdateTaskRequest
 } from "../tasks/task-requests.ts"
 import { TASKS_PATH, TaskSchema, type Task } from "../tasks/task.ts"
+import { OccurrenceSchema, type Occurrence } from "../tasks/occurrence.ts"
 import { TAGS_PATH, TagSummarySchema, type RenameTagRequest, type TagSummary } from "../tasks/tags.ts"
 import {
   CURRENT_SESSION_PATH,
@@ -153,6 +155,16 @@ export class TaxaClient {
   }
 
   /** Takes back the change that brought a task to `version`; undoing an undo redoes it. */
+  /** Does or skips a repeating task's occurrence, moving it on to its next date. */
+  recordOccurrence(ref: string, request: RecordOccurrenceRequest): Promise<Task> {
+    return this.#request(TaskSchema, `${taskPath(ref)}/occurrences`, { method: "POST", body: request })
+  }
+
+  /** A repeating task's occurrences, the latest first. */
+  async occurrences(ref: string): Promise<Occurrence[]> {
+    return (await this.#request(ListSchema(OccurrenceSchema), `${taskPath(ref)}/occurrences`)).items
+  }
+
   undoTask(ref: string, version: Version): Promise<Task> {
     return this.#request(TaskSchema, `${taskPath(ref)}/undo`, { method: "POST", body: { version } })
   }
