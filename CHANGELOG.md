@@ -6,6 +6,8 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ## Unreleased
 
+## 0.6.0 (2026-11-26)
+
 ### New
 
 - **Deadlines**, in the sidebar: every task with a due date, soonest first, under Overdue, Today, This week, Next week and each month, each saying how long it has. The sidebar counts those overdue or due within the week, in red when any are overdue. `G D` goes there; in the CLI, `taxa list --due`.
