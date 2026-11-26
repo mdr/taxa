@@ -1,6 +1,6 @@
 import type { TimeZone } from "@taxa/shared/dates/plain-date"
 import { userId as newUserId, type UserId } from "@taxa/shared/ids"
-import { and, eq, isNull } from "drizzle-orm"
+import { and, eq, isNotNull, isNull } from "drizzle-orm"
 import { uuidv7 } from "@taxa/shared/ids"
 import type { Instant } from "@taxa/shared/units"
 import type { CallerUser } from "../auth/caller.ts"
@@ -64,6 +64,10 @@ export const ensureUserNamed = async (
   const [row] = await db.select().from(users).where(eq(users.name, name))
   return row ? callerUserOf(row) : createUser(db, log, name, timeZone, now)
 }
+
+/** How many people Taxa knows by email: those who can sign in. */
+export const countSignInable = async (db: Db): Promise<number> =>
+  (await db.select({ id: users.id }).from(users).where(isNotNull(users.email))).length
 
 /** The person with this email, which is lower case, if Taxa knows them. */
 export const userByEmail = async (db: Db, email: string): Promise<CallerUser | undefined> => {

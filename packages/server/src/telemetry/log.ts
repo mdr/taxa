@@ -20,7 +20,8 @@ export const LOG_CODES = {
     signedIn: "signIn.signedIn",
     refused: "signIn.refused",
     failed: "signIn.failed",
-    signedOut: "signIn.signedOut"
+    signedOut: "signIn.signedOut",
+    noOneCan: "signIn.noOneCan"
   },
   agent: {
     created: "agent.created"

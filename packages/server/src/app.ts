@@ -18,7 +18,7 @@ import { tagRoutes } from "./tags/tag-routes.ts"
 import { sessionRoutes } from "./sessions/session-routes.ts"
 import { dayPlanRoutes } from "./days/day-plan-routes.ts"
 import { LOG_CODES, type ServerLogger } from "./telemetry/log.ts"
-import { ensurePeople, ensureUserNamed, userById } from "./users/user-store.ts"
+import { countSignInable, ensurePeople, ensureUserNamed, userById } from "./users/user-store.ts"
 import type { SignInOptions } from "./auth/sign-in-config.ts"
 import { signInCookies } from "./auth/sign-in-cookies.ts"
 import { signInRoutes } from "./auth/sign-in-routes.ts"
@@ -66,7 +66,11 @@ export const createApp = async ({
         return user
       }
     : undefined
-  if (signIn) await ensurePeople(db, logger, signIn.people, signIn.timeZone, clock.now())
+  if (signIn) {
+    await ensurePeople(db, logger, signIn.people, signIn.timeZone, clock.now())
+    if ((await countSignInable(db)) === 0)
+      logger.warn(LOG_CODES.signIn.noOneCan, "no one can sign in: Taxa knows no one by email; set TAXA_PEOPLE")
+  }
 
   const app = taxaHono()
   if (corsOrigins) {

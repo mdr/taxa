@@ -15,6 +15,7 @@ export interface SignInOptions {
   issuer: URL
   clientId: string
   clientSecret: string
+  /** People to make sure Taxa knows by email; anyone it knows by email may sign in, these or not. */
   people: Person[]
   /** The time zone of people made to sign in, until their browser says theirs. */
   timeZone: TimeZone
@@ -58,7 +59,6 @@ export const signInFrom = (config: Config, readFile: (path: string) => string): 
   if (config.TAXA_PUBLIC_URL === undefined)
     throw new Error("Sign-in needs TAXA_PUBLIC_URL, where people reach Taxa, such as https://taxa.example.com")
   const people = peopleFrom(config.TAXA_PEOPLE ?? "")
-  if (people.length === 0) throw new Error('Sign-in needs TAXA_PEOPLE, who may sign in: "Sam <sam@example.com>"')
   return {
     publicUrl: new URL(config.TAXA_PUBLIC_URL),
     issuer: new URL(config.TAXA_OIDC_ISSUER),

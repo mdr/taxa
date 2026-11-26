@@ -183,3 +183,21 @@ describe("the people who may sign in", () => {
     }
   })
 })
+
+describe("signing in with no one named", () => {
+  const it = useInProcessServer({
+    signIn: (publicUrl) => ({
+      publicUrl,
+      issuer: new URL("http://127.0.0.1:9"),
+      clientId: "client",
+      clientSecret: "secret",
+      people: [],
+      timeZone: timeZone("Europe/London")
+    })
+  })
+
+  it("starts, warning that no one can sign in while Taxa knows no one by email", async ({ server }) => {
+    expect((await server.health()).status).toBe("OK")
+    expect(server.logs.map(({ code }) => code)).toContain("signIn.noOneCan")
+  })
+})

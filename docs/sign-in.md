@@ -2,8 +2,8 @@
 
 Taxa can have people sign in with Google, or any OpenID Connect provider,
 instead of running as one person (`TAXA_DEV_USER`, `services.taxa.singlePerson`).
-Only the people it's told about can sign in, by the email the provider vouches
-for. The CLI and agents keep using API keys.
+Anyone Taxa knows by email (the `users` table) can sign in, once the provider
+vouches for that email. The CLI and agents keep using API keys.
 
 ## A Google client
 
@@ -35,12 +35,15 @@ runs:
 | `TAXA_OIDC_CLIENT_SECRET`      | The client's secret, such as from `fly secrets set`; or                                                                                |
 | `TAXA_OIDC_CLIENT_SECRET_FILE` | a file holding it, such as a systemd credential.                                                                                       |
 | `TAXA_PUBLIC_URL`              | Where people reach Taxa, such as `https://taxa.example.com`. The callback and the cookie follow from it, whatever proxy is in between. |
-| `TAXA_PEOPLE`                  | Who may sign in: `Sam <sam@example.com>, Alex <alex@example.com>`.                                                                     |
+| `TAXA_PEOPLE`                  | Optional: people to make sure Taxa knows by email, `Sam <sam@example.com>, Alex <alex@example.com>`.                                   |
 | `TAXA_OIDC_ISSUER`             | The provider, if not Google (`https://accounts.google.com`).                                                                           |
 
-Someone in `TAXA_PEOPLE` who's already in Taxa by that name, with no email
-yet, becomes them: so a server that ran as one person keeps its tasks once
-that person signs in. Anyone else is made the first time the server starts.
+`TAXA_PEOPLE` is how people come to have an email in Taxa, as each start of the
+server makes sure of them. Someone in it who's already in Taxa by that name,
+with no email yet, becomes them: so a server that ran as one person keeps its
+tasks once that person signs in. Anyone else is made. Taking someone out of it
+doesn't stop them signing in: their email stays. With no one known by email,
+the server starts but warns that no one can sign in.
 
 Taxa won't start with both sign-in and `TAXA_DEV_USER`, nor with sign-in
 missing any of the rest.

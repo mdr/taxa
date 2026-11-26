@@ -86,7 +86,7 @@ in
             email = "sam@example.com";
           }
         ];
-        description = "Who may sign in, by the email the provider vouches for. Someone already in Taxa by that name, with no email yet (as the single person is), becomes them.";
+        description = "People to make sure Taxa knows by email; anyone it knows by email may sign in. Someone already in Taxa by that name, with no email yet (as the single person is), becomes them; anyone else is made.";
       };
     };
 
@@ -126,10 +126,6 @@ in
       {
         assertion = cfg.publicUrl != null;
         message = "services.taxa.signIn needs publicUrl, where people reach Taxa.";
-      }
-      {
-        assertion = cfg.signIn.people != [ ];
-        message = "services.taxa.signIn needs people, who may sign in.";
       }
     ];
 

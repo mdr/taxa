@@ -28,6 +28,11 @@ describe("peopleFrom", () => {
 })
 
 describe("signInFrom", () => {
+  it("needs no one named: whoever Taxa already knows by email may sign in", () => {
+    const { TAXA_PEOPLE: _people, ...rest } = SIGN_IN
+    expect(signInFrom(configFrom(rest), noFiles)?.people).toEqual([])
+  })
+
   it("is off without a client, and with one, signs in through Google unless told otherwise", () => {
     expect(signInFrom(configFrom({ DATABASE_URL: "postgres://x" }), noFiles)).toBeUndefined()
     expect(signInFrom(configFrom(SIGN_IN), noFiles)).toMatchObject({
@@ -49,11 +54,10 @@ describe("signInFrom", () => {
     )
   })
 
-  it("needs where people reach Taxa, who they are, and a secret, and won't go with the development login", () => {
+  it("needs where people reach Taxa and a secret, and won't go with the development login", () => {
     const without = (name: keyof typeof SIGN_IN): Record<string, string> =>
       Object.fromEntries(Object.entries(SIGN_IN).filter(([key]) => key !== name))
     expect(() => signInFrom(configFrom(without("TAXA_PUBLIC_URL")), noFiles)).toThrow(/TAXA_PUBLIC_URL/)
-    expect(() => signInFrom(configFrom(without("TAXA_PEOPLE")), noFiles)).toThrow(/TAXA_PEOPLE/)
     expect(() => signInFrom(configFrom(without("TAXA_OIDC_CLIENT_SECRET")), noFiles)).toThrow(/secret/)
     expect(() => signInFrom(configFrom({ ...SIGN_IN, TAXA_DEV_USER: "Sam" }), noFiles)).toThrow(/TAXA_DEV_USER/)
   })

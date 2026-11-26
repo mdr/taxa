@@ -484,9 +484,9 @@ offline editing from the start, even though it ships in stages.
 ## People and sign-in
 
 - People sign in through OpenID Connect, so any provider will do (Google
-  first), checked against the people Taxa knows by email: those the server
-  is told may sign in (`TAXA_PEOPLE`), and only when the provider vouches
-  for the email. There's no sign-up. Someone already in Taxa by that name
+  first), checked against the people Taxa knows by email, and only when the
+  provider vouches for the email. People come to have an email in Taxa
+  through `TAXA_PEOPLE`, made sure of as the server starts. There's no sign-up. Someone already in Taxa by that name
   with no email yet, as the single person is, becomes them, so a server
   moves from single-person mode to sign-in keeping its tasks. Passkeys may
   come later.
