@@ -33,6 +33,7 @@ import { realScheduler } from "../../services/scheduler.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { useUndo } from "../../undo/undo-service.ts"
 import { FileButton } from "../filing/FileButton.tsx"
+import { DoneButton } from "./DoneButton.tsx"
 import { filedRequest } from "../filing/filing.ts"
 
 export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
@@ -74,6 +75,15 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
       available: () => query.data !== undefined,
       run: () => {
         if (query.data) void changeTask(query.data, { type: TaskChangeType.UPDATE, request: filedRequest(query.data) })
+      }
+    },
+    {
+      keys: ["x"],
+      description: "Mark it done, or take that back",
+      group: ShortcutGroup.TASKS,
+      available: () => query.data !== undefined,
+      run: () => {
+        if (query.data) void session.toggle(query.data)
       }
     },
     { keys: ["r"], description: "Rename", group: ShortcutGroup.TASKS, run: () => requestFocus(FocusTarget.TITLE) },
@@ -132,7 +142,10 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
               {task.ref}
             </span>
           </nav>
-          <TaskMenu task={task} change={change} />
+          <div className={styles.actions}>
+            <DoneButton task={task} />
+            <TaskMenu task={task} change={change} />
+          </div>
         </div>
         <h1 id="task-heading" className={styles.visuallyHidden}>
           {task.title}

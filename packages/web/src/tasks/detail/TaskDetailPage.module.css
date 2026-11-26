@@ -82,3 +82,9 @@
   background: var(--surface);
   border-color: var(--border-strong);
 }
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

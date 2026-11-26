@@ -12,6 +12,8 @@ them at the top of its release notes. See `docs/releasing.md`.
 - Below Today, **Deadlines coming up**: what's overdue or due within the week and not yet planned for today, with + Today on each.
 - **Filing** a task out of the Inbox is now its own step, once it's sorted out: the **File** button on its row or page, `V`, or "File it" in the row's menu. `V` again, or "Back to the Inbox", puts it back. In the CLI: `taxa file H-7`, `taxa edit --inbox` and `--filed`.
 
+- A big green **Mark done** button at the top of a task's page, with a little celebration; `X` does it from the keyboard there too, as in lists. On a repeating task it says "Done this time".
+
 ### Changed
 
 - **The Inbox** is for jotting things down to sort out later. Every task now goes in a domain from the start, with that domain's ref (`H-7`, no more `IN-7`), and waits in your Inbox until you file it. A task added for today, soon or someday, in a domain's list, or while planning is filed straight away. Inbox tasks are seen only by you, and stay out of their domain's list until filed. Your Inbox tasks have moved into your oldest domain, still in the Inbox; their old `IN-` refs still find them.

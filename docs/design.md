@@ -192,6 +192,10 @@ your notes.
   correct their own with `edit-comment` and `delete-comment`.
 - Adding a comment doesn't change the task's version, so it never conflicts
   with someone editing the task. It counts as activity on a claim.
+- A task's page has a green **Mark done** button at the top, beside its ⋯
+  menu ("Done this time" for a repeating task), and `X` does the same: it's
+  ticked off as in a list, with the same celebration, Undo and follow-on
+  offer. Clicked again, or `X` again, takes it back.
 - A task's page has a **timeline**: its changes and its comments, oldest
   first, and a box for adding one: Enter posts it, as in a chat, and
   Shift+Enter starts a new line (editing one, Enter saves it). Notes are a

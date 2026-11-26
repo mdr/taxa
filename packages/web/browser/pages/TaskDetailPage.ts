@@ -24,6 +24,7 @@ import { linkBarTestIds } from "../../src/notes/LinkBarTestIds.ts"
 import { estimatePropertyTestIds } from "../../src/tasks/detail/properties/EstimatePropertyTestIds.ts"
 import { taskDetailPageTestIds } from "../../src/tasks/detail/TaskDetailPageTestIds.ts"
 import { taskMenuTestIds } from "../../src/tasks/detail/TaskMenuTestIds.ts"
+import { doneButtonTestIds } from "../../src/tasks/detail/DoneButtonTestIds.ts"
 import { taskPropertiesTestIds } from "../../src/tasks/detail/TaskPropertiesTestIds.ts"
 import { titleFieldTestIds } from "../../src/tasks/detail/TitleFieldTestIds.ts"
 import { CONFLICT_NOTICE } from "../../src/tasks/changes/task-changes-service.ts"
@@ -108,6 +109,16 @@ export class TaskDetailPage extends PageObject {
 
   async setStatus(status: TaskStatus): Promise<void> {
     await this.#choose(taskPropertiesTestIds.status, status)
+  }
+
+  /** Clicks the Done button: marks it done, or takes that back. */
+  async markDone(): Promise<void> {
+    await this.#page.getByTestId(doneButtonTestIds.done).click()
+  }
+
+  /** What the Done button says: `Mark done`, `Done this time`, `Done`. */
+  async expectDoneButton(text: string): Promise<void> {
+    await expect(this.#page.getByTestId(doneButtonTestIds.done)).toContainText(text)
   }
 
   async expectStatus(status: TaskStatus): Promise<void> {

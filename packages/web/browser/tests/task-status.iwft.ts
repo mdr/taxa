@@ -1,3 +1,4 @@
+import { RepeatFrom, RepeatUnit } from "@taxa/shared/tasks/repeat"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
@@ -47,4 +48,33 @@ test("undoing marking a task done puts back what it was waiting on", async ({ ta
   await detail.toast.undo()
   await detail.expectStatus(TaskStatus.WAITING)
   await taxa.expectTask("H-1", { status: TaskStatus.WAITING, waitingOn: "the plumber", followUp: "2026-01-12" })
+})
+
+test("marking a task done from its page with the Done button, or X, and taking it back", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H" })
+  await taxa.matt.addTask("Water the plants", {
+    domain: "H",
+    scheduled: "2026-01-05",
+    repeat: { every: 1, unit: RepeatUnit.DAY, from: RepeatFrom.SCHEDULE }
+  })
+  const tab = await taxa.openTab("Matt")
+  const detail = await tab.openTask("H-1")
+  await detail.expectDoneButton("Mark done")
+  await detail.markDone()
+  await detail.expectDoneButton("Done")
+  await detail.expectStatus(TaskStatus.DONE)
+  await detail.toast.expectOffered("Fix the tap")
+  await detail.expectAccessible()
+  await taxa.expectTask("H-1", { status: TaskStatus.DONE })
+  await detail.markDone()
+  await detail.expectDoneButton("Mark done")
+  await taxa.expectTask("H-1", { status: TaskStatus.OPEN })
+  await detail.keyboard.press("x")
+  await taxa.expectTask("H-1", { status: TaskStatus.DONE })
+
+  const plants = await tab.openTask("H-2")
+  await plants.expectDoneButton("Done this time")
+  await plants.markDone()
+  await taxa.expectTask("H-2", { status: TaskStatus.OPEN, scheduled: "2026-01-06" })
 })
