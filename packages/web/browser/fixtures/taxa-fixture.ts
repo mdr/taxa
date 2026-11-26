@@ -8,10 +8,11 @@ import { expect, test as base, type Browser } from "@playwright/test"
 import type { SessionId } from "@taxa/shared/ids"
 import type { Task } from "@taxa/shared/tasks/task"
 import { InProcessServer } from "../../../server/src/test-support/in-process-server.ts"
-import type { TestUser } from "../../../server/src/test-support/test-user.ts"
 import type { Ms } from "@taxa/shared/units"
 import type { Tab } from "../pages/Tab.ts"
 import { newTab } from "./iwft-tab.ts"
+import { BrowserUser } from "./browser-user.ts"
+import type { TestUser } from "../../../server/src/test-support/test-user.ts"
 
 /** Who the web app signs in as: the development login. */
 const PERSON = { name: "Matt", timeZone: timeZone("Europe/London") }
@@ -19,11 +20,11 @@ const PERSON = { name: "Matt", timeZone: timeZone("Europe/London") }
 export class TestTaxa {
   readonly server: InProcessServer
   /** The person the tabs are signed in as, acting through the API to set up and check data. */
-  readonly matt: TestUser
+  readonly matt: BrowserUser
   readonly #browser: Browser
   readonly #tabs: Tab[] = []
 
-  constructor(server: InProcessServer, matt: TestUser, browser: Browser) {
+  constructor(server: InProcessServer, matt: BrowserUser, browser: Browser) {
     this.server = server
     this.matt = matt
     this.#browser = browser
@@ -119,7 +120,7 @@ export const test = base.extend<{ taxa: TestTaxa }>({
       devLogin: PERSON
     })
     try {
-      const taxa = new TestTaxa(server, await server.devLoginUser(), browser)
+      const taxa = new TestTaxa(server, BrowserUser.of(await server.devLoginUser()), browser)
       await use(taxa)
       await taxa.close()
     } finally {

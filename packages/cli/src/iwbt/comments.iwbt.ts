@@ -14,11 +14,12 @@ describe("taxa comment", () => {
 
   it("adds a comment, leaving the task as it is, and says where it is", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const claude = await matt.agent("Claude Code")
     const tap = await matt.addTask("Fix the tap", { notes: "The kitchen one" })
     expect(await taxaAs(server, claude.secret, ["comment", tap.ref, "Found", "the", "part"])).toEqual({
       exitCode: ExitCode.OK,
-      stdout: "Commented on IN-1  Fix the tap\nhttp://localhost:5173/tasks/IN-1\n",
+      stdout: "Commented on M-1  Fix the tap\nhttp://localhost:5173/tasks/M-1\n",
       stderr: ""
     })
     expect(await matt.client.comments(tap.ref)).toMatchObject([
@@ -29,6 +30,7 @@ describe("taxa comment", () => {
 
   it("reads Markdown from stdin with -", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     await taxaAs(server, matt.secret, ["comment", tap.ref, "-"], "Done so far:\n\n- bought washers\n")
     expect((await matt.client.comments(tap.ref))[0]?.body).toBe("Done so far:\n\n- bought washers")
@@ -36,6 +38,7 @@ describe("taxa comment", () => {
 
   it("says what's wrong without a task or text", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     expect((await taxaAs(server, matt.secret, ["comment"])).exitCode).toBe(ExitCode.USAGE)
     expect((await taxaAs(server, matt.secret, ["comment", tap.ref])).exitCode).toBe(ExitCode.USAGE)
@@ -44,6 +47,7 @@ describe("taxa comment", () => {
 
   it("lists them oldest first, and show gives the latest three", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     for (const body of ["Rang the plumber", "He's coming Thursday", "Bought washers", "Fixed it"]) {
       await matt.client.addComment(tap.ref, { body })
@@ -68,7 +72,7 @@ describe("taxa comment", () => {
       ].join("\n")
     )
     const shown = (await taxaAs(server, matt.secret, ["show", tap.ref])).stdout
-    expect(shown).toContain("Comments, the latest 3 (all 4: taxa comments IN-1)")
+    expect(shown).toContain("Comments, the latest 3 (all 4: taxa comments M-1)")
     expect(shown).not.toContain("Rang the plumber")
     expect(shown).toContain("  Fixed it\n")
     const json = JSON.parse((await taxaAs(server, matt.secret, ["comments", tap.ref, "--json"])).stdout) as unknown[]
@@ -77,6 +81,7 @@ describe("taxa comment", () => {
 
   it("edits, deletes and restores a comment of the caller's own, by its id", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const claude = await matt.agent("Claude Code")
     const tap = await matt.addTask("Fix the tap")
     const its = await claude.client.addComment(tap.ref, { body: "Found the prat" })

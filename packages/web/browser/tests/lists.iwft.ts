@@ -33,7 +33,7 @@ test("the Inbox count goes down as tasks are filed and finished", async ({ taxa 
   await list.sidebar.expectInboxCount(2)
 
   const detail = await list.openTask("Fix the tap")
-  await detail.moveTo("H")
+  await detail.filing.file()
   await detail.sidebar.expectInboxCount(1)
   await detail.sidebar.openInbox()
   await list.complete("Renew passport")

@@ -39,7 +39,7 @@ and `taxa show` print it too.
 ```sh
 taxa list --json                    # active tasks, most urgent first
 taxa list --domain H --json         # one domain's
-taxa list --inbox --json            # not yet organised
+taxa list --inbox --json            # jotted down, still to sort out and file
 taxa list --status done,cancelled --json
 taxa list --search "council tax" --json  # every word in the title, notes, tags or comments
 taxa list --tag "Life Admin" --json
@@ -112,8 +112,11 @@ taxa item-to-task H-142 oxfam               # a task of its own, following on fr
 ```
 
 Dates are `YYYY-MM-DD`, `today`, `tomorrow`, a weekday (`fri`), `+3d` or
-`+2w`. Without `--domain`, a new task goes into the Inbox of your
-user's default domain.
+`+2w`. Every task is in a domain: with only one, it goes there; with more,
+say which with `--domain`. A task added without `--scheduled` or
+`--horizon` waits in your user's Inbox, seen only by them, until it's filed
+(`taxa file H-142`); add `--filed` if you've sorted it out already, or
+`--inbox` to leave one with a date there.
 
 For several fields at once, or text with awkward quoting, pipe JSON in
 with `-`. The shapes are the API's (`/api/openapi.json`):

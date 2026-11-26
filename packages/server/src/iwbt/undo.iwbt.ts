@@ -12,14 +12,14 @@ describe("undo", () => {
     const matt = await server.user("Matt")
     await matt.addDomain("Home", "H")
     const tap = await matt.addTask("Fix the tap")
-    const filed = await matt.client.updateTask(tap.ref, { set: { domain: "H", priority: Priority.HIGH } })
+    const filed = await matt.client.updateTask(tap.ref, { set: { inbox: false, priority: Priority.HIGH } })
     const done = await matt.client.changeStatus(filed.ref, { status: TaskStatus.DONE })
 
     const undone = await matt.client.undoTask(tap.id, done.version)
     expect(undone).toMatchObject({ status: TaskStatus.OPEN, version: 4 })
     expect(undone.completedAt).toBeUndefined()
     const refiled = await matt.client.undoTask(tap.id, filed.version)
-    expect(refiled).toMatchObject({ ref: "IN-1", inbox: true, priority: Priority.NORMAL })
+    expect(refiled).toMatchObject({ ref: "H-1", inbox: true, priority: Priority.NORMAL })
     const redone = await matt.client.undoTask(tap.id, undone.version)
     expect(redone).toMatchObject({ status: TaskStatus.DONE })
 
@@ -36,6 +36,7 @@ describe("undo", () => {
 
   it("takes back a task added by mistake, not even leaving it in the bin, and redoes it", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const oops = await matt.addTask("Fix the tpa")
     const deleted = await matt.client.undoTask(oops.id, oops.version)
     expect(deleted.deletedAt).toBeDefined()
@@ -50,6 +51,7 @@ describe("undo", () => {
 
   it("puts a deleted task back in the bin, undoing restoring it", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     await matt.client.deleteTask(tap.ref)
     const restored = await matt.client.restoreTask(tap.ref)
@@ -59,6 +61,7 @@ describe("undo", () => {
 
   it("undoes an agent's change, and won't undo what's been changed since", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const claude = await matt.agent("Claude Code")
     const tap = await matt.addTask("Fix the tap")
     const byClaude = await claude.client.updateTask(tap.id, {

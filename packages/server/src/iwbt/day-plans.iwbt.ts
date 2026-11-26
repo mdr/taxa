@@ -8,6 +8,7 @@ describe("day plans", () => {
 
   it("put today's tasks in your order, those not placed coming after", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap", { scheduled: "2026-01-05" })
     const quote = await matt.addTask("Send the quote", { scheduled: "2026-01-04" })
     await matt.addTask("Book the MOT", { scheduled: "2026-01-05" })
@@ -25,7 +26,9 @@ describe("day plans", () => {
 
   it("keep only your own tasks, and each person's plan to themselves", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const jo = await server.user("Jo")
+    await jo.addDomain("Jo", "J")
     const tap = await matt.addTask("Fix the tap", { scheduled: "2026-01-05" })
     const hers = await jo.addTask("Jo's own", { scheduled: "2026-01-05" })
     expect((await matt.client.setDayPlan("2026-01-05", { taskIds: [hers.id, tap.id] })).taskIds).toEqual([tap.id])

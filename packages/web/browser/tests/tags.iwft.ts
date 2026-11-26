@@ -5,7 +5,7 @@ test("tagging tasks on their pages, and finding them by tag", async ({ taxa }) =
   await taxa.matt.addTask("Renew passport")
   await taxa.matt.addTask("Pay the council tax", { domain: "H" })
   const tab = await taxa.openTab("Matt")
-  const passport = await tab.openTask("IN-1")
+  const passport = await tab.openTask("H-1")
 
   // Any words make a tag, spaces and capitals kept.
   await passport.tags.addNew("Life Admin")
@@ -13,7 +13,7 @@ test("tagging tasks on their pages, and finding them by tag", async ({ taxa }) =
   await passport.tags.expectTags(["Life Admin", "errand"])
   await passport.tags.remove("errand")
   await passport.tags.expectTags(["Life Admin"])
-  await taxa.expectTask("IN-1", { tags: ["Life Admin"] })
+  await taxa.expectTask("H-1", { tags: ["Life Admin"] })
   await passport.expectAccessible()
 
   // Another task finds it in any case, and isn't offered a second spelling of it.
@@ -27,7 +27,7 @@ test("tagging tasks on their pages, and finding them by tag", async ({ taxa }) =
   // Its list gathers them from the Inbox and every domain.
   await tax.sidebar.expectTags(["Life Admin2"])
   const lifeAdmin = await tax.sidebar.openTag("Life Admin")
-  await lifeAdmin.expectTasks(["IN-1 Renew passport", "H-2 Pay the council tax"])
+  await lifeAdmin.expectTasks(["H-1 Renew passport", "H-2 Pay the council tax"])
   // Its rows needn't say so.
   await lifeAdmin.expectHighlights("Renew passport", "")
   await lifeAdmin.expectHighlights("Pay the council tax", "")
@@ -35,7 +35,7 @@ test("tagging tasks on their pages, and finding them by tag", async ({ taxa }) =
 
   // Renamed there, it's renamed on every task.
   await lifeAdmin.renameTag("Admin")
-  await lifeAdmin.expectTasks(["IN-1 Renew passport", "H-2 Pay the council tax"])
+  await lifeAdmin.expectTasks(["H-1 Renew passport", "H-2 Pay the council tax"])
   await lifeAdmin.sidebar.expectTags(["Admin2"])
   await taxa.expectTask("H-2", { tags: ["Admin"] })
 })
@@ -76,7 +76,7 @@ test("tagging a task as you capture it, with #", async ({ taxa }) => {
   await inbox.expectAccessible()
   await inbox.pressInCapture("Enter")
   await inbox.expectHighlights("Pay the council tax", "Life Admin")
-  await taxa.expectTask("IN-2", { title: "Pay the council tax", tags: ["Life Admin"] })
+  await taxa.expectTask("H-2", { title: "Pay the council tax", tags: ["Life Admin"] })
 
   // With no tag like it, Enter makes a new one of what was typed.
   await inbox.typeCapture("Book the MOT #car")
@@ -84,7 +84,7 @@ test("tagging a task as you capture it, with #", async ({ taxa }) => {
   await inbox.pressInCapture("Enter")
   await inbox.pressInCapture("Enter")
   await inbox.expectCapture("", [])
-  await taxa.expectTask("IN-3", { title: "Book the MOT", tags: ["car"] })
+  await taxa.expectTask("H-3", { title: "Book the MOT", tags: ["car"] })
 
   // A # inside a word is no tag, and Escape keeps one as text.
   await inbox.typeCapture("Learn C#")
@@ -94,5 +94,5 @@ test("tagging a task as you capture it, with #", async ({ taxa }) => {
   await inbox.expectTagsOffered([])
   await inbox.pressInCapture("Enter")
   await inbox.expectCapture("", [])
-  await taxa.expectTask("IN-4", { title: "Ring #1 fan", tags: [] })
+  await taxa.expectTask("H-4", { title: "Ring #1 fan", tags: [] })
 })

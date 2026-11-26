@@ -15,12 +15,12 @@ const itemTasksOf = async (db: Db, found: readonly FoundTask[]): Promise<Map<Tas
   const rows = await db
     .select({ id: tasks.id, number: tasks.number, status: tasks.status, prefix: domains.prefix })
     .from(tasks)
-    .leftJoin(domains, eq(domains.id, tasks.domainId))
+    .innerJoin(domains, eq(domains.id, tasks.domainId))
     .where(and(inArray(tasks.id, ids), isNull(tasks.deletedAt)))
   return new Map(
     rows.map(({ id, number, status, prefix }) => [
       id,
-      { ref: formatTaskRef(prefix ?? undefined, number), done: status === TaskStatus.DONE }
+      { ref: formatTaskRef(prefix, number), done: status === TaskStatus.DONE }
     ])
   )
 }

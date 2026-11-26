@@ -13,6 +13,7 @@ describe("BinService", () => {
 
   it("deletes a task for good once it's confirmed, not when it's cancelled", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     await matt.addTask("Put the bins out")
     for (const { ref } of await matt.client.tasks()) await matt.client.deleteTask(ref)
@@ -44,6 +45,7 @@ describe("BinService", () => {
 
   it("says why it couldn't, and keeps asking", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const unreachable: BinApi = {
       purgeTask: () => Promise.reject(new TypeError("Failed to fetch")),

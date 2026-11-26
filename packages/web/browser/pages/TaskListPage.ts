@@ -93,16 +93,11 @@ export class TaskListPage extends PageObject {
     await expect(input).toHaveValue("")
   }
 
-  /** In the Inbox, chooses a domain for it before adding it, by prefix. */
+  /** With more than one domain, chooses which a task goes in before adding it, by prefix. */
   async captureInto(title: string, prefix: string): Promise<void> {
     await this.#page.getByTestId(quickCaptureTestIds.filing).click()
     await this.#page.locator(`[data-testid="${optionListTestIds.option}"][data-value="${prefix}"]`).click()
     await this.capture(title)
-  }
-
-  /** What the Inbox says of a task added straight into a domain: `Added H-3 to Home.` */
-  async expectFiled(text: string): Promise<void> {
-    await expect(this.#page.getByTestId(quickCaptureTestIds.filed)).toHaveText(text)
   }
 
   /** The tasks listed, in order, as `ref title`, with ✓ before any ticked off. */
@@ -258,10 +253,19 @@ export class TaskListPage extends PageObject {
     await this.#expectRows(this.#page.getByTestId(taskListPageTestIds.completed), tasks)
   }
 
-  /** Files a task from the Inbox list, through its domain chip. */
-  async file(title: string, prefix: string): Promise<void> {
-    await this.#row(title).getByTestId(taskRowTestIds.domain).click()
-    await this.#page.locator(`[data-testid="${optionListTestIds.option}"][data-value="${prefix}"]`).click()
+  /** Files a task from the Inbox list, sorted out, with its File button. */
+  async file(title: string): Promise<void> {
+    await this.#row(title).getByTestId(taskRowTestIds.file).click()
+  }
+
+  /** Whether the Inbox list's task has its File button: none, elsewhere. */
+  async expectFileButton(title: string, shown: boolean): Promise<void> {
+    await expect(this.#row(title).getByTestId(taskRowTestIds.file)).toHaveCount(shown ? 1 : 0)
+  }
+
+  /** Whether the capture box offers a choice of domain: only with more than one. */
+  async expectDomainPicker(shown: boolean): Promise<void> {
+    await expect(this.#page.getByTestId(quickCaptureTestIds.filing)).toHaveCount(shown ? 1 : 0)
   }
 
   /** Opens the ⋯ menu on a task's row. */

@@ -1,9 +1,9 @@
 import { z } from "zod"
-import { INBOX_PREFIX, type DomainPrefix } from "../domains/domain.ts"
+import type { DomainPrefix } from "../domains/domain.ts"
 import { TaskIdSchema, type TaskId } from "../ids.ts"
 import type { TaskNumber } from "../units.ts"
 
-/** How a task is named to people: its domain's prefix and its number, `H-142`, or `IN-142` in the Inbox. */
+/** How a task is named to people: its domain's prefix and its number, `H-142`. */
 export const TaskRefSchema = z
   .string()
   .regex(/^[A-Z]{1,5}-[1-9]\d*$/)
@@ -11,9 +11,8 @@ export const TaskRefSchema = z
 export type TaskRef = z.infer<typeof TaskRefSchema>
 const taskRef = (text: string): TaskRef => TaskRefSchema.parse(text)
 
-/** A task's ref, from its domain's prefix, or none for the Inbox. */
-export const formatTaskRef = (prefix: DomainPrefix | undefined, number: TaskNumber): TaskRef =>
-  taskRef(`${prefix ?? INBOX_PREFIX}-${number}`)
+/** A task's ref, from its domain's prefix. */
+export const formatTaskRef = (prefix: DomainPrefix, number: TaskNumber): TaskRef => taskRef(`${prefix}-${number}`)
 
 /** How to find a task someone named. */
 export type TaskLookup = { type: "ID"; id: TaskId } | { type: "NUMBER"; number: TaskNumber }

@@ -18,8 +18,10 @@ export interface ListTaskActions {
   followOn: (task: Task) => void
   /** Deletes it, with a chance to undo it. */
   remove: (task: Task) => void
-  /** Whether it's filed from its own chip in the row, as in the Inbox, rather than moved from its menu. */
-  filedFromRow: (task: Task) => boolean
+  /** Files it, out of the Inbox, or puts it back there. */
+  file: (task: Task) => void
+  /** Whether there's another domain to move a task to. */
+  movable: boolean
 }
 
 /** The keys that open a highlighted task's menu at what they change: the task page's keys for the same things. */
@@ -38,7 +40,7 @@ const MENU_KEYS: readonly { key: string; description: string; entry: RowMenuEntr
 export const listShortcuts = (
   listed: readonly Task[],
   session: Session,
-  { open, followOn, remove, filedFromRow }: ListTaskActions,
+  { open, followOn, remove, file, movable }: ListTaskActions,
   leave: () => void,
   find: () => void
 ): readonly Shortcut[] => {
@@ -106,12 +108,11 @@ export const listShortcuts = (
         if (task) void session.startOrStop(task)
       }
     },
-    ...MENU_KEYS.map(({ key, description, entry }) => ({
+    ...MENU_KEYS.filter(({ entry }) => movable || entry !== RowMenuEntry.MOVE).map(({ key, description, entry }) => ({
       keys: [key],
-      ...onHighlighted(description, (task) =>
-        session.openRowMenu(task, entry === RowMenuEntry.MOVE && filedFromRow(task) ? RowMenuEntry.FILE : entry)
-      )
+      ...onHighlighted(description, (task) => session.openRowMenu(task, entry))
     })),
+    { keys: ["v"], ...onHighlighted("File it, or put it back in the Inbox", file) },
     { keys: ["r"], ...onHighlighted("Rename the task", session.rename) },
     { keys: ["f"], ...onHighlighted("Add a follow-on task", followOn) },
     { keys: ["Delete"], ...removing },

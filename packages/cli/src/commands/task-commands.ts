@@ -121,7 +121,7 @@ const list: Command = {
   summary: "List active tasks, most urgent first",
   usage: `[options]
   --domain PREFIX       Only this domain's
-  --inbox               Only your Inbox
+  --inbox               Only your Inbox: what's still to sort out
   --tag NAME            Only those with this tag, in any case
   --search WORDS        Only those with every word in their title, notes, tags, checklist or comments, best matches first
   --follows-on TASK     Only those that follow on from this task
@@ -246,6 +246,23 @@ const missedOnly = async (
   return { repeat: { ...repeat, missed } }
 }
 
+const file: Command = {
+  name: "file",
+  summary: "File a task: sorted out, out of your Inbox",
+  usage: `<ref> [--domain PREFIX]
+  --domain PREFIX       Move it to this domain as it's filed
+${VERSION_HELP}
+To put it back in your Inbox, taxa edit <ref> --inbox.`,
+  options: { domain: { type: "string" }, ...VERSION_OPTION },
+  run: async (context, values, positionals) => {
+    const ref = oneArgument(positionals, "task")
+    const domain = stringOption(values, "domain")
+    const request = { set: { inbox: false, ...(domain !== undefined && { domain }) } }
+    await showTask(context, await context.client.updateTask(ref, request, ifVersion(values)))
+    return ExitCode.OK
+  }
+}
+
 const log: Command = {
   name: "log",
   summary: "Every change to a task, with who made it",
@@ -262,4 +279,4 @@ const log: Command = {
   }
 }
 
-export const TASK_COMMANDS: Command[] = [add, list, show, edit, log]
+export const TASK_COMMANDS: Command[] = [add, list, show, edit, file, log]

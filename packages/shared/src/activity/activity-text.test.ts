@@ -49,6 +49,11 @@ describe("activityText", () => {
     )
   })
 
+  it("says a task in the Inbox was filed, or put back there to sort out again", () => {
+    expect(said(ActivityType.TASK_UPDATED, { inboxUserId: { from: "u" } })).toBe("Matt filed it")
+    expect(said(ActivityType.TASK_UPDATED, { inboxUserId: { to: "u" } })).toBe("Matt put it back in the Inbox")
+  })
+
   it("says a title changed and notes were edited, without quoting the notes", () => {
     expect(
       said(ActivityType.TASK_UPDATED, { title: { from: "Tap", to: "Fix the tap" }, notes: { from: "a", to: "b" } })

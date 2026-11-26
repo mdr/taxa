@@ -7,16 +7,20 @@ import { problemMessage } from "../../api/problem-message.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { useCreateTask } from "../../tasks/task-queries.ts"
+import { useDomains } from "../../domains/domain-queries.ts"
+import { captureDomain } from "../../tasks/list/capture-filing.ts"
 
-/** Under the plan: a task thought of while planning, added to the Inbox and to the end of the plan. */
+/** Under the plan: a task thought of while planning, added to the end of the plan. */
 export const PlanCapture = ({ busy, onCreated }: { busy: boolean; onCreated: (task: Task) => void }) => {
   const [title, setTitle] = useState("")
   const create = useCreateTask()
+  const domains = useDomains()
   const submit = (event: SubmitEvent) => {
     event.preventDefault()
     if (title.trim() === "" || create.isPending) return
     create.mutate(
-      { title: title.trim() },
+      // Planned for today as it's added, so sorted out already, not left in the Inbox.
+      { title: title.trim(), domain: captureDomain(domains.data ?? [])?.prefix, inbox: false },
       {
         onSuccess: (task) => {
           setTitle("")

@@ -43,6 +43,7 @@ describe("repeating tasks", () => {
 
   it("won't do the same occurrence twice: a retry for a date it's moved on from is refused", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const anki = await matt.addTask("Revise Anki cards", { repeat: DAILY })
     const request = { outcome: OccurrenceOutcome.DONE, date: "2026-01-05" } as const
     await matt.client.recordOccurrence(anki.ref, request)
@@ -54,6 +55,7 @@ describe("repeating tasks", () => {
 
   it("keeps to its schedule, moving its due date with it", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const rent = await matt.addTask("Pay the rent", {
       scheduled: "2026-01-01",
       due: "2026-01-03",
@@ -81,6 +83,7 @@ describe("repeating tasks", () => {
 
   it("always has a day it's next for, which beats a horizon", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const soon = await matt.addTask("Revise Anki cards", { horizon: Horizon.SOON })
     const repeating = await matt.client.updateTask(soon.ref, { set: { repeat: DAILY } })
     expect(repeating).toMatchObject({ scheduled: "2026-01-05" })
@@ -98,6 +101,7 @@ describe("repeating tasks", () => {
 
   it("is skipped rather than cancelled, and only done for good once it stops repeating", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const anki = await matt.addTask("Revise Anki cards", { repeat: DAILY })
     await expectProblem(
       matt.client.changeStatus(anki.ref, { status: TaskStatus.CANCELLED }),
@@ -110,6 +114,7 @@ describe("repeating tasks", () => {
 
   it("undoes doing one, putting its dates back, and redoes it", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const anki = await matt.addTask("Revise Anki cards", { repeat: DAILY })
     const done = await matt.client.changeStatus(anki.ref, { status: TaskStatus.DONE })
 
@@ -130,6 +135,7 @@ describe("repeating tasks", () => {
 
   it("won't undo doing one once it's been moved since", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const anki = await matt.addTask("Revise Anki cards", { repeat: DAILY })
     const done = await matt.client.changeStatus(anki.ref, { status: TaskStatus.DONE })
     server.clock.advance(DAY_MS)
@@ -141,6 +147,7 @@ describe("repeating tasks", () => {
     server
   }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const anki = await matt.addTask("Revise Anki cards", { repeat: DAILY, due: "2026-01-05" })
     expect(anki.repeat?.missed).toBe(MissedDays.SKIP)
     server.clock.advance(3 * DAY_MS)
@@ -180,6 +187,7 @@ describe("repeating tasks", () => {
     server
   }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const anki = await matt.addTask("Revise Anki cards", { repeat: DAILY })
     const started = await matt.addTask("Practise piano", { repeat: DAILY })
     await matt.client.changeStatus(started.ref, { status: TaskStatus.IN_PROGRESS })
@@ -214,6 +222,7 @@ describe("repeating tasks", () => {
 
   it("forgets its occurrences when it's deleted for good", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const anki = await matt.addTask("Revise Anki cards", { repeat: DAILY })
     await matt.client.changeStatus(anki.ref, { status: TaskStatus.DONE })
     await matt.client.deleteTask(anki.ref)

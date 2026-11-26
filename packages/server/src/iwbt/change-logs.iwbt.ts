@@ -47,6 +47,7 @@ describe("changes are logged", () => {
 
   it("names the agent that made a change", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Home", "H")
     const claude = await matt.agent("Claude Code", "mdr/taxa")
     const from = server.logs.length
     await claude.addTask("Write the tests")

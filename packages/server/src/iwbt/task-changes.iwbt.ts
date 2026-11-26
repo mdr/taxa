@@ -32,28 +32,29 @@ describe("changing tasks", () => {
     expect((await matt.client.updateTask(task.ref, { set: { title: "Fix the tap" } })).version).toBe(1)
   })
 
-  it("files a task from the Inbox in a domain, keeping its number", async ({ server }) => {
-    const matt = await server.user("Matt")
-    const home = await matt.addDomain("Home", "H")
-    const task = await matt.addTask("Fix the tap")
-    const filed = await matt.client.updateTask(task.ref, { set: { domain: "H" } })
-    expect(filed).toMatchObject({ ref: "H-1", domainId: home.id, inbox: false })
-    expect((await matt.client.task("IN-1")).ref).toBe("H-1")
-    expect(await matt.client.tasks({ inbox: "true" })).toEqual([])
-  })
-
-  it("puts a task back in the Inbox, out of its domain", async ({ server }) => {
+  it("files a task from the Inbox, and moves it to another domain keeping its number", async ({ server }) => {
     const matt = await server.user("Matt")
     await matt.addDomain("Home", "H")
-    const task = await matt.addTask("Fix the tap", { domain: "H" })
+    const work = await matt.addDomain("Work", "W")
+    const task = await matt.addTask("Plan the quarter", { domain: "H" })
+    const moved = await matt.client.updateTask(task.ref, { set: { domain: "W" } })
+    // Moved, it's still to sort out.
+    expect(moved).toMatchObject({ ref: "W-1", domainId: work.id, inbox: true })
+    expect((await matt.client.task("H-1")).ref).toBe("W-1")
+    const filed = await matt.client.updateTask(task.ref, { set: { inbox: false } })
+    expect(filed).toMatchObject({ ref: "W-1", inbox: false })
+    expect(await matt.client.tasks({ inbox: "true" })).toEqual([])
+    const log = await matt.client.activity(task.ref)
+    expect(log.at(-1)?.changes).toEqual({ inboxUserId: { from: expect.any(String) } })
+  })
+
+  it("puts a filed task back in the Inbox, still in its domain", async ({ server }) => {
+    const matt = await server.user("Matt")
+    const home = await matt.addDomain("Home", "H")
+    const task = await matt.addTask("Fix the tap", { domain: "H", inbox: false })
     const back = await matt.client.updateTask(task.ref, { set: { inbox: true } })
-    expect(back).toMatchObject({ ref: "IN-1", inbox: true })
-    expect(back.domainId).toBeUndefined()
-    expect(await matt.client.tasks({ domain: "H" })).toEqual([])
-    await expectProblem(
-      matt.client.updateTask(task.ref, { set: { inbox: true, domain: "H" } }),
-      ProblemType.INVALID_REQUEST
-    )
+    expect(back).toMatchObject({ ref: "H-1", inbox: true, domainId: home.id })
+    expect(await matt.client.tasks({ domain: "H", inbox: "false" })).toEqual([])
   })
 
   it("refuses a change based on an old version, saying what the task is now", async ({ server }) => {

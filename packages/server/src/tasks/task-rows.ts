@@ -44,7 +44,7 @@ export const inProgressIdsOf = (row: TaskRow): ActorIds | undefined =>
     : undefined
 
 export const stateOf = (row: TaskRow): TaskState => ({
-  domainId: row.domainId ?? undefined,
+  domainId: row.domainId,
   inboxUserId: row.inboxUserId ?? undefined,
   title: row.title,
   notes: row.notes,
@@ -70,7 +70,7 @@ export const stateOf = (row: TaskRow): TaskState => ({
 })
 
 export const valuesOf = (state: TaskState): Omit<TaskValues, "updatedAt" | "version" | "deletedAt"> => ({
-  domainId: state.domainId ?? null,
+  domainId: state.domainId,
   inboxUserId: state.inboxUserId ?? null,
   title: state.title,
   notes: state.notes,
@@ -113,7 +113,7 @@ const checklistOf = (row: TaskRow, itemTask: (id: TaskId) => ItemTask | undefine
 /** A task as the API shows it. */
 export const taskOf = (
   row: TaskRow,
-  prefix: DomainPrefix | undefined,
+  prefix: DomainPrefix,
   actorOf: (ids: ActorIds) => Actor,
   itemTask: (id: TaskId) => ItemTask | undefined
 ): Task => {
@@ -122,7 +122,7 @@ export const taskOf = (
     id: row.id,
     ref: formatTaskRef(prefix, row.number),
     number: row.number,
-    domainId: row.domainId ?? undefined,
+    domainId: row.domainId,
     title: row.title,
     notes: row.notes,
     status: row.status,
@@ -155,11 +155,8 @@ export const taskOf = (
   return definedFields(task) as Task
 }
 
-/** A task row as selected with its domain's prefix, which is empty while it's in the Inbox. */
-export const foundOf = ({ row, prefix }: { row: TaskRow; prefix: DomainPrefix | null }): FoundTask => ({
-  row,
-  prefix: prefix ?? undefined
-})
+/** A task row as selected with its domain's prefix. */
+export const foundOf = ({ row, prefix }: { row: TaskRow; prefix: DomainPrefix }): FoundTask => ({ row, prefix })
 
 /** A task deleted for good: what was written in it, gone. */
 export const purgedValues = (now: Instant): Partial<TaskValues> => ({

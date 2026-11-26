@@ -14,7 +14,8 @@ const second = makeTask({ number: 2, title: "Bleed the radiators" })
 
 /** The list's keys, pressed through a real shortcut service, on a session whose changes go nowhere. */
 const setUp = (
-  listed: readonly Task[] = [first, second]
+  listed: readonly Task[] = [first, second],
+  movable = true
 ): {
   press: (key: string) => boolean
   session: ListSessionService
@@ -26,7 +27,9 @@ const setUp = (
   followedOn: Task[]
   removed: Task[]
   undone: number[]
+  filed: Task[]
 } => {
+  const filed: Task[] = []
   const followedOn: Task[] = []
   const removed: Task[] = []
   const toggled: Task[] = []
@@ -62,13 +65,14 @@ const setUp = (
         open: (task) => opened.push(task),
         followOn: (task) => followedOn.push(task),
         remove: (task) => removed.push(task),
-        filedFromRow: (task) => task.inbox
+        file: (task) => filed.push(task),
+        movable
       },
       () => left.push(1),
       () => found.push(1)
     )
   )
-  return { press: shortcuts.press, session, opened, toggled, made, left, found, followedOn, removed, undone }
+  return { press: shortcuts.press, session, opened, toggled, made, left, found, followedOn, removed, undone, filed }
 }
 
 describe("listShortcuts", () => {
@@ -150,15 +154,17 @@ describe("listShortcuts", () => {
     expect(session.state.opening?.entry).toBe(RowMenuEntry.MENU)
   })
 
-  it("files an Inbox task with M from its own chip, and moves any other from its menu", () => {
-    const inbox = makeTask({ number: 3, title: "Renew passport", inbox: true })
-    const { press, session } = setUp([inbox, first])
+  it("files the highlighted task with V, and moves it with M only when there's another domain", () => {
+    const { press, session, filed } = setUp()
     press("j")
-    press("m")
-    expect(session.state.opening?.entry).toBe(RowMenuEntry.FILE)
-    press("j")
+    press("v")
+    expect(filed).toEqual([first])
     press("m")
     expect(session.state.opening?.entry).toBe(RowMenuEntry.MOVE)
+    const alone = setUp([first], false)
+    alone.press("j")
+    alone.press("m")
+    expect(alone.session.state.opening).toBeUndefined()
   })
 
   it("adds a follow-on to the highlighted task, and deletes it", () => {

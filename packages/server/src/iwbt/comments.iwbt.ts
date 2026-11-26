@@ -13,6 +13,7 @@ describe("comments", () => {
     server
   }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const claude = await matt.agent("Claude Code", "mdr/taxa")
     const tap = await matt.addTask("Fix the tap", { notes: "The kitchen one" })
     await matt.client.addComment(tap.ref, { body: "Rang the plumber: he'll call back Thursday." })
@@ -37,6 +38,7 @@ describe("comments", () => {
 
   it("adds a comment once, however often the request is retried", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const first = await matt.client.addComment(tap.ref, { body: "Rang the plumber" }, "key-1")
     expect(await matt.client.addComment(tap.ref, { body: "Rang the plumber" }, "key-1")).toEqual(first)
@@ -51,6 +53,7 @@ describe("comments", () => {
 
   it("won't add an empty comment, nor one on a task someone can't see", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const anna = await server.user("Anna")
     const tap = await matt.addTask("Fix the tap")
     await expectProblem(matt.client.addComment(tap.ref, { body: "   " }), ProblemType.INVALID_REQUEST)
@@ -60,6 +63,7 @@ describe("comments", () => {
 
   it("lets its author edit, delete and restore it, logging each change", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const comment = await matt.client.addComment(tap.ref, { body: "Rang the plumbr" })
     server.advance(MINUTE)
@@ -114,6 +118,7 @@ describe("comments", () => {
 
   it("undoes a change by the version it brought the comment to, and undoing that redoes it", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const added = await matt.client.addComment(tap.ref, { body: "Rang the plumbr" })
     const edited = await matt.client.editComment(added.id, { body: "Rang the plumber" })
@@ -130,6 +135,7 @@ describe("comments", () => {
 
   it("won't undo an edit that's been changed since, nor someone else's change", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const claude = await matt.agent("Claude Code")
     const tap = await matt.addTask("Fix the tap")
     const added = await matt.client.addComment(tap.ref, { body: "Rang the plumbr" })
@@ -142,6 +148,7 @@ describe("comments", () => {
 
   it("finds a task by what its comments say, but not by a deleted one", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const plumber = await matt.addTask("Call the plumber")
     await matt.addTask("Fix the tap")
     await matt.client.addComment(plumber.ref, { body: "He'll bring a new tap on Thursday" })
@@ -156,6 +163,7 @@ describe("comments", () => {
 
   it("is wiped when its task is deleted for good", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const comment = await matt.client.addComment(tap.ref, { body: "Rang the plumber" }, "key-1")
     await matt.client.editComment(comment.id, { body: "Rang the plumber again" })

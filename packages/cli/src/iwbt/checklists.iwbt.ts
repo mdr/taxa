@@ -19,36 +19,36 @@ describe("taxa checklists", () => {
 
   it("adds a task with items, adds more from stdin, and ticks them by number or text", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const claude = await matt.agent("Claude Code")
     await output(server, matt.secret, ["add", "Move charitable giving", "--item", "Oxfam", "--item", "Shelter"])
-    expect(await output(server, claude.secret, ["add-item", "IN-1", "-"], "- [ ] RSPB\n- [ ] Crisis\n\n")).toBe(
+    expect(await output(server, claude.secret, ["add-item", "M-1", "-"], "- [ ] RSPB\n- [ ] Crisis\n\n")).toBe(
       "Checklist  0/4\n1. [ ] Oxfam\n2. [ ] Shelter\n3. [ ] RSPB\n4. [ ] Crisis\n"
     )
-    expect(await output(server, claude.secret, ["check", "IN-1", "1", "rsp"])).toBe(
+    expect(await output(server, claude.secret, ["check", "M-1", "1", "rsp"])).toBe(
       "Checklist  2/4\n1. [x] Oxfam\n2. [ ] Shelter\n3. [x] RSPB\n4. [ ] Crisis\n"
     )
-    await output(server, matt.secret, ["uncheck", "IN-1", "oxfam"])
-    await output(server, matt.secret, ["edit-item", "IN-1", "Crisis", "Crisis", "at", "Christmas"])
-    await output(server, matt.secret, ["add-item", "IN-1", "--after", "1", "British Heart Foundation"])
-    expect(await output(server, matt.secret, ["remove-item", "IN-1", "shelter"])).toBe(
+    await output(server, matt.secret, ["uncheck", "M-1", "oxfam"])
+    await output(server, matt.secret, ["edit-item", "M-1", "Crisis", "Crisis", "at", "Christmas"])
+    await output(server, matt.secret, ["add-item", "M-1", "--after", "1", "British Heart Foundation"])
+    expect(await output(server, matt.secret, ["remove-item", "M-1", "shelter"])).toBe(
       "Checklist  1/4\n1. [ ] Oxfam\n2. [ ] British Heart Foundation\n3. [x] RSPB\n4. [ ] Crisis at Christmas\n"
     )
-    expect(await output(server, matt.secret, ["list"])).toContain(
-      "IN-1  Move charitable giving  (checklist 1/4, inbox)"
-    )
-    expect(await output(server, matt.secret, ["show", "IN-1"])).toContain("\nChecklist  1/4\n1. [ ] Oxfam\n")
+    expect(await output(server, matt.secret, ["list"])).toContain("M-1  Move charitable giving  (checklist 1/4, inbox)")
+    expect(await output(server, matt.secret, ["show", "M-1"])).toContain("\nChecklist  1/4\n1. [ ] Oxfam\n")
   })
 
   it("moves an item after another, or to the top", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     await matt.addTask("Move charitable giving", { checklist: ["Oxfam", "Shelter", "RSPB"] })
-    expect(await output(server, matt.secret, ["move-item", "IN-1", "oxfam", "--after", "rspb"])).toBe(
+    expect(await output(server, matt.secret, ["move-item", "M-1", "oxfam", "--after", "rspb"])).toBe(
       "Checklist  0/3\n1. [ ] Shelter\n2. [ ] RSPB\n3. [ ] Oxfam\n"
     )
-    expect(await output(server, matt.secret, ["move-item", "IN-1", "3", "--first"])).toBe(
+    expect(await output(server, matt.secret, ["move-item", "M-1", "3", "--first"])).toBe(
       "Checklist  0/3\n1. [ ] Oxfam\n2. [ ] Shelter\n3. [ ] RSPB\n"
     )
-    expect(await taxaAs(server, matt.secret, ["move-item", "IN-1", "oxfam"])).toMatchObject({
+    expect(await taxaAs(server, matt.secret, ["move-item", "M-1", "oxfam"])).toMatchObject({
       exitCode: ExitCode.USAGE,
       stderr: expect.stringContaining("Say where")
     })
@@ -69,13 +69,14 @@ describe("taxa checklists", () => {
 
   it("says what's wrong with an item it can't tell", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     await matt.addTask("Passwords", { checklist: ["Amazon", "Amazon Prime"] })
-    expect(await taxaAs(server, matt.secret, ["check", "IN-1", "ama"])).toMatchObject({
+    expect(await taxaAs(server, matt.secret, ["check", "M-1", "ama"])).toMatchObject({
       exitCode: ExitCode.USAGE,
-      stderr: expect.stringContaining('2 of IN-1\'s items match "ama"')
+      stderr: expect.stringContaining('2 of M-1\'s items match "ama"')
     })
-    expect(await output(server, matt.secret, ["check", "IN-1", "amazon"])).toContain("1. [x] Amazon\n")
-    expect((await taxaAs(server, matt.secret, ["check", "IN-1", "eBay"])).exitCode).toBe(ExitCode.USAGE)
-    expect(await output(server, matt.secret, ["checklist", "IN-1", "--json"])).toContain('"text": "Amazon Prime"')
+    expect(await output(server, matt.secret, ["check", "M-1", "amazon"])).toContain("1. [x] Amazon\n")
+    expect((await taxaAs(server, matt.secret, ["check", "M-1", "eBay"])).exitCode).toBe(ExitCode.USAGE)
+    expect(await output(server, matt.secret, ["checklist", "M-1", "--json"])).toContain('"text": "Amazon Prime"')
   })
 })

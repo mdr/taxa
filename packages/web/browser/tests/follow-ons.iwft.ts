@@ -7,11 +7,11 @@ test("finishing a task, adding what follows on from it, and following the trail 
   await taxa.matt.addTask("Sort the loft boxes", { domain: "H" })
   const home = await (await taxa.openTab("Matt")).openInbox().then((inbox) => inbox.sidebar.openDomain("Home"))
 
-  // Ticked off, it offers to add what comes next: in the same domain, for when you choose.
+  // Ticked off, it offers to add what comes next: in the same domain, the only one, for when you choose.
   await home.complete("Back up the floppy disks")
   const dialog = await home.addFollowOnFromUndo()
   await dialog.expectFrom("H-1 Back up the floppy disks")
-  await dialog.expectPlace("HHome")
+  await dialog.expectPlace(undefined)
   await dialog.expectAccessible()
   await dialog.add("Dispose of the disks", "Someday")
   await taxa.expectTask("H-3", { title: "Dispose of the disks", horizon: Horizon.SOMEDAY })
@@ -51,19 +51,21 @@ test("adding a follow-on from any task's menu, and linking or unlinking tasks af
   await label.followOns.expectFollowsOn("H-1 Back up the floppy disks")
 })
 
-test("a follow-on from a task in the Inbox can go in a domain", async ({ taxa }) => {
+test("a follow-on goes in its task's domain, or another chosen, already sorted out", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
-  await taxa.matt.addTask("Back up the floppy disks")
+  await taxa.matt.addDomain("Work", "W")
+  await taxa.matt.addTask("Back up the floppy disks", { domain: "H", inbox: true })
   const tab = await taxa.openTab("Matt")
   const inbox = await tab.openInbox()
   await inbox.complete("Back up the floppy disks")
   const dialog = await inbox.addFollowOnFromUndo()
-  await dialog.expectPlace("Inbox")
-  await dialog.choosePlace("Home")
+  await dialog.expectPlace("HHome")
+  await dialog.choosePlace("Work")
   await dialog.add("Dispose of the disks")
   await tab.expectLogged(["task.followOnStarted", "task.followOnAdded"])
-  const home = await inbox.sidebar.openDomain("Home")
-  await home.expectTasks(["H-2 Dispose of the disks"])
+  const work = await inbox.sidebar.openDomain("Work")
+  await work.expectTasks(["W-2 Dispose of the disks"])
+  await taxa.expectTask("W-2", { inbox: false })
 })
 
 test("marking a task done on its page offers to undo it, or add what follows on", async ({ taxa }) => {

@@ -34,7 +34,7 @@ export const purgeTask = async (
   log.info(LOG_CODES.task.purged, "deleted a task for good", {
     ...callerFields(caller),
     taskId: row.id,
-    domainId: row.domainId ?? undefined
+    domainId: row.domainId
   })
 }
 

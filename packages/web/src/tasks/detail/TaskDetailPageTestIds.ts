@@ -3,5 +3,7 @@ export const taskDetailPageTestIds = {
   problem: "TaskDetailPage.problem",
   error: "TaskDetailPage.error",
   deleted: "TaskDetailPage.deleted",
-  restore: "TaskDetailPage.restore"
+  restore: "TaskDetailPage.restore",
+  inbox: "TaskDetailPage.inbox",
+  file: "TaskDetailPage.file"
 }

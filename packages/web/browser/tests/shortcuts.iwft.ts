@@ -9,7 +9,7 @@ test("adding tasks and moving between lists from the keyboard", async ({ taxa })
 
   // c and g in a title are typed, not taken as shortcuts.
   await inbox.keyboard.addTask("Get coffee")
-  await inbox.expectTasks(["IN-1 Get coffee"])
+  await inbox.expectTasks(["H-1 Get coffee"])
 
   const work = await inbox.sidebar.openDomain("Work")
   await work.keyboard.addTask("Plan the quarter")
@@ -94,9 +94,9 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Choose when W",
     "Set a due date D",
     "Estimate E",
-    "Move to a domain M",
     "Add a tag L",
     "Open the task's menu .",
+    "File it, or put it back in the Inbox V",
     "Rename the task R",
     "Add a follow-on task F",
     "Delete the task Delete or Backspace",
@@ -122,7 +122,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
   await reopened.setSingleKeys(true)
   await reopened.close()
   await inbox.keyboard.addTask("Fix the tap")
-  await inbox.expectTasks(["IN-1 Fix the tap"])
+  await inbox.expectTasks(["H-1 Fix the tap"])
 })
 
 test("moving through a list, and ticking off and opening tasks, from the keyboard", async ({ taxa }) => {

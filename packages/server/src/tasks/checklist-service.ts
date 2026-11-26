@@ -38,7 +38,7 @@ const madeTask = async (
   const made = await insertTask(
     tx,
     caller,
-    { id: taskId, title: item.text, followsOn: row.id, ...(state.domainId && { domain: state.domainId }) },
+    { id: taskId, title: item.text, followsOn: row.id, domain: state.domainId },
     now
   )
   const checklist = state.checklist.map((each) => (each === item ? { ...each, taskId: made.task.id } : each))

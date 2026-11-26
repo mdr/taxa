@@ -138,7 +138,8 @@ export const Onboarding = () => {
           </button>
           <p className={styles.hint}>
             The prefix starts every task's reference, so “H-12” means the same thing here, in the terminal and to an
-            agent. Anything you capture without choosing a domain waits in your Inbox until you file it.
+            agent. Anything you jot down without saying when waits in your Inbox, to sort out and file when you're
+            ready.
           </p>
           <div className={styles.actions}>
             <button

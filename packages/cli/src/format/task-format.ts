@@ -34,6 +34,10 @@ export interface FollowOnLinks {
 
 const named = (task: Task): string => `${task.ref}  ${task.title}`
 
+/** Its domain, and whether it's still in the Inbox there. */
+const domainText = (task: Task, domain: Domain | undefined): string | undefined =>
+  domain && `${domain.name}${task.inbox ? ", in your Inbox to sort out" : ""}`
+
 /** Everything about one task. */
 export const taskDetail = (
   task: Task,
@@ -47,7 +51,7 @@ export const taskDetail = (
     url,
     "",
     ...row("Status", STATUS_TEXT[task.status]),
-    ...row("Domain", task.inbox ? "Inbox" : domain?.name),
+    ...row("Domain", domainText(task, domain)),
     ...row("Priority", PRIORITY_TEXT[task.priority]),
     ...row("Due", day(task.due, today)),
     ...row(

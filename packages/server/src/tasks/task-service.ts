@@ -28,7 +28,7 @@ import type { Caller } from "../auth/caller.ts"
 import type { Db } from "../database/database.ts"
 import { tasks } from "../database/schema.ts"
 import { newItems } from "./checklist-changes.ts"
-import { findDomain } from "../domains/domain-store.ts"
+import { domainForNewTask, findDomain } from "../domains/domain-store.ts"
 import { ProblemError } from "../http/problem-error.ts"
 import { callerFields } from "../telemetry/change-fields.ts"
 import { LOG_CODES, type ServerLogCode, type ServerLogger } from "../telemetry/log.ts"
@@ -183,14 +183,16 @@ export const logCreated = (log: ServerLogger, caller: Caller, task: Task, change
 export const insertTask = async (
   tx: Db,
   caller: Caller,
-  { id, domain, title, followsOn, tags, repeat, checklist, ...fields }: z.infer<typeof CreateTaskRequestSchema>,
+  { id, domain, inbox, title, followsOn, tags, repeat, checklist, ...fields }: z.infer<typeof CreateTaskRequestSchema>,
   now: Instant
 ): Promise<{ task: Task; changes: Record<string, FieldChange> }> => {
   const taskId = id ?? newTaskId(uuidv7(now))
   if (await taskIdExists(tx, taskId))
     throw new ProblemError(ProblemType.INVALID_REQUEST, `A task with id ${taskId} already exists.`)
-  const domainId = domain === undefined ? undefined : (await findDomain(tx, caller.user.id, domain)).id
-  const inboxUserId = domainId === undefined ? caller.user.id : undefined
+  const domainId = (await domainForNewTask(tx, caller.user.id, domain)).id
+  // Jotted down without saying when it's for, it waits in the Inbox to be sorted out.
+  const inboxUserId =
+    (inbox ?? (fields.scheduled === undefined && fields.horizon === undefined)) ? caller.user.id : undefined
   const followsOnId = followsOn === undefined ? undefined : await followsOnIdFor(tx, caller, followsOn, taskId)
   const blank = blankState(domainId, inboxUserId, title)
   const edited = editTask(blank, {
@@ -224,7 +226,7 @@ export const insertTask = async (
   }
 }
 
-const blankState = (domainId: DomainId | undefined, inboxUserId: UserId | undefined, title: string): TaskState => ({
+const blankState = (domainId: DomainId, inboxUserId: UserId | undefined, title: string): TaskState => ({
   domainId,
   inboxUserId,
   title,
@@ -347,25 +349,23 @@ export const updateTask = (
     code: LOG_CODES.task.updated,
     catchesUp: true,
     apply: async (state, row, tx) => {
-      if (domain !== undefined && inbox)
-        throw new ProblemError(ProblemType.INVALID_REQUEST, "A task is either in a domain or in the Inbox, not both.")
       if (appendNotes !== undefined && set.notes !== undefined)
         throw new ProblemError(ProblemType.INVALID_REQUEST, "Set the notes or add to them, not both.")
       const domainId = domain === undefined ? undefined : (await findDomain(tx, caller.user.id, domain)).id
-      const inboxUserId = inbox && state.inboxUserId === undefined ? caller.user.id : undefined
       const followsOnId = followsOn === undefined ? undefined : await followsOnIdFor(tx, caller, followsOn, row.id)
       const edited = editTask(state, {
         set: {
           ...set,
           ...(domainId && { domainId }),
-          ...(inboxUserId && { inboxUserId }),
           ...(followsOnId && { followsOnId }),
           tags: withTags(withoutTags(state.tags, removeTags), addTags),
           ...(appendNotes !== undefined && { notes: appendedNotes(state.notes, appendNotes) })
         },
         clear
       }).state
-      return outcomeOf(state, repeating(state, edited, repeat, dateIn(caller.user.timeZone, now)))
+      // Filed, it's out of the Inbox; put back, it's in the Inbox of whoever put it back.
+      const filed = inbox === undefined ? edited : { ...edited, inboxUserId: inbox ? caller.user.id : undefined }
+      return outcomeOf(state, repeating(state, filed, repeat, dateIn(caller.user.timeZone, now)))
     }
   })
 

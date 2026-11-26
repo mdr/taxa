@@ -12,8 +12,8 @@ import type { ActorIds } from "../activity/actor-names.ts"
 
 /** What a task says, apart from its identity and bookkeeping: what edits change. */
 export interface TaskState {
-  /** Exactly one of these: filed in a domain, or in someone's Inbox. */
-  domainId: DomainId | undefined
+  domainId: DomainId
+  /** Whose Inbox it's in, still to be sorted out and filed, if anyone's. */
   inboxUserId: UserId | undefined
   title: string
   notes: string
@@ -115,13 +115,11 @@ const changesBetween = (before: TaskState, after: TaskState): Record<string, Fie
   return changes
 }
 
-/** Sets and clears fields. Filing a task in a domain takes it out of the Inbox, and putting it in an Inbox out of its domain. */
+/** Sets and clears fields. */
 export const editTask = (before: TaskState, { set, clear }: Edit): Outcome => {
   const after: TaskState = { ...before }
   Object.assign(after, definedFields(set))
   for (const field of clear) after[field] = undefined
-  if (set.domainId !== undefined) after.inboxUserId = undefined
-  if (set.inboxUserId !== undefined) after.domainId = undefined
   return { state: after, changes: changesBetween(before, after) }
 }
 

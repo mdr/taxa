@@ -6,7 +6,7 @@ import { capturesWhen, isHome, listQuery, ListType } from "./task-list.ts"
 describe("task lists", () => {
   it("ask for the Inbox, a domain's tasks, or everything in progress", () => {
     expect(listQuery({ type: ListType.INBOX })).toEqual({ inbox: "true" })
-    expect(listQuery({ type: ListType.DOMAIN, prefix: "h" })).toEqual({ domain: "h" })
+    expect(listQuery({ type: ListType.DOMAIN, prefix: "h" })).toEqual({ domain: "h", inbox: "false" })
     expect(listQuery({ type: ListType.IN_PROGRESS })).toEqual({ status: TaskStatus.IN_PROGRESS })
   })
 

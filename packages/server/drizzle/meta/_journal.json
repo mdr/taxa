@@ -99,6 +99,13 @@
       "when": 1795635973524,
       "tag": "0013_undone_creation",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795695508235,
+      "tag": "0014_inbox_in_domains",
+      "breakpoints": true
     }
   ]
 }

@@ -11,8 +11,8 @@ import type { Instant, Ms } from "@taxa/shared/units"
 import { createKey } from "../agents/agent-store.ts"
 import { createApp, type DevLogin } from "../app.ts"
 import { eq } from "drizzle-orm"
-import type { TaskId } from "@taxa/shared/ids"
-import { activity, comments, occurrences, tasks } from "../database/schema.ts"
+import type { DomainId, TaskId } from "@taxa/shared/ids"
+import { activity, comments, domainMembers, occurrences, tasks } from "../database/schema.ts"
 import { clearOldBin } from "../tasks/task-purge.ts"
 import type { Database } from "../database/database.ts"
 import { createLogger, type LogRecord } from "@taxa/shared/telemetry/log"
@@ -127,6 +127,14 @@ export class InProcessServer {
   }
 
   /** What the daily clear-out of the bin does, now. */
+  /** Shares a domain with someone else, as no API does yet. */
+  async shareDomain(domainId: DomainId, user: TestUser): Promise<void> {
+    const {
+      user: { id: userId }
+    } = await user.client.me()
+    await this.#database.db.insert(domainMembers).values({ domainId, userId })
+  }
+
   clearOldBin(): Promise<number> {
     return clearOldBin(this.#database.db, this.#logger, this.clock.now())
   }

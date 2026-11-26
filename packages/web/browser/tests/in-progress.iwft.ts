@@ -23,7 +23,7 @@ test("starting tasks from the keyboard puts them first, and in the In progress l
 
   const started = await inbox.sidebar.openInProgress()
   await started.expectHeading("In progress")
-  await started.expectTasks(["H-2 Bleed the radiators", "IN-3 Renew passport"])
+  await started.expectTasks(["H-2 Bleed the radiators", "H-3 Renew passport"])
   await started.expectAccessible()
 
   const detail = await started.openTask("Bleed the radiators")

@@ -52,7 +52,8 @@ export const listQuery = (list: TaskList): ListTasksQuery => {
     case ListType.INBOX:
       return { inbox: "true" }
     case ListType.DOMAIN:
-      return { domain: list.prefix }
+      // Its filed tasks: those still to sort out wait in the Inbox.
+      return { domain: list.prefix, inbox: "false" }
     case ListType.IN_PROGRESS:
       return { status: TaskStatus.IN_PROGRESS }
     case ListType.TODAY:

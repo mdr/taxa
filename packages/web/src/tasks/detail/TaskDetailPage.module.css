@@ -54,7 +54,8 @@
 }
 
 .problem,
-.deleted {
+.deleted,
+.inbox {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -67,6 +68,10 @@
 
 .deleted {
   background: var(--danger-soft);
+}
+
+.inbox {
+  justify-content: space-between;
 }
 
 .deleted button {

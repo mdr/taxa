@@ -12,6 +12,7 @@ describe("CommentsService", () => {
 
   it("adds what's written, then empties the draft", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const telemetry = testTelemetry()
     let refreshed = 0
@@ -36,6 +37,7 @@ describe("CommentsService", () => {
 
   it("edits a comment, and leaves it as it was when the edit is cancelled or changes nothing", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const comment = await matt.client.addComment(tap.ref, { body: "Rang the plumbr" })
     const comments = new CommentsService(
@@ -62,6 +64,7 @@ describe("CommentsService", () => {
 
   it("says so when the comment changed since it was shown, and keeps the edit", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const comment = await matt.client.addComment(tap.ref, { body: "Rang the plumber" })
     await matt.client.editComment(comment.id, { body: "Rang the plumber twice" })
@@ -81,6 +84,7 @@ describe("CommentsService", () => {
 
   it("deletes a comment", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const comment = await matt.client.addComment(tap.ref, { body: "Rang the plumber" })
     const telemetry = testTelemetry()
@@ -92,6 +96,7 @@ describe("CommentsService", () => {
 
   it("keeps the draft and says why when the server can't be reached", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const unreachable = (): Promise<never> => Promise.reject(new TypeError("Failed to fetch"))
     const api: CommentsApi = {

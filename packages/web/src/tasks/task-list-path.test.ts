@@ -20,7 +20,7 @@ describe("taskListPath", () => {
   })
 
   it("is the Inbox for a task in it, or one not loaded yet", () => {
-    expect(taskListPath({ ...task, inbox: true, domainId: undefined }, [home])).toBe("/")
+    expect(taskListPath({ ...task, inbox: true }, [home])).toBe("/")
     expect(taskListPath(undefined, [home])).toBe("/")
     expect(taskListPath(task, undefined)).toBe("/")
   })

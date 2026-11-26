@@ -11,6 +11,7 @@ import { Sidebar } from "./Sidebar.ts"
 import { FollowOnLinks } from "./task-parts/FollowOnLinks.ts"
 import { UndoToast } from "./UndoToast.ts"
 import { TaskTags } from "./task-parts/TaskTags.ts"
+import { TaskFiling } from "./task-parts/TaskFiling.ts"
 import { TaskComments } from "./task-parts/TaskComments.ts"
 import { TaskChecklist } from "./task-parts/TaskChecklist.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
@@ -37,6 +38,7 @@ export class TaskDetailPage extends PageObject {
   readonly undoNotice: UndoNotice
   readonly followOns: FollowOnLinks
   readonly tags: TaskTags
+  readonly filing: TaskFiling
   readonly comments: TaskComments
   readonly checklist: TaskChecklist
   /** Shown once it's marked done here. */
@@ -50,6 +52,7 @@ export class TaskDetailPage extends PageObject {
     this.undoNotice = new UndoNotice(page)
     this.followOns = new FollowOnLinks(page)
     this.tags = new TaskTags(page)
+    this.filing = new TaskFiling(page)
     this.comments = new TaskComments(page)
     this.checklist = new TaskChecklist(page)
     this.toast = new UndoToast(page)

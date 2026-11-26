@@ -2,7 +2,7 @@ export const taskRowTestIds = {
   row: "TaskRow.row",
   done: "TaskRow.done",
   ref: "TaskRow.ref",
-  domain: "TaskRow.domain",
+  file: "TaskRow.file",
   title: "TaskRow.title",
   highlights: "TaskRow.highlights",
   repeat: "TaskRow.repeat",

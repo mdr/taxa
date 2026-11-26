@@ -146,7 +146,7 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
         task={task}
         domains={domains}
         testId={taskPropertiesTestIds.domain}
-        shortcut={{ key: "m", description: task.inbox ? "File in a domain" : "Move to a domain" }}
+        shortcut={{ key: "m", description: "Move to a domain" }}
         onChoose={(request) => change({ type: TaskChangeType.UPDATE, request })}
       />
       <TagsProperty task={task} change={change} />

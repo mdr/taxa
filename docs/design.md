@@ -109,20 +109,29 @@ go by number, still find them wherever they moved.
 | assignee  | A member of the task's domain                                       |
 | delegate  | An agent doing the work, while the assignee stays accountable       |
 
-Everything except the title is optional. A quick capture is a title in the
-Inbox, or straight into a domain picked beside it; the Inbox remembers the
-last one picked, in that browser, until another is chosen. Today, Plan
-today, Soon and Someday capture too, into the Inbox or a domain picked the
-same way, and the task is for then: scheduled today, or put down for soon or
+Everything except the title is optional. A quick capture is a title, into
+your only domain, or, with more than one, the domain picked beside it; that
+choice is remembered, in that browser, until another is chosen. Captured
+without saying when, it waits in the Inbox. Today, Plan today, Soon and
+Someday capture too, into a domain picked the same way, and the task is for
+then, so filed: scheduled today, or put down for soon or
 someday, so it's listed where it was added (while planning, at the end of the plan). A task
 captured into the list you're on is highlighted there, ready for its keys;
 `C` goes back to capture.
 
-The **Inbox** is where a task waits before it's filed: a task created without
-a domain goes into its creator's Inbox, in no domain, seen only by them. Its
-ref is `IN-7`; filing it in Home makes it `H-7`, and `7` still finds it. A
-task is in a domain or an Inbox, never both, so domain lists hold only filed
-tasks. Capture without deciding where something goes, and sort it later.
+The **Inbox** is for jotting something down as it occurs to you, to sort out
+later: fill it in, decide when, then file it. Every task is in a domain, from
+the start (with one domain, that one; with more, the one named), and its ref
+is that domain's, `H-7`. Being in the Inbox is a mark on the task, of whose
+Inbox it's in: a task created without a `scheduled` date or a horizon goes in
+its creator's Inbox, and one created with either is filed at once (`inbox` on
+creating says otherwise). Until it's filed, it's seen only by the person whose
+Inbox it's in, even in a shared domain, and its domain's list leaves it out.
+Filing is explicit, and can be undone: the File button on its row or page,
+`V`, or `taxa file`; `V` again, the row's menu or `taxa edit --inbox` put it
+back. Each is in its activity. Moving a task to another domain leaves it in
+the Inbox or out as it was. Tasks from the old `IN-7` days moved into their
+owner's oldest domain, still in the Inbox; `7` and `IN-7` still find them.
 
 - **In progress** records who is working on the task: a person or an agent.
   Tasks in progress sort first in their lists, and the In progress view
@@ -332,7 +341,7 @@ cleverness lives in views and suggestions.
 or until a time), then drag tasks in from suggestions (in progress, due soon,
 high priority), in the order you'll do them. The suggestions can be narrowed
 to a tag, and a task thought of while planning can be added from under the
-plan: it goes to the Inbox and the end of the plan. A task's time in the plan is its
+plan: it goes, filed, at the end of the plan. A task's time in the plan is its
 estimate, the same one as on its page: set or changed in the plan, it's saved
 to the task, and a task with none counts as half an hour until it has one.
 It's yours to read as a target or a timebox. Every task links to its page,

@@ -138,3 +138,16 @@ export const deleteDomain = async (
   })
   return deleted
 }
+
+/** Where a new task goes: the domain named, or else the only one this person has. */
+export const domainForNewTask = async (db: Db, userId: UserId, name: string | undefined): Promise<Domain> => {
+  if (name !== undefined) return findDomain(db, userId, name)
+  const [only, ...others] = await domainsOf(db, userId)
+  if (!only) throw new ProblemError(ProblemType.INVALID_REQUEST, "Add a domain first: every task goes in one.")
+  if (others.length > 0)
+    throw new ProblemError(
+      ProblemType.INVALID_REQUEST,
+      `Say which domain it goes in: ${[only, ...others].map(({ prefix }) => prefix).join(", ")}.`
+    )
+  return only
+}

@@ -5,7 +5,8 @@ import { useEffect, useRef, useState, type Ref } from "react"
 import styles from "./TaskListPage.module.css"
 import { taskListPageTestIds } from "./TaskListPageTestIds.ts"
 import { QuickCapture } from "./QuickCapture.tsx"
-import { TaskRow, type Filing } from "./row/TaskRow.tsx"
+import { TaskRow } from "./row/TaskRow.tsx"
+import { filedRequest } from "../filing/filing.ts"
 import { UndoToast } from "./UndoToast.tsx"
 import { withTicked } from "./with-ticked.ts"
 import { listSearch } from "./list-search.ts"
@@ -21,7 +22,7 @@ import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { useUndo } from "../../undo/undo-service.ts"
 import { ANALYTICS_CODES } from "../../telemetry/codes.ts"
 import { useServiceState } from "../../services/service-hooks.ts"
-import { useTaskChanges } from "../changes/task-changes-service.ts"
+import { TaskChangeType, useTaskChanges } from "../changes/task-changes-service.ts"
 import { ShortcutScope, useShortcuts } from "../../shortcuts/shortcut-service.ts"
 import { problemMessage } from "../../api/problem-message.ts"
 import { useToday } from "../../dates/use-today.ts"
@@ -73,7 +74,7 @@ const ShownTasks = ({
   grouped,
   today,
   domains,
-  filing,
+  onFile,
   onDelete
 }: {
   list: TaskList
@@ -81,7 +82,7 @@ const ShownTasks = ({
   grouped: boolean
   today: IsoDate
   domains: readonly Domain[]
-  filing: Filing | undefined
+  onFile: ((task: Task) => void) | undefined
   onDelete: (task: Task) => void
 }) =>
   grouped ? (
@@ -96,7 +97,7 @@ const ShownTasks = ({
           task={task}
           today={today}
           domains={domains}
-          filing={filing}
+          onFile={onFile}
           listedBy={listWhen(list)}
           listedTag={list.type === ListType.TAG ? list.name : undefined}
           onDelete={onDelete}
@@ -150,18 +151,15 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
       task,
       (shown ?? []).map(({ id }) => id)
     )
-  const filing: Filing | undefined =
-    list.type !== ListType.INBOX || !domains.data
-      ? undefined
-      : {
-          domains: domains.data,
-          file: (task, request) =>
-            void session.file(
-              task,
-              request,
-              (shown ?? []).map(({ id }) => id)
-            )
-        }
+  // Filed, a task leaves the Inbox, the highlight going on past it; elsewhere it stays, and can go back.
+  const file = (task: Task): void =>
+    void (list.type === ListType.INBOX
+      ? session.file(
+          task,
+          filedRequest(task),
+          (shown ?? []).map(({ id }) => id)
+        )
+      : changes.change(task, { type: TaskChangeType.UPDATE, request: filedRequest(task) }))
   useShortcuts(
     ShortcutScope.PAGE,
     listShortcuts(
@@ -174,7 +172,8 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
         },
         followOn: startFollowOn,
         remove,
-        filedFromRow: (task) => filing !== undefined && task.inbox
+        file,
+        movable: (domains.data ?? []).length > 1
       },
       () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
@@ -222,7 +221,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
             grouped={list.type === ListType.DEADLINES && !search}
             today={today}
             domains={domains.data ?? []}
-            filing={filing}
+            onFile={list.type === ListType.INBOX ? file : undefined}
             onDelete={remove}
           />
         )}
@@ -253,7 +252,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
                     task={task}
                     today={today}
                     domains={domains.data ?? []}
-                    filing={filing}
+                    onFile={list.type === ListType.INBOX ? file : undefined}
                     onDelete={remove}
                   />
                 ))}

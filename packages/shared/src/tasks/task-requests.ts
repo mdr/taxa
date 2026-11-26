@@ -14,8 +14,8 @@ const EditableFieldsSchema = z.object({
   title: TitleSchema,
   notes: z.string().max(100_000),
   priority: z.enum(Priority),
-  /** Back to your Inbox, out of its domain. */
-  inbox: z.literal(true),
+  /** false files it, out of your Inbox, sorted out; true puts it back there. On a new task, whether it starts in your Inbox: by default, unless it says when it's for. */
+  inbox: z.boolean(),
   due: IsoDateSchema,
   scheduled: IsoDateSchema,
   scheduledTime: IsoTimeSchema,
@@ -23,7 +23,7 @@ const EditableFieldsSchema = z.object({
   estimateMinutes: flavoured<Minutes>(z.number().int().min(1).max(100_000)),
   energy: z.enum(Energy),
   horizon: z.enum(Horizon),
-  /** File it in this domain, by prefix or id. */
+  /** The domain it's in, by prefix or id. A new task goes in yours if you have only one. */
   domain: z.string(),
   /** The task it follows on from, by ref or id. */
   followsOn: z.string(),
@@ -45,17 +45,15 @@ export enum ClearableField {
   REPEAT = "repeat"
 }
 
-/** Without a domain, it goes in your Inbox. */
-export const CreateTaskRequestSchema = EditableFieldsSchema.omit({ inbox: true })
-  .partial()
-  .extend({
-    /** Chosen by the client (a UUIDv7), so a task made offline is real at once. */
-    id: TaskIdSchema.optional(),
-    title: TitleSchema,
-    tags: z.array(TagSchema).max(MAX_TAGS).optional(),
-    /** Its checklist's items, none ticked. */
-    checklist: z.array(ChecklistTextSchema).max(MAX_CHECKLIST_ITEMS).optional()
-  })
+/** Without a when (scheduled or horizon), it starts in your Inbox, to be sorted out later, unless `inbox` is false. */
+export const CreateTaskRequestSchema = EditableFieldsSchema.partial().extend({
+  /** Chosen by the client (a UUIDv7), so a task made offline is real at once. */
+  id: TaskIdSchema.optional(),
+  title: TitleSchema,
+  tags: z.array(TagSchema).max(MAX_TAGS).optional(),
+  /** Its checklist's items, none ticked. */
+  checklist: z.array(ChecklistTextSchema).max(MAX_CHECKLIST_ITEMS).optional()
+})
 
 export type CreateTaskRequest = z.input<typeof CreateTaskRequestSchema>
 

@@ -123,10 +123,10 @@ test("planning a session, working through it, running over, and how it went", as
 test("a session's end has to be still to come, its plan can change as it goes, and finishing can be undone", async ({
   taxa
 }) => {
+  await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Fix the tap", { estimateMinutes: 15 })
   await taxa.matt.addTask("Bleed the radiators")
   await taxa.matt.addTask("Renew passport")
-  await taxa.matt.addDomain("Home", "H")
   const inbox = await (await taxa.openTab("Matt")).openInbox()
   const setup = await inbox.sidebar.openSession()
   await setup.chooseUntil("08:30")
@@ -152,7 +152,7 @@ test("a session's end has to be still to come, its plan can change as it goes, a
   await session.plan.expectPlan(["9:00 – 9:15 Fix the tap", "9:15 – 9:45 Bleed the radiators"])
   await session.plan.estimatePlanned("Bleed the radiators", "45m")
   await session.plan.expectPlan(["9:00 – 9:15 Fix the tap", "9:15 – 10:00 Bleed the radiators"])
-  await taxa.expectTask("IN-2", { estimateMinutes: 45 })
+  await taxa.expectTask("H-2", { estimateMinutes: 45 })
 
   // Put ahead of the task under way, a task's started now, the other waiting next.
   await session.plan.dragIn("Renew passport", "Fix the tap", "before")
@@ -162,7 +162,7 @@ test("a session's end has to be still to come, its plan can change as it goes, a
     "9:30 – 9:45 Fix the tap",
     "9:45 – 10:30 Bleed the radiators"
   ])
-  await taxa.expectTask("IN-1", { status: TaskStatus.OPEN })
+  await taxa.expectTask("H-1", { status: TaskStatus.OPEN })
   await session.expectAccessible()
   await session.plan.remove("Bleed the radiators")
   await session.doneReplanning()
@@ -171,12 +171,12 @@ test("a session's end has to be still to come, its plan can change as it goes, a
   await session.keyboard.press("x")
   await session.expectCurrent("Fix the tap", "15:00")
   await session.expectUndoOffered("“Renew passport” done")
-  await taxa.expectTask("IN-3", { status: TaskStatus.DONE })
+  await taxa.expectTask("H-3", { status: TaskStatus.DONE })
   await session.expectAccessible()
   await session.undo()
   await session.expectCurrent("Renew passport", "30:00")
   await session.expectNoUndoOffered()
-  await taxa.expectTask("IN-3", { status: TaskStatus.IN_PROGRESS })
+  await taxa.expectTask("H-3", { status: TaskStatus.IN_PROGRESS })
   await session.done()
   await session.expectCurrent("Fix the tap", "15:00")
   await session.done()
@@ -208,7 +208,8 @@ test("planning a session: suggestions narrowed to a tag, and a task thought of w
 
   await planner.plan.addNewTask("Call the plumber")
   await planner.plan.expectPlan(["9:00 – 9:30 Post the letter", "9:30 – 10:00 Call the plumber"])
-  await taxa.expectTask("IN-4", { title: "Call the plumber", inbox: true })
+  // Planned as it's added, it's sorted out already, not left in the Inbox.
+  await taxa.expectTask("H-4", { title: "Call the plumber", inbox: false })
   await planner.expectAccessible()
 })
 
@@ -223,7 +224,7 @@ test("a task added to a session's plan by mistake, undone, comes out of the plan
   await planner.plan.expectPlan(["9:00 – 9:30 Fix the tap", "9:30 – 10:00 Call the plumber"])
 
   await planner.keyboard.press("Escape mod+z")
-  await planner.undoNotice.expectSays("Undid: Added IN-2")
+  await planner.undoNotice.expectSays("Undid: Added H-2")
   await planner.plan.expectPlan(["9:00 – 9:30 Fix the tap"])
   const session = await planner.start()
   await session.expectCurrent("Fix the tap", "30:00")
@@ -244,11 +245,11 @@ test("⌘Z in a session takes back moving on; a task under way that's undone awa
   await session.expectCurrent("Fix the tap", "30:00")
   await session.keyboard.press("mod+z")
   await session.expectCurrent("Call the plumber", "30:00")
-  await taxa.expectTask("IN-2", { status: TaskStatus.IN_PROGRESS })
+  await taxa.expectTask("H-2", { status: TaskStatus.IN_PROGRESS })
 
   // Nothing left to take back in the session, so the tab's last change: adding the task under way.
   await session.keyboard.press("mod+z")
-  await session.undoNotice.expectSays("Undid: Added IN-2")
+  await session.undoNotice.expectSays("Undid: Added H-2")
   await taxa.expectTaskCount(1)
   await session.startNext()
   await session.expectCurrent("Fix the tap", "30:00")

@@ -13,10 +13,11 @@ import {
 } from "./task-state.ts"
 
 const HOME = domainId("0190a1b2-0000-7000-8000-00000000000a")
+const WORK = domainId("0190a1b2-0000-7000-8000-00000000000b")
 const MATT = userId("0190a1b2-0000-7000-8000-000000000001")
 
 const makeState = (overrides: Partial<TaskState> = {}): TaskState => ({
-  domainId: undefined,
+  domainId: HOME,
   inboxUserId: MATT,
   title: "Fix the tap",
   notes: "",
@@ -68,20 +69,6 @@ describe("editTask", () => {
     })
   })
 
-  it("takes a task out of the Inbox when it's filed in a domain", () => {
-    const { state, changes } = editTask(makeState(), { set: { domainId: HOME }, clear: [] })
-    expect(state).toMatchObject({ domainId: HOME, inboxUserId: undefined })
-    expect(changes).toEqual({ domainId: { to: HOME }, inboxUserId: { from: MATT } })
-  })
-
-  it("takes a task out of its domain when it's put back in an Inbox", () => {
-    const filed = makeState({ domainId: HOME, inboxUserId: undefined })
-    expect(editTask(filed, { set: { inboxUserId: MATT }, clear: [] }).state).toMatchObject({
-      domainId: undefined,
-      inboxUserId: MATT
-    })
-  })
-
   it("changes nothing when nothing differs", () => {
     expect(editTask(makeState(), { set: { title: "Fix the tap" }, clear: [ClearableField.DUE] }).changes).toEqual({})
   })
@@ -124,6 +111,7 @@ describe("changeStatus", () => {
 describe("changesFromNothing", () => {
   it("logs every field a new task has", () => {
     expect(changesFromNothing(makeState({ due: "2026-01-09" }))).toEqual({
+      domainId: { to: HOME },
       inboxUserId: { to: MATT },
       title: { to: "Fix the tap" },
       notes: { to: "" },
@@ -148,8 +136,8 @@ describe("revertedState", () => {
     expect(revertedState(reopened.state, reopened.changes)).toMatchObject({ outcome: { state: cancelled.state } })
   })
 
-  it("takes back moving a task, out of its domain and back into the Inbox", () => {
-    const moved = editTask(makeState(), { set: { domainId: HOME }, clear: [] })
+  it("takes back moving a task to another domain", () => {
+    const moved = editTask(makeState(), { set: { domainId: WORK }, clear: [] })
     expect(revertedState(moved.state, moved.changes)).toMatchObject({ outcome: { state: makeState() } })
   })
 

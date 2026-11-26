@@ -1,8 +1,7 @@
 import type { TaskId } from "@taxa/shared/ids"
-import type { Task } from "@taxa/shared/tasks/task"
 import { When, whenRequest } from "@taxa/shared/tasks/when"
-import { Inbox, Plus } from "lucide-react"
-import { Link } from "wouter"
+import { Plus } from "lucide-react"
+import type { Domain } from "@taxa/shared/domains/domain"
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type SubmitEvent } from "react"
 import { withTags, withoutTags } from "@taxa/shared/tasks/tags"
 import { hashTagIn } from "../../tags/hash-tag.ts"
@@ -25,57 +24,51 @@ import { DomainBadge } from "../../domains/DomainBadge.tsx"
 import { useDomains } from "../../domains/domain-queries.ts"
 import { OptionList } from "../../ui/OptionList.tsx"
 import { Popover, PopoverLook } from "../../ui/Popover.tsx"
-import { INBOX_CHOICE } from "../filing/filing.ts"
-import { loadCaptureFiling, saveCaptureFiling } from "./capture-filing.ts"
+import { captureDomain, loadCaptureFiling, saveCaptureFiling } from "./capture-filing.ts"
 import { useToday } from "../../dates/use-today.ts"
 import type { CaptureWhen } from "./task-list.ts"
 import { FocusTarget, useFocusRequested, useShortcutActions } from "../../shortcuts/shortcut-service.ts"
 
-/** In the Inbox, where a new task goes: the Inbox, or straight into a domain. */
-const FilingPicker = ({ filing, onChoose }: { filing: string; onChoose: (choice: string) => void }) => {
-  const domains = useDomains().data ?? []
-  const domain = domains.find(({ prefix }) => prefix === filing)
-  return (
-    <Popover
-      label="Where it goes"
-      look={PopoverLook.CHIP}
-      testId={quickCaptureTestIds.filing}
-      track="QuickCapture.filing"
-      value={filing}
-      trigger={
-        domain ? (
-          <>
-            <DomainBadge prefix={domain.prefix} /> {domain.name}
-          </>
-        ) : (
-          <>
-            <Inbox size={14} aria-hidden /> Inbox
-          </>
-        )
-      }
-      alignEnd
-    >
-      {(close) => (
-        <OptionList
-          track="QuickCapture.filing"
-          selected={filing}
-          options={[
-            { value: INBOX_CHOICE, label: "Inbox", icon: <Inbox size={15} aria-hidden /> },
-            ...domains.map(({ prefix, name }) => ({
-              value: prefix,
-              label: name,
-              icon: <DomainBadge prefix={prefix} />
-            }))
-          ]}
-          onChoose={(choice) => {
-            close()
-            onChoose(choice)
-          }}
-        />
-      )}
-    </Popover>
-  )
-}
+/** With more than one domain, which a new task goes in. */
+const DomainPicker = ({
+  domain,
+  domains,
+  onChoose
+}: {
+  domain: Domain
+  domains: readonly Domain[]
+  onChoose: (choice: string) => void
+}) => (
+  <Popover
+    label="Which domain it goes in"
+    look={PopoverLook.CHIP}
+    testId={quickCaptureTestIds.filing}
+    track="QuickCapture.filing"
+    value={domain.prefix}
+    trigger={
+      <>
+        <DomainBadge prefix={domain.prefix} /> {domain.name}
+      </>
+    }
+    alignEnd
+  >
+    {(close) => (
+      <OptionList
+        track="QuickCapture.filing"
+        selected={domain.prefix}
+        options={domains.map(({ prefix, name }) => ({
+          value: prefix,
+          label: name,
+          icon: <DomainBadge prefix={prefix} />
+        }))}
+        onChoose={(choice) => {
+          close()
+          onChoose(choice)
+        }}
+      />
+    )}
+  </Popover>
+)
 
 const PLACEHOLDER: Record<CaptureWhen, string> = {
   [When.TODAY]: "Add a task for today",
@@ -84,8 +77,9 @@ const PLACEHOLDER: Record<CaptureWhen, string> = {
 }
 
 /**
- * A title, and Enter: into this domain if given; else the Inbox, or a domain
- * chosen for it there, which stays chosen for the next, here and next time.
+ * A title, and Enter: into this domain if given; else the only one, or the one
+ * chosen beside it, which stays chosen for the next, here and next time. Said
+ * nothing of when it's for, it waits in the Inbox to be sorted out.
  * Given a `when`, the task is for then, so it's listed where it was added.
  * Once added, a task shown on the page is highlighted there, if it can be.
  */
@@ -110,11 +104,9 @@ export const QuickCapture = ({
   const suggestions = typingTag ? tagSuggestions(allTags, hashTag.typed, tags) : []
   const suggestionsId = useId()
   const [chosen, setChosen] = useState(loadCaptureFiling)
-  /** The last task added straight into a domain from the Inbox, so it's not lost from sight. */
-  const [filed, setFiled] = useState<Task | undefined>(undefined)
   const domains = useDomains().data ?? []
-  /** The last place chosen, while it's still a domain; else the Inbox. */
-  const filing = domains.some(({ prefix }) => prefix === chosen) ? chosen : INBOX_CHOICE
+  /** The domain last chosen, while it's still one; else the first. */
+  const picked = captureDomain(domains, chosen)
   const choose = (choice: string): void => {
     setChosen(choice)
     saveCaptureFiling(choice)
@@ -156,18 +148,17 @@ export const QuickCapture = ({
       {
         title: title.trim(),
         tags,
-        domain: domainPrefix ?? (filing === INBOX_CHOICE ? undefined : filing),
+        domain: domainPrefix ?? picked?.prefix,
+        // Added in a domain's list, it's placed already, so filed, and listed there.
+        ...(domainPrefix !== undefined && { inbox: false }),
         ...(when && whenRequest(when, today).set)
       },
       {
         onSuccess: (task) => {
           setTitle("")
           setTags([])
-          // Added from the Inbox straight into a domain, it isn't listed here.
-          const filedElsewhere = domainPrefix === undefined && when === undefined && !task.inbox
-          setFiled(filedElsewhere ? task : undefined)
           // Highlighting the new row moves focus to it, for its keys; C comes back here.
-          if (!filedElsewhere) highlight?.(task.id)
+          highlight?.(task.id)
           appAnalytics.track(ANALYTICS_CODES.task.captured, `captured ${task.ref}`, {
             taskId: task.id,
             taskRef: task.ref,
@@ -206,7 +197,9 @@ export const QuickCapture = ({
         <TagChip key={name} name={name} onRemove={() => setTags(withoutTags(tags, [name]))} />
       ))}
       {title.trim() !== "" && <kbd className={styles.hint}>Enter</kbd>}
-      {domainPrefix === undefined && <FilingPicker filing={filing} onChoose={choose} />}
+      {domainPrefix === undefined && picked && domains.length > 1 && (
+        <DomainPicker domain={picked} domains={domains} onChoose={choose} />
+      )}
       <button
         type="submit"
         className={styles.submit}
@@ -225,12 +218,6 @@ export const QuickCapture = ({
             onPick={(name) => pickTag(name, hashTag.start)}
           />
         </div>
-      )}
-      {filed && (
-        <p className={styles.filed} role="status" data-testid={quickCaptureTestIds.filed}>
-          Added <Link href={`/tasks/${filed.ref}`}>{filed.ref}</Link> to{" "}
-          {domains.find(({ id }) => id === filed.domainId)?.name ?? "its domain"}.
-        </p>
       )}
       {create.isError && (
         <p className={styles.error} role="alert" data-testid={quickCaptureTestIds.error}>

@@ -30,7 +30,7 @@ describe("sessions", () => {
     })
     expect(started.items.map(({ task, minutes }) => [task.ref, task.status, minutes])).toEqual([
       ["H-1", TaskStatus.IN_PROGRESS, 30],
-      ["IN-2", TaskStatus.OPEN, 20]
+      ["H-2", TaskStatus.OPEN, 20]
     ])
     expect(started.current?.taskId).toBe(radiators.id)
     expect(await matt.client.currentSession()).toEqual(started)
@@ -43,7 +43,7 @@ describe("sessions", () => {
     )
     expect(moved.items.map(({ task, spentMs, outcome }) => [task.ref, task.status, spentMs, outcome])).toEqual([
       ["H-1", TaskStatus.DONE, 27 * MINUTE, SessionOutcome.DONE],
-      ["IN-2", TaskStatus.IN_PROGRESS, 0, undefined]
+      ["H-2", TaskStatus.IN_PROGRESS, 0, undefined]
     ])
     await expectProblem(
       matt.client.updateSession(started.id, { finish: SessionOutcome.DONE }, started.version),
@@ -54,7 +54,7 @@ describe("sessions", () => {
     const ended = await matt.client.updateSession(moved.id, { end: true })
     expect(ended.endedAt).toBeDefined()
     expect(ended.items[1]).toMatchObject({ spentMs: 10 * MINUTE, outcome: SessionOutcome.STOPPED })
-    expect((await matt.client.task("IN-2")).status).toBe(TaskStatus.OPEN)
+    expect((await matt.client.task("H-2")).status).toBe(TaskStatus.OPEN)
     expect(await matt.client.currentSession()).toBeUndefined()
 
     const noted = await matt.client.updateSession(ended.id, { set: { note: "Passport photo next" } })
@@ -65,6 +65,7 @@ describe("sessions", () => {
 
   it("are one at a time, each only its owner's, and only of tasks they can see", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const jo = await server.user("Jo")
     const tap = await matt.addTask("Fix the tap")
     const endsAt = new Date(server.clock.now() + 60 * MINUTE).toISOString()
@@ -82,6 +83,7 @@ describe("sessions", () => {
 
   it("leave a task someone else finished meanwhile as it is", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const session = await matt.client.createSession({
       endsAt: new Date(server.clock.now() + 60 * MINUTE).toISOString(),
@@ -97,6 +99,7 @@ describe("sessions", () => {
     server
   }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const radiators = await matt.addTask("Bleed the radiators")
     const session = await matt.client.createSession({
@@ -123,6 +126,7 @@ describe("sessions", () => {
 
   it("do a repeating task this time, and taking that back takes back the occurrence too", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const anki = await matt.addTask("Revise Anki cards", {
       repeat: { every: 1, unit: RepeatUnit.DAY, from: RepeatFrom.SCHEDULE }
     })
@@ -146,6 +150,7 @@ describe("sessions", () => {
 
   it("stop a task deleted while under way, and keep its place for when it's restored", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const radiators = await matt.addTask("Bleed the radiators")
     const session = await matt.client.createSession({
@@ -176,6 +181,7 @@ describe("sessions", () => {
 
   it("are logged, once per change, with what changed", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const tap = await matt.addTask("Fix the tap")
     const from = server.logs.length
     const session = await matt.client.createSession({

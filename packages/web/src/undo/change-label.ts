@@ -2,6 +2,7 @@ import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { OccurrenceOutcome } from "@taxa/shared/tasks/repeat"
 import { ChecklistChangeType, type ChecklistRequest } from "@taxa/shared/tasks/checklist"
 import { STATUS_TEXT } from "@taxa/shared/tasks/task-text"
+import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import { TaskChangeType, type TaskChange } from "../tasks/changes/task-changes-service.ts"
 
 const statusLabel = (status: TaskStatus, ref: string): string => {
@@ -37,6 +38,15 @@ const checklistLabel = (request: ChecklistRequest, task: Task): string => {
   }
 }
 
+const updateLabel = ({ set = {}, addTags = [], removeTags = [] }: UpdateTaskRequest, task: Task): string => {
+  if (set.title !== undefined) return `Renamed ${task.ref}`
+  if (set.inbox === false) return `Filed ${task.ref}`
+  if (set.inbox === true) return `Put ${task.ref} back in the Inbox`
+  if (set.domain !== undefined) return `Moved ${task.ref}`
+  if (addTags.length > 0 || removeTags.length > 0) return `Changed the tags on ${task.ref}`
+  return `Changed ${task.ref}`
+}
+
 /** What a change did, in a few words, for the notice that it's been undone: `Marked H-3 done`. */
 export const changeLabel = (change: TaskChange, task: Task): string => {
   switch (change.type) {
@@ -53,13 +63,8 @@ export const changeLabel = (change: TaskChange, task: Task): string => {
       return `Restored ${task.ref}`
     case TaskChangeType.CHECKLIST:
       return checklistLabel(change.request, task)
-    case TaskChangeType.UPDATE: {
-      const { set = {}, addTags = [], removeTags = [] } = change.request
-      if (set.title !== undefined) return `Renamed ${task.ref}`
-      if (set.domain !== undefined || set.inbox !== undefined) return `Moved ${task.ref}`
-      if (addTags.length > 0 || removeTags.length > 0) return `Changed the tags on ${task.ref}`
-      return `Changed ${task.ref}`
-    }
+    case TaskChangeType.UPDATE:
+      return updateLabel(change.request, task)
   }
 }
 

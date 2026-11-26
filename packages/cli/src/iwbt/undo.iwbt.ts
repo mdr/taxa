@@ -13,11 +13,12 @@ describe("taxa undo", () => {
 
   it("undoes a change by its number in the log, and an undo redoes", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     await matt.addTask("Fix the tap")
     await taxa(server, matt, "edit", "1", "--priority", "high")
     await taxa(server, matt, "done", "1")
     expect((await taxa(server, matt, "undo", "1", "--version", "3")).stdout).toBe(
-      "Undid change 3 to IN-1  Fix the tap\n"
+      "Undid change 3 to M-1  Fix the tap\n"
     )
     expect((await taxa(server, matt, "undo", "1", "--version", "2")).exitCode).toBe(ExitCode.OK)
     expect((await taxa(server, matt, "log", "1")).stdout).toBe(
@@ -36,6 +37,7 @@ describe("taxa undo", () => {
 
   it("takes back a task added by mistake, not even leaving it in the bin", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     await matt.addTask("Fix the tpa")
     await taxa(server, matt, "undo", "1", "--version", "1")
     expect((await taxa(server, matt, "list")).stdout).toBe("No tasks.\n")
@@ -44,6 +46,7 @@ describe("taxa undo", () => {
 
   it("says when what a change did has been changed since, with its own exit code", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     await matt.addTask("Fix the tap")
     await taxa(server, matt, "edit", "1", "--priority", "high")
     await taxa(server, matt, "edit", "1", "--priority", "low")
@@ -53,6 +56,7 @@ describe("taxa undo", () => {
   })
   it("won't guess which change to undo, since the last may be someone else's", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     await matt.addTask("Fix the tap")
     await taxa(server, matt, "done", "1")
     const run = await taxa(server, matt, "undo", "1")

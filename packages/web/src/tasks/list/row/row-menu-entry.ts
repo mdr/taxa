@@ -9,9 +9,7 @@ export enum RowMenuEntry {
   DUE = "DUE",
   ESTIMATE = "ESTIMATE",
   MOVE = "MOVE",
-  TAGS = "TAGS",
-  /** In the Inbox, the row's own chip for filing it. */
-  FILE = "FILE"
+  TAGS = "TAGS"
 }
 
 /** A key's request to open a row's menu; each has a new `seq`, so the same one twice opens it twice. */

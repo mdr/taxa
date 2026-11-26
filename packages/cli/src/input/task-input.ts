@@ -22,6 +22,7 @@ export const TASK_FIELD_OPTIONS = {
   "follows-on": { type: "string" },
   tag: { type: "string", multiple: true },
   inbox: { type: "boolean" },
+  filed: { type: "boolean" },
   repeat: { type: "string" },
   missed: { type: "string" }
 } as const
@@ -32,7 +33,7 @@ export const repeatedOption = (values: OptionValues, name: string): string[] => 
   return Array.isArray(value) ? value.filter((each): each is string => typeof each === "string") : []
 }
 
-export const TASK_FIELD_HELP = `  --domain PREFIX       File it in this domain, out of the Inbox
+export const TASK_FIELD_HELP = `  --domain PREFIX       The domain it's in; to add one, needed only when you have more than one
   --notes TEXT          Notes, in Markdown
   --due DATE            When it must be done by
   --scheduled DATE      When you plan to do it
@@ -44,13 +45,21 @@ export const TASK_FIELD_HELP = `  --domain PREFIX       File it in this domain, 
   --horizon WHEN        soon or someday, for a task without a date
   --follows-on TASK     The task it follows on from, by ref or id
   --tag NAME            Tag it; again for more, e.g. --tag "Life Admin" --tag errand
-  --inbox               Put it back in the Inbox, out of its domain
+  --inbox               In your Inbox, to sort out later: as a task added without saying when is
+  --filed               Filed: sorted out, out of your Inbox (taxa file does just this)
   --repeat HOW          Make it repeat: daily, every weekday, every monday and thursday,
                         monthly on the 1st, 3 days after done (none: stop it repeating)
   --missed WHAT         For a repeating task, days that go by undone: skip (each recorded
                         as missed, and it moves on) or carry-over (it waits till it's done).
                         By default, skipped if it's daily, otherwise carried over
 DATE is ${DATE_INPUT_HELP}.`
+
+/** --inbox or --filed, if either: whether it's in the Inbox. */
+const inboxOption = (values: OptionValues): boolean | undefined => {
+  if (values["inbox"] === true && values["filed"] === true) throw new UsageError("--inbox or --filed, not both.")
+  if (values["inbox"] === true) return true
+  return values["filed"] === true ? false : undefined
+}
 
 const choice = <T extends string>(choices: Record<string, T>, text: string, what: string): T => {
   const found = Object.values(choices).find((value) => value.toLowerCase() === text.trim().toLowerCase())
@@ -119,7 +128,7 @@ export const fieldsFrom = (values: OptionValues, today: IsoDate): NonNullable<Up
         throw new UsageError(`--estimate must be like 30m, 1h or 1h30m, not ${JSON.stringify(text)}.`)
       return minutes
     }),
-    inbox: values["inbox"] === true ? true : undefined,
+    inbox: inboxOption(values),
     repeat: repeatOption(values)
   }
   return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined))

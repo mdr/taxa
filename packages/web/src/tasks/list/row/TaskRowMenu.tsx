@@ -12,6 +12,7 @@ import {
   Copy,
   CornerDownRight,
   Ellipsis,
+  FolderCheck,
   FolderInput,
   Inbox,
   Pencil,
@@ -32,7 +33,7 @@ import { Popover, PopoverLook } from "../../../ui/Popover.tsx"
 import { setOrClear } from "../../changes/field-change.ts"
 import { TaskChangeType, useTaskChanges, type TaskChange } from "../../changes/task-changes-service.ts"
 import { EstimateEditor } from "../../detail/properties/EstimateProperty.tsx"
-import { INBOX_CHOICE, filingChoice, filingRequest } from "../../filing/filing.ts"
+import { domainChoice, filedRequest, movedRequest } from "../../filing/filing.ts"
 import { PriorityIcon } from "../../PriorityIcon.tsx"
 import { StatusIcon } from "../../StatusIcon.tsx"
 import { WHEN_ICONS, whenLabel, whenOptions } from "../../when/when-choices.tsx"
@@ -68,6 +69,7 @@ const SECTION_TEXT: Record<Section, string> = {
 
 enum Action {
   RENAME = "RENAME",
+  FILE = "FILE",
   FOLLOW_ON = "FOLLOW_ON",
   COPY_REF = "COPY_REF",
   DELETE = "DELETE"
@@ -90,6 +92,7 @@ const MainOptions = ({
   task,
   today,
   domains,
+  apply,
   remove,
   close,
   open
@@ -133,12 +136,19 @@ const MainOptions = ({
           icon: <Timer size={15} aria-hidden />,
           detail: task.estimateMinutes === undefined ? "None" : formatEstimate(task.estimateMinutes)
         },
-        {
-          value: Section.MOVE,
-          label: "Move to",
-          icon: <FolderInput size={15} aria-hidden />,
-          detail: domain?.name ?? "Inbox"
-        },
+        task.inbox
+          ? { value: Action.FILE, label: "File it", icon: <FolderCheck size={15} aria-hidden />, detail: "Sorted out" }
+          : { value: Action.FILE, label: "Back to the Inbox", icon: <Inbox size={15} aria-hidden /> },
+        ...(domains.length > 1
+          ? [
+              {
+                value: Section.MOVE,
+                label: "Move to",
+                icon: <FolderInput size={15} aria-hidden />,
+                detail: domain?.name
+              }
+            ]
+          : []),
         {
           value: Section.TAGS,
           label: "Tags",
@@ -168,7 +178,8 @@ const MainOptions = ({
             taskId: task.id,
             taskRef: task.ref
           })
-        } else if (chosen === Action.DELETE) remove()
+        } else if (chosen === Action.FILE) apply({ type: TaskChangeType.UPDATE, request: filedRequest(task) })
+        else if (chosen === Action.DELETE) remove()
         else open(chosen)
       }}
     />
@@ -262,16 +273,13 @@ const SectionChoices = ({
       return (
         <OptionList
           track="TaskRowMenu.move"
-          options={[
-            ...domains.map(({ name, prefix }) => ({
-              value: prefix,
-              label: name,
-              icon: <DomainBadge prefix={prefix} />
-            })),
-            { value: INBOX_CHOICE, label: "Inbox", icon: <Inbox size={15} aria-hidden /> }
-          ]}
-          selected={filingChoice(task, domains)}
-          onChoose={(choice) => apply({ type: TaskChangeType.UPDATE, request: filingRequest(choice) })}
+          options={domains.map(({ name, prefix }) => ({
+            value: prefix,
+            label: name,
+            icon: <DomainBadge prefix={prefix} />
+          }))}
+          selected={domainChoice(task, domains)}
+          onChoose={(choice) => apply({ type: TaskChangeType.UPDATE, request: movedRequest(choice) })}
         />
       )
     case Section.TAGS:
@@ -348,7 +356,7 @@ export const TaskRowMenu = ({
       track="TaskRow.menu"
       trigger={<Ellipsis size={16} aria-hidden />}
       opening={
-        opening && opening.entry !== RowMenuEntry.FILE
+        opening
           ? { into: opening.entry === RowMenuEntry.MENU ? undefined : opening.entry, seq: opening.seq }
           : undefined
       }

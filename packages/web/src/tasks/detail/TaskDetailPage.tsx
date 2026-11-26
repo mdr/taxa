@@ -1,7 +1,7 @@
 import { OccurrenceStrip } from "./OccurrenceStrip.tsx"
 import { Checklist } from "../checklist/Checklist.tsx"
 import { TaskStatus } from "@taxa/shared/tasks/task"
-import { ChevronRight, Inbox, RotateCcw } from "lucide-react"
+import { ChevronRight, Inbox, Layers, RotateCcw } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link, useLocation } from "wouter"
 import styles from "./TaskDetailPage.module.css"
@@ -32,6 +32,8 @@ import { useServiceState } from "../../services/service-hooks.ts"
 import { realScheduler } from "../../services/scheduler.ts"
 import { appAnalytics } from "../../telemetry/app-telemetry.ts"
 import { useUndo } from "../../undo/undo-service.ts"
+import { FileButton } from "../filing/FileButton.tsx"
+import { filedRequest } from "../filing/filing.ts"
 
 export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
   const query = useTask(taskRef)
@@ -64,6 +66,15 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
       description: "Undo the last change",
       group: ShortcutGroup.GENERAL,
       run: () => void session.undo()
+    },
+    {
+      keys: ["v"],
+      description: "File it, or put it back in the Inbox",
+      group: ShortcutGroup.TASKS,
+      available: () => query.data !== undefined,
+      run: () => {
+        if (query.data) void changeTask(query.data, { type: TaskChangeType.UPDATE, request: filedRequest(query.data) })
+      }
     },
     { keys: ["r"], description: "Rename", group: ShortcutGroup.TASKS, run: () => requestFocus(FocusTarget.TITLE) },
     { keys: ["n"], description: "Write notes", group: ShortcutGroup.TASKS, run: () => requestFocus(FocusTarget.NOTES) },
@@ -104,7 +115,15 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
             ) : (
               domain && (
                 <Link href={`/domains/${domain.prefix}`} className={styles.crumb}>
-                  <DomainBadge prefix={domain.prefix} /> {domain.name}
+                  {(domains.data ?? []).length > 1 ? (
+                    <>
+                      <DomainBadge prefix={domain.prefix} /> {domain.name}
+                    </>
+                  ) : (
+                    <>
+                      <Layers size={14} aria-hidden /> All tasks
+                    </>
+                  )}
                 </Link>
               )
             )}
@@ -129,6 +148,17 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
             >
               <RotateCcw size={14} aria-hidden /> Restore
             </button>
+          </p>
+        )}
+        {task.inbox && !task.deletedAt && (
+          <p className={styles.inbox} data-testid={taskDetailPageTestIds.inbox}>
+            In your Inbox, to sort out: fill it in, then file it.
+            <FileButton
+              task={task}
+              testId={taskDetailPageTestIds.file}
+              track="TaskDetailPage.file"
+              onFile={() => change({ type: TaskChangeType.UPDATE, request: filedRequest(task) })}
+            />
           </p>
         )}
         <TitleField key={task.title} title={task.title} change={change} />

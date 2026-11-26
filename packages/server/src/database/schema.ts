@@ -108,8 +108,10 @@ export const tasks = pgTable(
       .notNull()
       .unique()
       .default(sql`nextval('task_numbers')`),
-    /** Where it's filed; while it's in the Inbox, empty, and `inboxUserId` says whose. */
-    domainId: domainId("domain_id").references(() => domains.id),
+    domainId: domainId("domain_id")
+      .notNull()
+      .references(() => domains.id),
+    /** Whose Inbox it's in, still to be sorted out and filed; empty once filed. Seen only by them meanwhile. */
     inboxUserId: userId("inbox_user_id").references(() => users.id),
     title: text("title").notNull(),
     notes: text("notes").notNull(),
@@ -163,8 +165,7 @@ export const tasks = pgTable(
   (table) => [
     index("tasks_domain").on(table.domainId),
     index("tasks_inbox").on(table.inboxUserId),
-    index("tasks_follows_on").on(table.followsOnId),
-    check("tasks_filed_or_in_an_inbox", sql`(${table.domainId} is null) <> (${table.inboxUserId} is null)`)
+    index("tasks_follows_on").on(table.followsOnId)
   ]
 )
 

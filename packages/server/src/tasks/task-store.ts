@@ -11,20 +11,19 @@ import { foundOf, type TaskRow } from "./task-rows.ts"
 
 export interface FoundTask {
   row: TaskRow
-  /** None while it's in the Inbox. */
-  prefix: DomainPrefix | undefined
+  prefix: DomainPrefix
 }
 
 // Returns Drizzle's query builder, whose type is too intricate to write out.
 // oxlint-disable-next-line typescript/explicit-function-return-type
 const selectVisible = (db: Db, userId: UserId, where: SQL | undefined) =>
-  // Filed in a domain they're a member of, or in their own Inbox.
+  // In a domain they're a member of, and not in someone else's Inbox.
   db
     .select({ row: tasks, prefix: domains.prefix })
     .from(tasks)
-    .leftJoin(domains, eq(domains.id, tasks.domainId))
-    .leftJoin(domainMembers, and(eq(domainMembers.domainId, tasks.domainId), eq(domainMembers.userId, userId)))
-    .where(and(or(isNotNull(domainMembers.userId), eq(tasks.inboxUserId, userId)), isNull(tasks.purgedAt), where))
+    .innerJoin(domains, eq(domains.id, tasks.domainId))
+    .innerJoin(domainMembers, and(eq(domainMembers.domainId, tasks.domainId), eq(domainMembers.userId, userId)))
+    .where(and(or(isNull(tasks.inboxUserId), eq(tasks.inboxUserId, userId)), isNull(tasks.purgedAt), where))
 
 /**
  * A task this person can see, named by ref. `forUpdate` locks it until the
@@ -66,7 +65,7 @@ export const findTasks = async (
         inArray(tasks.status, [...statuses]),
         domainId === undefined ? undefined : eq(tasks.domainId, domainId),
         followsOnId === undefined ? undefined : eq(tasks.followsOnId, followsOnId),
-        inbox === undefined ? undefined : inbox ? isNotNull(tasks.inboxUserId) : isNotNull(tasks.domainId)
+        inbox === undefined ? undefined : inbox ? isNotNull(tasks.inboxUserId) : isNull(tasks.inboxUserId)
       )
     )
   ).map(foundOf)

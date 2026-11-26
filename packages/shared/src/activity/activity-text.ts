@@ -116,6 +116,8 @@ const PHRASES: Record<string, Phrase> = {
   },
   missed: missedPhrase,
   scheduledTime: ({ to }) => (typeof to === "string" ? `set the time to ${to}` : "cleared the time"),
+  // Filed, or put back to be sorted out again; before Inbox tasks were in domains, a change of domain did both.
+  inboxUserId: ({ to }) => (typeof to === "string" ? "put it back in the Inbox" : "filed it"),
   domainId: ({ from, to }, { domainName }) => {
     if (typeof to !== "string") return "put it back in the Inbox"
     const name = domainName(to)
@@ -203,6 +205,8 @@ const actionOf = ({ type, changes }: Activity, context: ActivityContext): string
       const parts = [
         ...(changes["status"] ? [statusAction(changes)] : []),
         ...Object.entries(changes)
+          // Before Inbox tasks were in domains, filing changed both; the domain says it.
+          .filter(([field]) => field !== "inboxUserId" || changes["domainId"] === undefined)
           .map(([field, change]) => phrase(field, change, context))
           .filter((text) => text !== undefined)
       ]

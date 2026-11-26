@@ -6,7 +6,6 @@ import { PageObject } from "./steps.ts"
 import { expectAccessible } from "./accessibility.ts"
 import { FollowOnDialog } from "./FollowOnDialog.ts"
 import { datePickerTestIds } from "../../src/dates/DatePickerTestIds.ts"
-import { INBOX_CHOICE } from "../../src/tasks/filing/filing.ts"
 import { estimatePropertyTestIds } from "../../src/tasks/detail/properties/EstimatePropertyTestIds.ts"
 import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
 import { rowTitleFieldTestIds } from "../../src/tasks/list/row/RowTitleFieldTestIds.ts"
@@ -84,8 +83,16 @@ export class TaskRowMenu extends PageObject {
     await this.#choose("Move to", prefix)
   }
 
-  async moveToInbox(): Promise<void> {
-    await this.#choose("Move to", INBOX_CHOICE)
+  /** Files it out of the Inbox, or puts it back there: the menu's entry says which. */
+  async fileOrPutBack(label: "File it" | "Back to the Inbox"): Promise<void> {
+    await expect(this.#option("FILE")).toContainText(label)
+    await this.#option("FILE").click()
+    await this.#closed()
+  }
+
+  /** Whether the menu offers to move it: only with another domain to move it to. */
+  async expectMovable(movable: boolean): Promise<void> {
+    await expect(this.#option(THING_CHOICE["Move to"])).toHaveCount(movable ? 1 : 0)
   }
 
   /** Types a due date into the menu's date picker: `2026-01-09`, `fri`. */

@@ -41,7 +41,7 @@ test("finding any task from the command menu, by title or notes", async ({ taxa 
 
   const menu = await inbox.keyboard.openCommandMenu()
   await menu.search("tap")
-  await menu.expectFoundTasks(["H-1 Fix the kitchen tap", "IN-3 Call the plumber", "H-2 Buy a tap washer"])
+  await menu.expectFoundTasks(["H-1 Fix the kitchen tap", "H-3 Call the plumber", "H-2 Buy a tap washer"])
   await menu.expectAccessible()
   await menu.search("tap washer")
   await menu.expectFoundTasks(["H-2 Buy a tap washer"])

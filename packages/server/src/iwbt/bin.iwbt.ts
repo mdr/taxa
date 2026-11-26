@@ -26,6 +26,7 @@ describe("the bin", () => {
 
   it("won't delete for good a task that isn't in the bin, nor one someone can't see", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const anna = await server.user("Anna")
     const tap = await matt.addTask("Fix the tap")
     await expectProblem(matt.client.purgeTask(tap.ref), ProblemType.INVALID_REQUEST)
@@ -36,7 +37,9 @@ describe("the bin", () => {
 
   it("empties the bin of what each person can see, and nothing else", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const anna = await server.user("Anna")
+    await anna.addDomain("Anna", "A")
     const tap = await matt.addTask("Fix the tap")
     const bins = await matt.addTask("Put the bins out")
     const kept = await matt.addTask("Book the dentist")
@@ -52,6 +55,7 @@ describe("the bin", () => {
 
   it("clears out tasks uncreated by an undo after a day, kept that long only for redoing it", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const oops = await matt.addTask("Fix the tpa")
     await matt.client.undoTask(oops.id, oops.version)
     server.advance(UNCREATED_KEEPS_MS)
@@ -63,6 +67,7 @@ describe("the bin", () => {
 
   it("clears out tasks left in it for 30 days", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const old = await matt.addTask("Fix the tap")
     const recent = await matt.addTask("Put the bins out")
     await matt.client.deleteTask(old.ref)

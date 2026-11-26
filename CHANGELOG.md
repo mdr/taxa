@@ -10,8 +10,12 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 - **Deadlines**, in the sidebar: every task with a due date, soonest first, under Overdue, Today, This week, Next week and each month, each saying how long it has. The sidebar counts those overdue or due within the week, in red when any are overdue. `G D` goes there; in the CLI, `taxa list --due`.
 - Below Today, **Deadlines coming up**: what's overdue or due within the week and not yet planned for today, with + Today on each.
+- **Filing** a task out of the Inbox is now its own step, once it's sorted out: the **File** button on its row or page, `V`, or "File it" in the row's menu. `V` again, or "Back to the Inbox", puts it back. In the CLI: `taxa file H-7`, `taxa edit --inbox` and `--filed`.
 
 ### Changed
+
+- **The Inbox** is for jotting things down to sort out later. Every task now goes in a domain from the start, with that domain's ref (`H-7`, no more `IN-7`), and waits in your Inbox until you file it. A task added for today, soon or someday, in a domain's list, or while planning is filed straight away. Inbox tasks are seen only by you, and stay out of their domain's list until filed. Your Inbox tasks have moved into your oldest domain, still in the Inbox; their old `IN-` refs still find them.
+- With only one domain, there's no choosing it: no domain picker when capturing, on a task's page, in the row menu or when adding a follow-on. "Inbox" is no longer offered as a place to move a task to.
 
 - **Might want attention**, below Today, leaves deadlines to the new box above it.
 - With only one domain, the sidebar has no Domains section or "New domain": just **All tasks**, going to that domain's list. A second domain (`taxa add-domain`) brings the section back.

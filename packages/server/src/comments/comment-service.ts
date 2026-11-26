@@ -40,7 +40,7 @@ const logComment = (log: ServerLogger, code: ServerLogCode, caller: Caller, task
   log.info(code, "a comment changed", {
     ...callerFields(caller),
     taskId: task.row.id,
-    domainId: task.row.domainId ?? undefined,
+    domainId: task.row.domainId,
     commentId: comment.id,
     version: comment.version
   })
@@ -74,7 +74,7 @@ export const addComment = async (
     await recordActivity(tx, caller, now, {
       type: ActivityType.COMMENT_ADDED,
       entityId: commentId,
-      domainId: task.row.domainId ?? undefined,
+      domainId: task.row.domainId,
       version: 1,
       changes: { body: { to: body } }
     })
@@ -145,7 +145,7 @@ const changeComment = async (
     await recordActivity(tx, caller, now, {
       type,
       entityId: id,
-      domainId: task.row.domainId ?? undefined,
+      domainId: task.row.domainId,
       version: row.version + 1,
       ...(undoesVersion !== undefined && { undoesVersion }),
       changes

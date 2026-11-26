@@ -48,14 +48,13 @@ export const TaskSchema = z.object({
   /** How people refer to it: `H-142`. */
   ref: TaskRefSchema,
   number: flavoured<TaskNumber>(z.number().int()),
-  /** Absent while it's in the Inbox. */
-  domainId: DomainIdSchema.optional(),
+  domainId: DomainIdSchema,
   title: z.string(),
   /** Markdown. */
   notes: z.string(),
   status: z.enum(TaskStatus),
   priority: z.enum(Priority),
-  /** In its creator's Inbox, not yet filed in a domain: seen only by them. */
+  /** In its creator's Inbox, still to be sorted out and filed: seen only by them till then. */
   inbox: z.boolean(),
   due: IsoDateSchema.optional(),
   scheduled: IsoDateSchema.optional(),

@@ -22,6 +22,7 @@ describe("checklists", () => {
 
   it("holds a task's steps, added, ticked, reworded and removed, each change in its activity", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const claude = await matt.agent("Claude Code", "mdr/life-admin")
     const giving = await matt.addTask("Move charitable giving to my name", { checklist: ["Oxfam", "Shelter"] })
     expect(shown(giving)).toEqual(["  Oxfam", "  Shelter"])
@@ -63,6 +64,7 @@ describe("checklists", () => {
 
   it("moves an item after another, or to the top", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const giving = await matt.addTask("Move charitable giving", { checklist: ["Oxfam", "Shelter", "RSPB"] })
     const down = await matt.client.changeChecklist(giving.ref, {
       type: ChecklistChangeType.MOVE,
@@ -89,6 +91,7 @@ describe("checklists", () => {
 
   it("refuses items that aren't there, and more than it holds", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const giving = await matt.addTask("Move charitable giving", { checklist: ["Oxfam"] })
     const oxfam = itemId(giving, "Oxfam")
     await matt.client.changeChecklist(giving.ref, { type: ChecklistChangeType.REMOVE, item: oxfam })
@@ -177,6 +180,7 @@ describe("checklists", () => {
 
   it("starts again each time a repeating task comes round", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const review = await matt.addTask("Weekly review", {
       scheduled: "2026-01-05",
       repeat: { every: 1, unit: RepeatUnit.WEEK, from: RepeatFrom.SCHEDULE },
@@ -195,6 +199,7 @@ describe("checklists", () => {
 
   it("undoes a tick, and refuses to undo one an item has changed since", async ({ server }) => {
     const matt = await server.user("Matt")
+    await matt.addDomain("Matt", "M")
     const giving = await matt.addTask("Move charitable giving", { checklist: ["Oxfam", "Shelter"] })
     const oxfam = await matt.client.changeChecklist(giving.ref, {
       type: ChecklistChangeType.TICK,

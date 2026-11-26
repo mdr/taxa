@@ -1,26 +1,31 @@
 import { Horizon, TaskStatus } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
-test("capturing to the Inbox and filing a task", async ({ taxa }) => {
+test("capturing to the Inbox, then sorting a task out and filing it", async ({ taxa }) => {
   const inbox = await (await (await taxa.openTab("Matt")).openFirstTime()).start()
   await inbox.sidebar.addDomain("Hobbies", "H")
   await inbox.sidebar.expectDomainProblem("H")
 
   await inbox.capture("Fix the tap")
   await inbox.capture("Renew passport")
-  await inbox.expectTasks(["IN-1 Fix the tap", "IN-2 Renew passport"])
+  await inbox.expectTasks(["P-1 Fix the tap", "P-2 Renew passport"])
   await inbox.expectAccessible()
-  // Not filed anywhere yet, so in no domain's list.
+  // In Personal, but still to sort out, so not in its list yet.
   await inbox.sidebar.openDomain("Personal")
   await inbox.expectTasks([])
   await inbox.sidebar.openInbox()
 
   const detail = await inbox.openTask("Fix the tap")
+  await detail.filing.expectInInbox(true)
   await detail.moveTo("H")
   await detail.expectRef("H-1")
+  await detail.filing.expectInInbox(true)
+  await detail.expectAccessible()
+  await detail.filing.file()
+  await taxa.expectTask("H-1", { inbox: false })
   await detail.sidebar.openInbox()
-  await inbox.expectTasks(["IN-2 Renew passport"])
-  await inbox.file("Renew passport", "P")
+  await inbox.expectTasks(["P-2 Renew passport"])
+  await inbox.file("Renew passport")
   await inbox.expectTasks([])
   await inbox.sidebar.openDomain("Home")
   await inbox.expectHeading("Home")
@@ -32,39 +37,54 @@ test("capturing to the Inbox and filing a task", async ({ taxa }) => {
 test("filing the Inbox from the keyboard, one task after another", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addDomain("Work", "W")
-  await taxa.matt.addTask("Fix the tap")
-  await taxa.matt.addTask("Plan the quarter")
+  await taxa.matt.addTask("Fix the tap", { domain: "H", inbox: true })
+  await taxa.matt.addTask("Plan the quarter", { domain: "H", inbox: true })
   const inbox = await (await taxa.openTab("Matt")).openInbox()
-  await inbox.expectTasks(["IN-1 Fix the tap", "IN-2 Plan the quarter"])
+  await inbox.expectTasks(["H-1 Fix the tap", "H-2 Plan the quarter"])
 
   await inbox.keyboard.press("j")
   await inbox.expectHighlighted("Fix the tap")
-  await inbox.keyboard.choose("m", "H")
-  await inbox.expectTasks(["IN-2 Plan the quarter"])
+  await inbox.keyboard.press("v")
+  await inbox.expectTasks(["H-2 Plan the quarter"])
   await inbox.expectHighlighted("Plan the quarter")
+  // Moved, it's still in the Inbox to sort out.
   await inbox.keyboard.choose("m", "W")
+  await inbox.expectTasks(["W-2 Plan the quarter"])
+  await inbox.keyboard.press("v")
   await inbox.expectTasks([])
-  await taxa.expectTask("W-2", { title: "Plan the quarter" })
+  await taxa.expectTask("W-2", { title: "Plan the quarter", inbox: false })
 })
 
-test("putting a task back in the Inbox", async ({ taxa }) => {
+test("with one domain, there's no choosing it; and a filed task can go back in the Inbox", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
-  await taxa.matt.addTask("Fix the tap", { domain: "H" })
-  const detail = await (await taxa.openTab("Matt")).openTask("H-1")
-  await detail.moveTo("IN")
-  await detail.expectRef("IN-1")
-  const inbox = await detail.sidebar.openInbox()
-  await inbox.expectTasks(["IN-1 Fix the tap"])
+  await taxa.matt.addTask("Fix the tap", { domain: "H", inbox: false })
+  const tab = await taxa.openTab("Matt")
+  const inbox = await tab.openInbox()
+  await inbox.expectDomainPicker(false)
+  const home = await inbox.sidebar.openDomain("Home")
+  const menu = await home.openMenu("Fix the tap")
+  await menu.expectMovable(false)
+  await menu.fileOrPutBack("Back to the Inbox")
+  await home.expectTasks([])
+  await taxa.expectTask("H-1", { inbox: true })
+
+  const detail = await tab.openTask("H-1")
+  await detail.filing.expectDomainChoice(false)
+  await detail.filing.expectInInbox(true)
+  await detail.keyboard.press("v")
+  await detail.filing.expectInInbox(false)
+  await detail.keyboard.press("v")
+  await detail.filing.expectInInbox(true)
+  await (await detail.sidebar.openInbox()).expectTasks(["H-1 Fix the tap"])
 })
 
-test("what people do is tracked, from starting the app to capturing and changing a task", async ({ taxa }) => {
+test("what people do is tracked, from starting the app to capturing and filing a task", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   const tab = await taxa.openTab("Matt")
   const inbox = await tab.openInbox()
   await inbox.capture("Fix the tap")
   const detail = await inbox.openTask("Fix the tap")
-  await detail.moveTo("H")
-  await detail.expectRef("H-1")
+  await detail.filing.file()
   await tab.expectLogged(["app.started", "nav.pageOpened", "task.captured", "nav.pageOpened", "task.changed"])
 })
 
@@ -89,7 +109,7 @@ test("a captured task is highlighted, ready for its keys, and C goes back to cap
   await list.expectTasks(["H-1 Fix the tap", "H-2 Bleed the radiators", "H-3 Clear the gutters"])
 })
 
-test("a task captured in a domain's list goes straight into it", async ({ taxa }) => {
+test("a task captured in a domain's list goes straight into it, filed", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   const inbox = await (await taxa.openTab("Matt")).openInbox()
   await inbox.sidebar.openDomain("Home")
@@ -139,46 +159,39 @@ test("finished tasks, done or cancelled, can be found again, and unticked", asyn
   await taxa.expectTask("H-1", { status: TaskStatus.OPEN })
 })
 
-test("capturing in the Inbox straight into a domain", async ({ taxa }) => {
+test("with more than one domain, capture says which a task goes in, and remembers it", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
-  const inbox = await (await taxa.openTab("Matt")).openInbox()
-  await inbox.captureInto("Fix the tap", "H")
-  await inbox.expectFiled("Added H-1 to Home.")
-  await inbox.expectTasks([])
-  await inbox.expectAccessible()
-  await inbox.capture("Clear the gutters")
-  await inbox.expectFiled("Added H-2 to Home.")
-  await inbox.captureInto("Renew passport", "IN")
-  await inbox.expectTasks(["IN-3 Renew passport"])
-  await (await inbox.sidebar.openDomain("Home")).expectTasks(["H-1 Fix the tap", "H-2 Clear the gutters"])
-})
-
-test("the Inbox remembers where quick capture last sent a task", async ({ taxa }) => {
-  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addDomain("Work", "W")
   const tab = await taxa.openTab("Matt")
   const inbox = await tab.openInbox()
-  await inbox.captureInto("Fix the tap", "H")
+  await inbox.captureInto("Plan the quarter", "W")
+  await inbox.expectTasks(["W-1 Plan the quarter"])
+  await inbox.expectAccessible()
+  await inbox.capture("Book the offsite")
+  await inbox.expectTasks(["W-1 Plan the quarter", "W-2 Book the offsite"])
   const again = await tab.openInbox()
-  await again.capture("Clear the gutters")
-  await again.expectFiled("Added H-2 to Home.")
-  await again.expectTasks([])
+  await again.capture("Write the review")
+  await again.expectTasks(["W-1 Plan the quarter", "W-2 Book the offsite", "W-3 Write the review"])
+  await taxa.expectTask("W-3", { inbox: true })
 })
 
-test("a task captured on Today, Soon or Someday is for then, and listed where it was added", async ({ taxa }) => {
+test("a task captured on Today, Soon or Someday is for then, so filed, and listed where it was added", async ({
+  taxa
+}) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Fix the tap", { domain: "H", scheduled: "2026-01-05" })
   const tab = await taxa.openTab("Matt")
   const today = await (await tab.openInbox()).sidebar.openList("Today")
   await today.expectTasks(["H-1 Fix the tap"])
   await (await today.keyboard.addTask("Bleed the radiators")).expectHighlighted("Bleed the radiators")
-  await today.expectTasks(["H-1 Fix the tap", "IN-2 Bleed the radiators"])
-  await taxa.expectTask("IN-2", { scheduled: "2026-01-05", inbox: true })
+  await today.expectTasks(["H-1 Fix the tap", "H-2 Bleed the radiators"])
+  await taxa.expectTask("H-2", { scheduled: "2026-01-05", inbox: false })
   await today.expectAccessible()
 
   const soon = await today.sidebar.openList("Soon")
-  await soon.captureInto("Clear the gutters", "H")
+  await soon.capture("Clear the gutters")
   await soon.expectTasks(["H-3 Clear the gutters"])
-  await taxa.expectTask("H-3", { horizon: Horizon.SOON, scheduled: undefined })
+  await taxa.expectTask("H-3", { horizon: Horizon.SOON, scheduled: undefined, inbox: false })
 
   const someday = await soon.sidebar.openList("Someday")
   await someday.capture("Learn the cello")
@@ -186,7 +199,7 @@ test("a task captured on Today, Soon or Someday is for then, and listed where it
   await taxa.expectTask("H-4", { horizon: Horizon.SOMEDAY })
 })
 
-test("a task captured while planning today goes into the plan", async ({ taxa }) => {
+test("a task captured while planning today goes into the plan, filed", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Fix the tap", { scheduled: "2026-01-05" })
   const today = await (await (await taxa.openTab("Matt")).openInbox()).sidebar.openList("Today")
@@ -194,8 +207,8 @@ test("a task captured while planning today goes into the plan", async ({ taxa })
   await planning.plan.expectPlan(["1 Fix the tap"])
   await planning.capture("Book the dentist")
   await planning.plan.expectPlan(["1 Fix the tap", "2 Book the dentist"])
-  await taxa.expectTask("IN-2", { scheduled: "2026-01-05" })
+  await taxa.expectTask("H-2", { scheduled: "2026-01-05", inbox: false })
   await planning.expectAccessible()
   const planned = await planning.done()
-  await planned.expectTasks(["IN-1 Fix the tap", "IN-2 Book the dentist"])
+  await planned.expectTasks(["H-1 Fix the tap", "H-2 Book the dentist"])
 })

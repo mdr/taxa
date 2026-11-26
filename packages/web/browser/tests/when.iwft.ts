@@ -43,7 +43,7 @@ test("choosing when a task's meant for from its menu in a list, someday ones goi
 test("choosing when a task's meant for on its page, a date taking over from soon", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   await taxa.matt.addTask("Fix the tap")
-  const task = await (await taxa.openTab("Matt")).openTask("IN-1")
+  const task = await (await taxa.openTab("Matt")).openTask("H-1")
   await task.expectWhen(When.ANY_TIME, "When")
 
   await task.setWhen(When.TODAY)
@@ -52,14 +52,14 @@ test("choosing when a task's meant for on its page, a date taking over from soon
   await task.setWhen(When.SOON)
   await task.expectWhen(When.SOON, "Soon")
   await task.expectScheduled("", "Scheduled")
-  await taxa.expectTask("IN-1", { scheduled: undefined, horizon: Horizon.SOON })
+  await taxa.expectTask("H-1", { scheduled: undefined, horizon: Horizon.SOON })
 
   await task.scheduleFor("Tomorrow")
   await task.expectWhen(When.ON_A_DAY, "Tue 6 Jan")
-  await taxa.expectTask("IN-1", { scheduled: "2026-01-06", horizon: undefined })
+  await taxa.expectTask("H-1", { scheduled: "2026-01-06", horizon: undefined })
   await task.setWhen(When.ANY_TIME)
   await task.expectWhen(When.ANY_TIME, "When")
-  await taxa.expectTask("IN-1", { scheduled: undefined, horizon: undefined })
+  await taxa.expectTask("H-1", { scheduled: undefined, horizon: undefined })
 })
 
 test("seeing what's meant for today, soon and someday, across domains", async ({ taxa }) => {

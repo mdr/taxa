@@ -62,7 +62,7 @@ const EMPTY: Record<ListType, { title?: string; text: string }> = {
   [ListType.DOMAIN]: { text: "Nothing to do here. Enjoy it." },
   [ListType.INBOX]: {
     title: "Your Inbox is clear",
-    text: "Capture anything above as it occurs to you, and file it into a domain later."
+    text: "Jot anything down above as it occurs to you. Sort it out later: fill it in, decide when, then file it."
   },
   [ListType.IN_PROGRESS]: {
     title: "Nothing in progress",

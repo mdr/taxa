@@ -1,14 +1,13 @@
-import { INBOX_PREFIX, type Domain } from "@taxa/shared/domains/domain"
+import type { Domain } from "@taxa/shared/domains/domain"
 import type { Task } from "@taxa/shared/tasks/task"
 import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 
-/** The choice that stands for the Inbox: no domain can have its prefix. */
-export const INBOX_CHOICE: string = INBOX_PREFIX
+/** A task's domain, as a choice: its prefix. */
+export const domainChoice = (task: Task, domains: readonly Domain[]): string =>
+  domains.find(({ id }) => id === task.domainId)?.prefix ?? ""
 
-/** Where a task is, as a choice: the Inbox, or its domain's prefix. */
-export const filingChoice = (task: Task, domains: readonly Domain[]): string =>
-  task.inbox ? INBOX_CHOICE : (domains.find(({ id }) => id === task.domainId)?.prefix ?? "")
+/** The change that moves a task to the domain chosen. */
+export const movedRequest = (prefix: string): UpdateTaskRequest => ({ set: { domain: prefix } })
 
-/** The change that puts a task where it was chosen to go. */
-export const filingRequest = (choice: string): UpdateTaskRequest =>
-  choice === INBOX_CHOICE ? { set: { inbox: true } } : { set: { domain: choice } }
+/** The change that files a task in the Inbox, sorted out, or puts a filed one back there. */
+export const filedRequest = (task: Task): UpdateTaskRequest => ({ set: { inbox: !task.inbox } })

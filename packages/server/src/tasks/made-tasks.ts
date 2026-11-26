@@ -76,7 +76,7 @@ const setDeletion = async (tx: Db, caller: Caller, now: Instant, id: TaskId, del
         }
       : { type: ActivityType.TASK_DELETED, changes: { deletedAt: { to: at }, uncreated: { to: true } } }),
     entityId: id,
-    domainId: row.domainId ?? undefined,
+    domainId: row.domainId,
     version
   })
   if (deletion !== Deletion.RESTORE) await stopDeletedTask(tx, id, now)

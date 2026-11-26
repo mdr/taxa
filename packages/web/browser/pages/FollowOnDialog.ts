@@ -23,14 +23,15 @@ export class FollowOnDialog extends PageObject {
     await expect(this.#page.getByTestId(followOnDialogTestIds.from)).toHaveText(`Follows on from ${task}`)
   }
 
-  /** Which domain it'll go in, by name, or Inbox. */
-  async expectPlace(place: string): Promise<void> {
+  /** Which domain it'll go in, by name; none to choose from, with only one. */
+  async expectPlace(place: string | undefined): Promise<void> {
+    if (place === undefined) return expect(this.#page.getByTestId(followOnDialogTestIds.place)).toHaveCount(0)
     await expect(
       this.#page.getByTestId(followOnDialogTestIds.place).and(this.#page.locator('[aria-checked="true"]'))
     ).toHaveText(place)
   }
 
-  /** Puts it in a domain, by name, or the Inbox. */
+  /** Puts it in a domain, by name. */
   async choosePlace(place: string): Promise<void> {
     await this.#page.getByTestId(followOnDialogTestIds.place).filter({ hasText: place }).click()
   }

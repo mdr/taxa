@@ -1,9 +1,7 @@
 import { formatDay } from "@taxa/shared/dates/date-format"
-import { RowMenuEntry } from "./row-menu-entry.ts"
 import { TagChip } from "../../../tags/TagChip.tsx"
 import { sameTag } from "@taxa/shared/tasks/tags"
 import type { Domain } from "@taxa/shared/domains/domain"
-import type { UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
@@ -18,27 +16,14 @@ import { TickBox } from "./TickBox.tsx"
 import { PriorityIcon } from "../../PriorityIcon.tsx"
 import { StatusIcon } from "../../StatusIcon.tsx"
 import { capitalised } from "../../../ui/capitalised.ts"
-import {
-  useCelebrated,
-  useHighlighted,
-  useListSession,
-  useRenaming,
-  useRowMenuOpening,
-  useShownDone
-} from "../list-session-service.ts"
+import { useCelebrated, useHighlighted, useListSession, useRenaming, useShownDone } from "../list-session-service.ts"
 import { TaskChangeType, useTaskChanges, useTaskProblem } from "../../changes/task-changes-service.ts"
 import { RowTitleField } from "./RowTitleField.tsx"
-import { DomainChoice } from "../../filing/DomainChoice.tsx"
+import { FileButton } from "../../filing/FileButton.tsx"
 import { TaskRowMenu } from "./TaskRowMenu.tsx"
 import type { When } from "@taxa/shared/tasks/when"
 import { WhenTag } from "../../when/WhenTag.tsx"
 import { countdown } from "../../../deadlines/deadlines.ts"
-
-/** In the Inbox: the domains to file a task in, and how. */
-export interface Filing {
-  domains: readonly Domain[]
-  file: (task: Task, request: UpdateTaskRequest) => void
-}
 
 /** Statuses a row says, beyond open and the tick of done. */
 const SHOWN_STATUSES: ReadonlySet<TaskStatus> = new Set([
@@ -54,7 +39,7 @@ export const TaskRow = ({
   task,
   today,
   domains,
-  filing,
+  onFile,
   listedBy,
   listedTag,
   countdown: withCountdown,
@@ -64,7 +49,8 @@ export const TaskRow = ({
   today: IsoDate
   /** Where it can be moved to, from its menu. */
   domains: readonly Domain[]
-  filing?: Filing
+  /** In the Inbox: files it, sorted out, from its own button. */
+  onFile?: (task: Task) => void
   /** The When the list is made of, which its rows needn't say. */
   listedBy?: When
   /** The tag the list is made of, which its rows needn't show. */
@@ -105,7 +91,6 @@ export const TaskRow = ({
     }
   }, [highlight, task.id])
   const problem = useTaskProblem(task.id)
-  const opening = useRowMenuOpening(task)
   const done = useShownDone(task)
   const celebrate = useCelebrated(task.id)
   return (
@@ -181,14 +166,8 @@ export const TaskRow = ({
             <TagChip key={name} name={name} />
           ))}
       </span>
-      {filing && task.inbox && (
-        <DomainChoice
-          task={task}
-          domains={filing.domains}
-          testId={taskRowTestIds.domain}
-          opening={opening?.entry === RowMenuEntry.FILE ? opening.seq : undefined}
-          onChoose={(request) => filing.file(task, request)}
-        />
+      {onFile && task.inbox && (
+        <FileButton task={task} testId={taskRowTestIds.file} track="TaskRow.file" onFile={() => onFile(task)} />
       )}
       <span className={styles.ref} data-testid={taskRowTestIds.ref}>
         {task.ref}
