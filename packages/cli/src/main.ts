@@ -15,5 +15,6 @@ process.exitCode = await runCli(process.argv.slice(2), {
   readStdin: () => text(process.stdin),
   now: () => realClock.now(),
   timeZone: timeZone(Intl.DateTimeFormat().resolvedOptions().timeZone),
+  terminal: process.stdout.isTTY ? { columns: process.stdout.columns } : undefined,
   readCredentials: () => readCredentialsFile(credentialsPath(process.env))
 })

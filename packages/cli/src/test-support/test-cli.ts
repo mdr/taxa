@@ -25,13 +25,15 @@ export interface CliRunOptions {
   credentials?: CredentialsFile
   /** More environment, such as TAXA_AS. */
   env?: Record<string, string>
+  /** Printing to a terminal this wide, as a person at one: otherwise to a pipe, as agents do. */
+  terminal?: { columns: number }
 }
 
 /** Runs `taxa` in this process as `caller`, capturing what it prints. */
 export const runTaxaAs = async (
   caller: CliCaller,
   argv: string[],
-  { stdin = "", timeZone = zoneNamed("Europe/London"), credentials, env = {} }: CliRunOptions = {}
+  { stdin = "", timeZone = zoneNamed("Europe/London"), credentials, env = {}, terminal }: CliRunOptions = {}
 ): Promise<CliRun> => {
   let stdout = ""
   let stderr = ""
@@ -42,6 +44,7 @@ export const runTaxaAs = async (
     readStdin: () => Promise.resolve(stdin),
     now: () => caller.clock?.now() ?? Date.UTC(2026, 0, 5, 9),
     timeZone,
+    terminal,
     readCredentials: () => Promise.resolve(credentials)
   })
   return { exitCode, stdout, stderr }

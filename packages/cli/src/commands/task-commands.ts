@@ -15,6 +15,7 @@ import {
 } from "../command.ts"
 import { activityLines } from "../format/activity-format.ts"
 import { taskDetail, taskLines } from "../format/task-format.ts"
+import { taskGroups } from "../format/task-groups.ts"
 import { latestComments } from "../format/comment-format.ts"
 import { recentOccurrences } from "../format/occurrence-format.ts"
 import { readStdinJson, STDIN } from "../input/stdin-json.ts"
@@ -161,7 +162,15 @@ const list: Command = {
     print(
       context,
       tasks.map((task) => linked(context, task)),
-      () => taskLines(tasks, context.today())
+      () =>
+        context.style.styled
+          ? taskGroups(tasks, {
+              today: context.today(),
+              web: context.web,
+              style: context.style,
+              grouped: stringOption(values, "search") === undefined
+            })
+          : taskLines(tasks, context.today())
     )
     return ExitCode.OK
   }

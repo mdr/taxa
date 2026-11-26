@@ -1,4 +1,5 @@
 import { daysMissed } from "@taxa/shared/tasks/when"
+import { confirmation } from "../format/confirmation.ts"
 import { DATE_INPUT_HELP, parseDateInput } from "@taxa/shared/dates/date-input"
 import { ClearableField, type ChangeStatusRequest } from "@taxa/shared/tasks/task-requests"
 import { formatDay } from "@taxa/shared/dates/date-format"
@@ -19,7 +20,7 @@ import { STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 import { ifVersion, VERSION_HELP, VERSION_OPTION } from "../input/version-option.ts"
 
 const changed = (context: CommandContext, task: Task, verb: string): ExitCode => {
-  print(context, linked(context, task), () => `${verb} ${task.ref}  ${task.title}`)
+  print(context, linked(context, task), () => confirmation(verb, task, context))
   return ExitCode.OK
 }
 
@@ -90,7 +91,7 @@ const recorded = async (
   const date = caught?.next ?? task.scheduled
   const missed = caught ? `, after missing ${caught.missed.length === 1 ? "one" : caught.missed.length}` : ""
   const when = date === undefined ? "" : ` for ${formatDay(date, today)}${missed}`
-  print(context, linked(context, moved), () => `${verb} ${moved.ref}${when}${next}  ${moved.title}`)
+  print(context, linked(context, moved), () => confirmation(verb, moved, { ...context, extra: `${when}${next}` }))
   return ExitCode.OK
 }
 

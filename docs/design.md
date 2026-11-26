@@ -409,6 +409,13 @@ the Zod schemas in `shared`.
   default, and an agent with `--as` or `TAXA_AS`, which Claude Code sets
   for its sessions. That labels agents' changes honestly; it isn't a
   boundary, since an agent could pick the person's identity.
+- **`taxa` reads well for both.** Printing to a terminal, it's for a
+  person: tasks under headings (In progress, Today, Tomorrow, Later…),
+  status marks, colour for what needs attention, refs as links to the web
+  app, and lines cut to the terminal's width. Printing to a pipe, as
+  agents' tools do, its output is plain text whose layout doesn't change,
+  and `--json` is for machines. `--color`, `NO_COLOR` and `FORCE_COLOR`
+  choose otherwise.
 - **Assign vs delegate:** people are assigned tasks and stay accountable.
   Agents are delegated tasks to work on.
 - **The activity log** records every change with its actor (a person or an

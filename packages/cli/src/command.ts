@@ -4,6 +4,7 @@ import type { Task } from "@taxa/shared/tasks/task"
 import { taskUrl } from "./format/task-url.ts"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import type { CliIo, ExitCode } from "./cli-io.ts"
+import type { Style } from "./format/style.ts"
 
 export type OptionValues = Record<string, string | boolean | (string | boolean)[] | undefined>
 
@@ -15,6 +16,8 @@ export interface CommandContext {
   /** The web app, where links to tasks go. */
   web: string
   today: () => IsoDate
+  /** Plain for agents, pipes and scripts; styled for a person at a terminal. */
+  style: Style
 }
 
 export interface Command {

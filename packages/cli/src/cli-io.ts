@@ -12,6 +12,8 @@ export interface CliIo {
   now: () => Instant
   /** Where "today" and "friday" are worked out. */
   timeZone: TimeZone
+  /** The terminal printed to, if output goes to one rather than a pipe or file: a person is reading. */
+  terminal?: { columns: number }
   /** The credentials file, or nothing when there's none. */
   readCredentials: () => Promise<CredentialsFile | undefined>
 }

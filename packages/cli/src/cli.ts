@@ -11,6 +11,7 @@ import { COMMENT_COMMANDS } from "./commands/comment-commands.ts"
 import { CHECKLIST_COMMANDS } from "./commands/checklist-commands.ts"
 import { UsageError, type Command } from "./command.ts"
 import { healthCommand } from "./health-command.ts"
+import { colorChoiceOf, PLAIN, styleFor, type Style } from "./format/style.ts"
 import { connectionFrom, CredentialsError, parseCredentials, type Connection } from "./credentials/credentials.ts"
 
 const COMMANDS: Command[] = [
@@ -26,12 +27,13 @@ const GLOBAL_OPTIONS = {
   json: { type: "boolean", default: false },
   server: { type: "string" },
   as: { type: "string" },
+  color: { type: "string" },
   help: { type: "boolean", short: "h", default: false }
 } satisfies ParseArgsOptionsConfig
 
 const width = Math.max(...COMMANDS.map(({ name }) => name.length), "health".length)
 
-const USAGE = `Usage: taxa <command> [arguments] [--json] [--server URL] [--as NAME]
+const USAGE = `Usage: taxa <command> [arguments] [--json] [--server URL] [--as NAME] [--color WHEN]
 
 Commands:
 ${COMMANDS.map(({ name, summary }) => `  ${name.padEnd(width)}  ${summary}`).join("\n")}
@@ -40,7 +42,9 @@ ${COMMANDS.map(({ name, summary }) => `  ${name.padEnd(width)}  ${summary}`).joi
 A task is named by its reference (H-142), its number (142) or its id.
 taxa <command> --help says more about a command.
 
---json prints the API's JSON. Exit codes: 0 OK, 1 failed, 2 bad usage,
+In a terminal, taxa marks and colours what it prints, and cuts lines to fit;
+piped or redirected, it prints plain text. --color auto|always|never says
+otherwise, as do NO_COLOR and FORCE_COLOR. --json prints the API's JSON. Exit codes: 0 OK, 1 failed, 2 bad usage,
 3 the task changed since --if-version, 4 not found.
 
 Environment:
@@ -74,15 +78,24 @@ const PROBLEM_EXIT: Partial<Record<ProblemType, ExitCode>> = {
   [ProblemType.INVALID_REQUEST]: ExitCode.USAGE
 }
 
-const reportApiError = (error: TaxaApiError, json: boolean, io: CliIo): ExitCode => {
+const PROBLEM_HINT: Partial<Record<ProblemType, string>> = {
+  [ProblemType.UNAUTHENTICATED]:
+    "Set TAXA_API_KEY to an API key from taxa add-key, or put it in the credentials file (taxa --help).",
+  [ProblemType.VERSION_CONFLICT]: "Run taxa show to see it as it is now, then try again.",
+  [ProblemType.NOT_FOUND]: "taxa list finds tasks; taxa list --search WORDS, by what they say."
+}
+
+/** What went wrong, and what to try; styled, a cross in red and the hint dimmed. */
+const reportApiError = (error: TaxaApiError, json: boolean, io: CliIo, style: Style): ExitCode => {
   if (json) io.stdout(`${JSON.stringify(error.problem, undefined, 2)}\n`)
-  const hint =
-    error.problem.type === ProblemType.UNAUTHENTICATED
-      ? "\nSet TAXA_API_KEY to an API key from taxa add-key, or put it in the credentials file (taxa --help)."
-      : ""
-  const conflictHint =
-    error.problem.type === ProblemType.VERSION_CONFLICT ? "\nRun taxa show to see it as it is now, then try again." : ""
-  io.stderr(`${error.problem.message}${hint}${conflictHint}\n`)
+  const hint = PROBLEM_HINT[error.problem.type]
+  // The not-found hint is new, and only for people: agents' and scripts' output stays as it was.
+  const shownHint =
+    hint !== undefined && (style.styled || error.problem.type !== ProblemType.NOT_FOUND) ? hint : undefined
+  const message = style.styled ? style.red(`✗ ${error.problem.message}`) : error.problem.message
+  io.stderr(
+    `${message}${shownHint === undefined ? "" : `\n${style.styled ? `  ${style.dim(shownHint)}` : shownHint}`}\n`
+  )
   return PROBLEM_EXIT[error.problem.type] ?? ExitCode.FAILED
 }
 
@@ -104,6 +117,13 @@ const runCommand = async (
     return ExitCode.OK
   }
   const json = parsed.values.json
+  let style: Style
+  try {
+    style = json ? PLAIN : styleFor(colorChoiceOf(parsed.values.color), io.env, io.terminal)
+  } catch (error) {
+    io.stderr(`${messageOf(error)}\n\n${commandUsage(command)}`)
+    return ExitCode.USAGE
+  }
   const { server, apiKey, web } = await connect()
   const client = new TaxaClient({
     baseUrl: server,
@@ -113,7 +133,7 @@ const runCommand = async (
   })
   try {
     return await command.run(
-      { client, io, json, web, today: () => dateIn(io.timeZone, io.now()) },
+      { client, io, json, web, today: () => dateIn(io.timeZone, io.now()), style },
       parsed.values,
       parsed.positionals
     )
@@ -122,7 +142,7 @@ const runCommand = async (
       io.stderr(`${error.message}\n\n${commandUsage(command)}`)
       return ExitCode.USAGE
     }
-    if (error instanceof TaxaApiError) return reportApiError(error, json, io)
+    if (error instanceof TaxaApiError) return reportApiError(error, json, io, style)
     if (error instanceof TypeError && error.message === "fetch failed") {
       io.stderr(`Can't reach the Taxa server at ${server}.\n`)
       return ExitCode.FAILED
