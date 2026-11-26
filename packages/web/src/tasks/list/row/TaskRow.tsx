@@ -32,6 +32,7 @@ import { DomainChoice } from "../../filing/DomainChoice.tsx"
 import { TaskRowMenu } from "./TaskRowMenu.tsx"
 import type { When } from "@taxa/shared/tasks/when"
 import { WhenTag } from "../../when/WhenTag.tsx"
+import { countdown } from "../../../deadlines/deadlines.ts"
 
 /** In the Inbox: the domains to file a task in, and how. */
 export interface Filing {
@@ -56,6 +57,7 @@ export const TaskRow = ({
   filing,
   listedBy,
   listedTag,
+  countdown: withCountdown,
   onDelete
 }: {
   task: Task
@@ -67,6 +69,8 @@ export const TaskRow = ({
   listedBy?: When
   /** The tag the list is made of, which its rows needn't show. */
   listedTag?: string
+  /** Says how long until it's due, or how late it is, as the Deadlines list does. */
+  countdown?: boolean
   /** Deletes it from its menu, with a chance to undo it. */
   onDelete: (task: Task) => void
 }) => {
@@ -168,6 +172,7 @@ export const TaskRow = ({
           <span className={dueClass(task.due, today)}>
             <CalendarClock size={14} aria-hidden />
             Due {formatDay(task.due, today)}
+            {withCountdown && ` · ${countdown(task.due, today)}`}
           </span>
         )}
         {task.tags

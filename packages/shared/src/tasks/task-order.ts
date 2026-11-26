@@ -19,3 +19,6 @@ const started = (task: Task): number => (task.status === TaskStatus.IN_PROGRESS 
 /** The order lists show tasks in: those in progress first, then most urgent, then soonest due, then oldest. */
 export const compareTasks = (a: Task, b: Task): number =>
   started(a) - started(b) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || byDue(a, b) || a.number - b.number
+
+/** The order deadlines are listed in: soonest due first, then as lists have them. */
+export const compareDeadlines = (a: Task, b: Task): number => byDue(a, b) || compareTasks(a, b)

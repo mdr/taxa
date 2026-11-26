@@ -6,12 +6,19 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ## Unreleased
 
+### New
+
+- **Deadlines**, in the sidebar: every task with a due date, soonest first, under Overdue, Today, This week, Next week and each month, each saying how long it has. The sidebar counts those overdue or due within the week, in red when any are overdue. `G D` goes there; in the CLI, `taxa list --due`.
+- Below Today, **Deadlines coming up**: what's overdue or due within the week and not yet planned for today, with + Today on each.
+
 ### Changed
 
+- **Might want attention**, below Today, leaves deadlines to the new box above it.
 - With only one domain, the sidebar has no Domains section or "New domain": just **All tasks**, going to that domain's list. A second domain (`taxa add-domain`) brings the section back.
 
 ### Fixed
 
+- "Due today" on a task's row is a darker amber, easier to read.
 - The favicon and home-screen icon show on the live site: the built web app was missing them.
 
 ## 0.5.0 (2026-11-25)

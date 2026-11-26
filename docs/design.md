@@ -305,10 +305,19 @@ Each time it comes round is an **occurrence**, kept as its history.
   tasks in that order, those it doesn't place after. The plan follows
   today's tasks as they change elsewhere, by an undo or in another tab: a
   task taken out and put back returns to its place.
-- Below Today, **Might want attention** offers what isn't planned for it but
-  is due, overdue, or urgent and lined up for soon, with + Today on each. A
+- Below Today, **Deadlines coming up** offers what's overdue or due within
+  the week and isn't planned for today nor waiting, overdue first, with + Today
+  on each and a link to Deadlines. Below that, **Might want attention** offers
+  what's urgent and lined up for soon. A
   task in Soon for four weeks says so, to ask whether it's still soon or
   someday. Sessions offer today's tasks first, in the order planned.
+- **Deadlines** lists every task with a due date, someday ones too, soonest
+  first, under Overdue, Today, This week, Next week and then each month, each
+  saying how long it has (`in 4 days`, `3 days late`). The sidebar counts
+  those overdue or due within the week, in red when any are overdue; `G D`
+  goes there, and `taxa list --due` lists the same. For deadlines set from
+  outside (bills, renewals, forms) more than for planning: a warning time per
+  task, to bring a long job up earlier, may come later.
 - Other built-in views: **Inbox** (not yet organised), **Upcoming**,
   **Someday**, and per project.
 - **Saved filters** are named queries in the query language, built by

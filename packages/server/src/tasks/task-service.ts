@@ -7,7 +7,7 @@ import { ActivityType, type Activity, type FieldChange } from "@taxa/shared/acti
 import { ProblemType } from "@taxa/shared/api/problem"
 import { dateIn } from "@taxa/shared/dates/plain-date"
 import { taskId as newTaskId, uuidv7, type DomainId, type TaskId, type UserId } from "@taxa/shared/ids"
-import { compareTasks } from "@taxa/shared/tasks/task-order"
+import { compareDeadlines, compareTasks } from "@taxa/shared/tasks/task-order"
 import { hasTag, withoutTags, withTags } from "@taxa/shared/tasks/tags"
 import { appendedNotes } from "@taxa/shared/tasks/notes-append"
 import { matchesSearch, searchResults } from "@taxa/shared/tasks/task-search"
@@ -114,17 +114,21 @@ export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, n
     followsOnId
   })
   const today = dateIn(caller.user.timeZone, now)
-  const whens = parseWhens(query.when)
+  // Deadlines are listed whenever they're for, someday too, unless asked otherwise.
+  const due = query.due === "true"
+  const whens = parseWhens(query.when ?? (due ? Object.values(When).join(",") : undefined))
+  const order = due ? compareDeadlines : compareTasks
   const started = found.filter(
     ({ row }) =>
+      (!due || Boolean(row.due)) &&
       (query.includeNotStarted === "true" || !row.start || row.start <= today) &&
       (query.tag === undefined || hasTag(row.tags, query.tag)) &&
       whens.has(whenOf({ scheduled: row.scheduled ?? undefined, horizon: row.horizon ?? undefined }, today))
   )
   const { search } = query
   if (search === undefined) {
-    const listed = (await tasksOf(db, started)).sort(compareTasks)
-    return whens.size === 1 && whens.has(When.TODAY)
+    const listed = (await tasksOf(db, started)).sort(order)
+    return !due && whens.size === 1 && whens.has(When.TODAY)
       ? inPlanOrder(listed, (await getDayPlan(db, caller, today)).taskIds)
       : listed
   }
@@ -133,7 +137,7 @@ export const listTasks = async (db: Db, caller: Caller, query: ListTasksQuery, n
     started.map(({ row }) => row.id)
   )
   const matching = started.filter(({ row }) => matchesSearch({ ...row, comments: comments.get(row.id) }, search))
-  return searchResults((await tasksOf(db, matching)).sort(compareTasks), search, (task) => comments.get(task.id) ?? [])
+  return searchResults((await tasksOf(db, matching)).sort(order), search, (task) => comments.get(task.id) ?? [])
 }
 
 /** The live tasks among these that the caller can see, by id. */

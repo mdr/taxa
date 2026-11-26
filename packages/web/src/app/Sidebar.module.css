@@ -82,6 +82,12 @@
   font-weight: 600;
 }
 
+/* Deadlines overdue. */
+.overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+
 /* Darkened towards the text, to read at this size. */
 .over {
   color: color-mix(in srgb, var(--warning) 65%, var(--text));

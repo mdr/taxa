@@ -36,8 +36,9 @@
   white-space: nowrap;
 }
 
+/* Darkened towards the text, to read at this size. */
 .dueToday {
-  color: var(--warning);
+  color: color-mix(in srgb, var(--warning) 65%, var(--text));
 }
 
 .overdue {

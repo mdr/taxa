@@ -15,5 +15,7 @@ export const sidebarTestIds = {
   tag: "Sidebar.tag",
   tagCount: "Sidebar.tagCount",
   bin: "Sidebar.bin",
-  shortcuts: "Sidebar.shortcuts"
+  shortcuts: "Sidebar.shortcuts",
+  deadlines: "Sidebar.deadlines",
+  deadlinesCount: "Sidebar.deadlinesCount"
 }

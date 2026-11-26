@@ -1,0 +1,19 @@
+.name,
+.overdue {
+  margin: 1.25rem 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.overdue {
+  color: var(--danger);
+}
+
+.tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

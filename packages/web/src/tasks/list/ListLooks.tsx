@@ -1,7 +1,7 @@
 import type { Domain } from "@taxa/shared/domains/domain"
 import { TaskStatus } from "@taxa/shared/tasks/task"
 import { When } from "@taxa/shared/tasks/when"
-import { Inbox, Tag } from "lucide-react"
+import { CalendarClock, Inbox, Tag } from "lucide-react"
 import { Link } from "wouter"
 import { taskListPageTestIds } from "./TaskListPageTestIds.ts"
 import { PLAN_TODAY_PATH } from "../when/when-paths.ts"
@@ -18,7 +18,8 @@ const HEADINGS: Record<ListType, string | undefined> = {
   [ListType.TODAY]: "Today",
   [ListType.SOON]: "Soon",
   [ListType.SOMEDAY]: "Someday",
-  [ListType.TAG]: undefined
+  [ListType.TAG]: undefined,
+  [ListType.DEADLINES]: "Deadlines"
 }
 
 /** What a list is called: a domain by its name, once known. */
@@ -44,6 +45,8 @@ export const ListIcon = ({ list, domain }: { list: TaskList; domain: Domain | un
       return <Inbox size={22} className={styles.icon} aria-hidden />
     case ListType.TAG:
       return <Tag size={22} className={styles.icon} aria-hidden />
+    case ListType.DEADLINES:
+      return <CalendarClock size={22} className={styles.icon} aria-hidden />
     case ListType.IN_PROGRESS:
       return <StatusIcon status={TaskStatus.IN_PROGRESS} size={22} />
     case ListType.TODAY:
@@ -80,6 +83,10 @@ const EMPTY: Record<ListType, { title?: string; text: string }> = {
   [ListType.SOMEDAY]: {
     title: "No somedays",
     text: "Things you might do one day go here, out of sight until you look."
+  },
+  [ListType.DEADLINES]: {
+    title: "No deadlines",
+    text: "Give a task a due date and it shows here, soonest first, until it's done."
   }
 }
 

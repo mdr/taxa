@@ -126,6 +126,7 @@ const list: Command = {
   --search WORDS        Only those with every word in their title, notes, tags, checklist or comments, best matches first
   --follows-on TASK     Only those that follow on from this task
   --status LIST         Only these statuses, e.g. done or open,waiting (default: open, in progress, waiting)
+  --due                 Only those with a due date, soonest due first, someday ones too
   --when LIST           Only these, e.g. today or soon,someday (today, on a day, soon, any time, someday;
                         default: all but someday)
   --all                 Include tasks whose start date is still to come, and someday ones
@@ -138,6 +139,7 @@ const list: Command = {
     search: { type: "string" },
     "follows-on": { type: "string" },
     status: { type: "string" },
+    due: { type: "boolean" },
     when: { type: "string" },
     all: { type: "boolean" },
     deleted: { type: "boolean" }
@@ -153,6 +155,7 @@ const list: Command = {
       followsOn: stringOption(values, "follows-on"),
       includeNotStarted: values["all"] === true ? "true" : undefined,
       when: values["all"] === true ? ALL_WHENS : stringOption(values, "when")?.toUpperCase().replaceAll(" ", "_"),
+      due: values["due"] === true ? "true" : undefined,
       deleted: values["deleted"] === true ? "true" : undefined
     })
     print(

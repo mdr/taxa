@@ -2,6 +2,7 @@ import { MENU_KEY } from "./command-menu-service.ts"
 import { SESSION_PATH } from "../sessions/session-paths.ts"
 import { IN_PROGRESS_PATH } from "../tasks/in-progress.ts"
 import { BIN_PATH } from "../tasks/bin/bin-path.ts"
+import { DEADLINES_PATH } from "../deadlines/deadlines.ts"
 import { PLAN_TODAY_PATH, SOMEDAY_PATH, SOON_PATH, TODAY_PATH } from "../tasks/when/when-paths.ts"
 import type { UndoActions } from "../undo/undo-service.ts"
 import { FocusTarget, ShortcutGroup, type Shortcut, type ShortcutActions } from "./shortcut-service.ts"
@@ -13,6 +14,7 @@ import { FocusTarget, ShortcutGroup, type Shortcut, type ShortcutActions } from 
 const GO_TO: readonly { key: string; description: string; path: string }[] = [
   { key: "t", description: "Today", path: TODAY_PATH },
   { key: "s", description: "Soon", path: SOON_PATH },
+  { key: "d", description: "Deadlines", path: DEADLINES_PATH },
   { key: "i", description: "Inbox", path: "/" },
   { key: "p", description: "In progress", path: IN_PROGRESS_PATH },
   { key: "n", description: "Session", path: SESSION_PATH },

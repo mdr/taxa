@@ -30,6 +30,10 @@ import { useTasks } from "../task-queries.ts"
 import { EmptyList, ListIcon, listHeading, listWhen } from "./ListLooks.tsx"
 import { capturesWhen, isHome, listQuery, ListType, type TaskList } from "./task-list.ts"
 import { openedMemoryFor } from "./opened-memory.ts"
+import { DeadlineGroups } from "../../deadlines/DeadlineGroups.tsx"
+import type { Domain } from "@taxa/shared/domains/domain"
+import type { IsoDate } from "@taxa/shared/dates/plain-date"
+import { DeadlinesComingUp } from "../../deadlines/DeadlinesComingUp.tsx"
 
 /** Finds tasks in the list as you type; Escape clears it and leaves. */
 const ListSearch = ({
@@ -61,6 +65,45 @@ const ListSearch = ({
     />
   </label>
 )
+
+/** The tasks listed: one list, or for Deadlines, under when they're due. */
+const ShownTasks = ({
+  list,
+  tasks,
+  grouped,
+  today,
+  domains,
+  filing,
+  onDelete
+}: {
+  list: TaskList
+  tasks: readonly Task[]
+  grouped: boolean
+  today: IsoDate
+  domains: readonly Domain[]
+  filing: Filing | undefined
+  onDelete: (task: Task) => void
+}) =>
+  grouped ? (
+    <div data-testid={taskListPageTestIds.tasks}>
+      <DeadlineGroups tasks={tasks} today={today} domains={domains} onDelete={onDelete} />
+    </div>
+  ) : (
+    <ul className={styles.tasks} data-testid={taskListPageTestIds.tasks}>
+      {tasks.map((task) => (
+        <TaskRow
+          key={task.id}
+          task={task}
+          today={today}
+          domains={domains}
+          filing={filing}
+          listedBy={listWhen(list)}
+          listedTag={list.type === ListType.TAG ? list.name : undefined}
+          onDelete={onDelete}
+        />
+      ))}
+    </ul>
+  )
 
 /** A list of tasks: the Inbox, a domain's, or everything in progress. */
 export const TaskListPage = ({ list }: { list: TaskList }) => {
@@ -173,20 +216,15 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
             <EmptyList list={list} />
           </div>
         ) : (
-          <ul className={styles.tasks} data-testid={taskListPageTestIds.tasks}>
-            {shown?.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                today={today}
-                domains={domains.data ?? []}
-                filing={filing}
-                listedBy={listWhen(list)}
-                listedTag={list.type === ListType.TAG ? list.name : undefined}
-                onDelete={remove}
-              />
-            ))}
-          </ul>
+          <ShownTasks
+            list={list}
+            tasks={shown ?? []}
+            grouped={list.type === ListType.DEADLINES && !search}
+            today={today}
+            domains={domains.data ?? []}
+            filing={filing}
+            onDelete={remove}
+          />
         )}
         {earlierFound.length > 0 && (
           <div className={styles.completed}>
@@ -223,6 +261,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
             )}
           </div>
         )}
+        {list.type === ListType.TODAY && !search && <DeadlinesComingUp />}
         {list.type === ListType.TODAY && !search && <TodayAttention />}
         {undoable && <UndoToast task={undoable} undoes={undoes} />}
       </section>

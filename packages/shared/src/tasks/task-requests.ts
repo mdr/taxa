@@ -116,6 +116,8 @@ export const ListTasksQuerySchema = z.object({
   followsOn: z.string().optional(),
   /** Words to find in a task's title, notes, tags or comments: each must be in one of them. Best matches first. */
   search: z.string().max(200).optional(),
+  /** true for only the tasks with a due date, soonest due first, someday ones too unless `when` says otherwise. */
+  due: z.enum(["true", "false"]).optional(),
   /** true for the deleted tasks only, the last deleted first, whatever their status or when they're for. */
   deleted: z.enum(["true", "false"]).optional()
 })

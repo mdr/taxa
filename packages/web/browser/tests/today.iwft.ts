@@ -17,25 +17,23 @@ test("Today says what's been carried over, and offers what might want doing toda
   await today.expectTasks(["H-1 Fix the tap", "H-2 Send the quote"])
   await today.expectHighlights("Fix the tap", "")
   await today.expectHighlights("Send the quote", "Carried over from Fri 2 Jan")
-  await today.attention.expectOffered([
+  await today.deadlines.expectOffered([
     "Pay the bill: Overdue since Fri 2 Jan",
     "Book the MOT: Overdue since Sun 4 Jan",
     "Renew the insurance: Due today"
   ])
+  await today.attention.expectOffered(["Call Mum: Soon · urgent"])
   await today.expectAccessible()
 
-  await today.attention.planForToday("Book the MOT")
+  await today.deadlines.planForToday("Book the MOT")
   // With no order planned, today's tasks come most pressing first.
   await today.expectTasks(["H-6 Book the MOT", "H-1 Fix the tap", "H-2 Send the quote"])
   await taxa.expectTask("H-6", { scheduled: "2026-01-05" })
-  await today.attention.expectOffered([
-    "Pay the bill: Overdue since Fri 2 Jan",
-    "Renew the insurance: Due today",
-    "Call Mum: Soon · urgent"
-  ])
+  await today.deadlines.expectOffered(["Pay the bill: Overdue since Fri 2 Jan", "Renew the insurance: Due today"])
 
-  await today.attention.planForToday("Pay the bill")
-  await today.attention.planForToday("Renew the insurance")
+  await today.deadlines.planForToday("Pay the bill")
+  await today.deadlines.planForToday("Renew the insurance")
+  await today.deadlines.expectNothingOffered()
   await today.attention.planForToday("Call Mum")
   await today.attention.expectNothingOffered()
 })
@@ -43,9 +41,9 @@ test("Today says what's been carried over, and offers what might want doing toda
 test("Today's box points to Plan today when there's more than it shows", async ({ taxa }) => {
   await taxa.matt.addDomain("Home", "H")
   for (const title of ["One", "Two", "Three", "Four"])
-    await taxa.matt.addTask(title, { domain: "H", due: "2026-01-05" })
+    await taxa.matt.addTask(title, { domain: "H", horizon: Horizon.SOON, priority: Priority.URGENT })
   const today = await (await taxa.openTab("Matt")).openInbox().then((inbox) => inbox.sidebar.openList("Today"))
-  await today.attention.expectOffered(["One: Due today", "Two: Due today", "Three: Due today"])
+  await today.attention.expectOffered(["One: Soon · urgent", "Two: Soon · urgent", "Three: Soon · urgent"])
   const planning = await today.attention.reviewAll(4)
   await planning.plan.expectSuggestions(["One", "Two", "Three", "Four"])
 })

@@ -18,12 +18,14 @@ import { SESSION_PATH } from "../sessions/session-paths.ts"
 import { SessionPlanContext, SessionPlanService } from "../sessions/plan/session-plan-service.ts"
 import { sessionChanged } from "../sessions/session-queries.ts"
 import { realClock } from "@taxa/shared/clock"
+import { DEADLINES_PATH } from "../deadlines/deadlines.ts"
 
 const INBOX_LIST: TaskList = { type: ListType.INBOX }
 const IN_PROGRESS_LIST: TaskList = { type: ListType.IN_PROGRESS }
 const TODAY_LIST: TaskList = { type: ListType.TODAY }
 const SOON_LIST: TaskList = { type: ListType.SOON }
 const SOMEDAY_LIST: TaskList = { type: ListType.SOMEDAY }
+const DEADLINES_LIST: TaskList = { type: ListType.DEADLINES }
 import { useDomains } from "../domains/domain-queries.ts"
 import { Onboarding } from "../onboarding/Onboarding.tsx"
 import { problemMessage } from "../api/problem-message.ts"
@@ -85,6 +87,9 @@ const Pages = () => (
     </Route>
     <Route path={SOMEDAY_PATH}>
       <TaskListPage key="SOMEDAY" list={SOMEDAY_LIST} />
+    </Route>
+    <Route path={DEADLINES_PATH}>
+      <TaskListPage key="DEADLINES" list={DEADLINES_LIST} />
     </Route>
     <Route path="/domains/:prefix">
       {({ prefix }) => <TaskListPage key={prefix} list={{ type: ListType.DOMAIN, prefix }} />}

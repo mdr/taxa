@@ -1,4 +1,4 @@
-import { Inbox, Keyboard, Layers, Tag, Timer, Trash2 } from "lucide-react"
+import { CalendarClock, Inbox, Keyboard, Layers, Tag, Timer, Trash2 } from "lucide-react"
 import { tagPath } from "../tags/tag-paths.ts"
 import { useTags } from "../tags/tag-queries.ts"
 import { Link, useLocation } from "wouter"
@@ -25,6 +25,8 @@ import { useCurrentSession } from "../sessions/session-queries.ts"
 import { SESSION_PATH } from "../sessions/session-paths.ts"
 import { shortLeft } from "../sessions/session-text.ts"
 import { useNow } from "../sessions/use-now.ts"
+import { DEADLINES_PATH, isComingUp } from "../deadlines/deadlines.ts"
+import { useToday } from "../dates/use-today.ts"
 
 /** Time left on the task under way, or how far over it's run. */
 const SessionLeft = ({ session }: { session: Session }) => {
@@ -71,6 +73,35 @@ const ListLink = ({
       {count > 0 && (
         <span className={styles.count} data-testid={countTestId}>
           {count}
+        </span>
+      )}
+    </Link>
+  )
+}
+
+/** Deadlines, with how many are overdue or due within the week, in red if any are overdue. */
+const DeadlinesLink = () => {
+  const [location] = useLocation()
+  const today = useToday()
+  const soon = (useTasks({ due: "true" }).data ?? []).filter((task) => isComingUp(task, today))
+  const overdue = soon.filter(({ due }) => due !== undefined && due < today).length
+  return (
+    <Link
+      href={DEADLINES_PATH}
+      className={styles.link}
+      aria-current={location === DEADLINES_PATH ? "page" : undefined}
+      data-testid={sidebarTestIds.deadlines}
+    >
+      <CalendarClock size={16} className={styles.linkIcon} aria-hidden />
+      <span className={styles.name}>Deadlines</span>
+      {soon.length > 0 && (
+        <span
+          className={`${styles.count} ${overdue > 0 ? styles.overdue : ""}`}
+          aria-label={`${soon.length} due within a week${overdue > 0 ? `, ${overdue} overdue` : ""}`}
+          data-testid={sidebarTestIds.deadlinesCount}
+          data-overdue={overdue > 0}
+        >
+          {soon.length}
         </span>
       )}
     </Link>
@@ -214,6 +245,7 @@ export const Sidebar = () => {
         testId={sidebarTestIds.soon}
         countTestId={sidebarTestIds.soonCount}
       />
+      <DeadlinesLink />
       <Link href="/" className={styles.link} aria-current={current("/")} data-testid={sidebarTestIds.inbox}>
         <Inbox size={16} className={styles.linkIcon} aria-hidden />
         <span className={styles.name}>Inbox</span>

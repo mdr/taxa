@@ -110,6 +110,16 @@ describe("taxa list and show", () => {
     expect(started.url).toBe("http://localhost:5173/tasks/H-1")
   })
 
+  it("lists deadlines with --due: tasks with a due date, soonest first", async ({ server }) => {
+    const matt = await mattAtHome(server)
+    await matt.addTask("Fix the tap", { domain: "H", priority: Priority.URGENT, due: "2026-02-01" })
+    await matt.addTask("Renew passport", { domain: "M", horizon: Horizon.SOMEDAY, due: "2026-01-09" })
+    await matt.addTask("Tidy the shed", { domain: "H" })
+    expect((await taxa(server, matt, "list", "--due")).stdout).toBe(
+      "M-2  Renew passport  (due Fri 9 Jan)\nH-1  Fix the tap  (urgent, due Sun 1 Feb)\n"
+    )
+  })
+
   it("lists finished tasks when asked", async ({ server }) => {
     const matt = await mattAtHome(server)
     const { ref } = await matt.addTask("Renew passport")

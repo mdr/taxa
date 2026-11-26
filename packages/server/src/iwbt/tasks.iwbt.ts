@@ -171,6 +171,18 @@ describe("listing tasks", () => {
     await expectProblem(matt.client.tasks({ when: "LATER" }), ProblemType.INVALID_REQUEST)
   })
 
+  it("lists deadlines: only tasks with a due date, soonest first, someday ones too", async ({ server }) => {
+    const matt = await mattWithDomains(server)
+    await matt.addTask("Urgent, due later", { priority: Priority.URGENT, due: "2026-02-01" })
+    await matt.addTask("One day, due soon", { horizon: Horizon.SOMEDAY, due: "2026-01-09" })
+    await matt.addTask("Overdue, today's", { scheduled: "2026-01-05", due: "2026-01-02" })
+    await matt.addTask("No deadline", { priority: Priority.URGENT })
+    const titles = async (query: ListTasksQuery): Promise<string[]> =>
+      (await matt.client.tasks(query)).map(({ title }) => title)
+    expect(await titles({ due: "true" })).toEqual(["Overdue, today's", "One day, due soon", "Urgent, due later"])
+    expect(await titles({ due: "true", when: "TODAY" })).toEqual(["Overdue, today's"])
+  })
+
   it("keeps when a task was put in soon or someday, until it comes out", async ({ server }) => {
     const matt = await mattWithDomains(server)
     const started = new Date(server.clock.now()).toISOString()

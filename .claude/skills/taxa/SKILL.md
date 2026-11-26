@@ -44,6 +44,7 @@ taxa list --status done,cancelled --json
 taxa list --search "council tax" --json  # every word in the title, notes, tags or comments
 taxa list --tag "Life Admin" --json
 taxa list --follows-on H-142 --json  # what H-142 led to
+taxa list --due --json              # deadlines: only tasks with a due date, soonest first, someday ones too
 taxa show H-142 --json              # one task, everything about it
 taxa show H-142                     # readable, with what it came from and led to, and the latest comments
 taxa comments H-142                 # what's happened on it, oldest first

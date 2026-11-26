@@ -4,5 +4,5 @@ export const todayAttentionTestIds = {
   title: "TodayAttention.title",
   reason: "TodayAttention.reason",
   add: "TodayAttention.add",
-  reviewAll: "TodayAttention.reviewAll"
+  more: "TodayAttention.more"
 }

@@ -10,6 +10,8 @@ import { TodayAttention } from "./TodayAttention.ts"
 import { FollowOnDialog } from "./FollowOnDialog.ts"
 import { quickCaptureTestIds } from "../../src/tasks/list/QuickCaptureTestIds.ts"
 import { taskListPageTestIds } from "../../src/tasks/list/TaskListPageTestIds.ts"
+import { deadlinesComingUpTestIds } from "../../src/deadlines/DeadlinesComingUpTestIds.ts"
+import { deadlineGroupsTestIds } from "../../src/deadlines/DeadlineGroupsTestIds.ts"
 import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
 import { UndoNotice } from "./UndoNotice.ts"
 import { undoToastTestIds } from "../../src/tasks/list/UndoToastTestIds.ts"
@@ -26,12 +28,15 @@ export class TaskListPage extends PageObject {
   readonly undoNotice: UndoNotice
   /** On Today: what might want planning for it. */
   readonly attention: TodayAttention
+  /** On Today: deadlines overdue or due within the week. */
+  readonly deadlines: TodayAttention
 
   constructor(page: Page) {
     super()
     this.#page = page
     this.sidebar = new Sidebar(page)
     this.attention = new TodayAttention(page)
+    this.deadlines = new TodayAttention(page, deadlinesComingUpTestIds)
     this.keyboard = new Keyboard(page)
     this.undoNotice = new UndoNotice(page)
   }
@@ -108,6 +113,19 @@ export class TaskListPage extends PageObject {
       return
     }
     await this.#expectRows(this.#page.getByTestId(taskListPageTestIds.tasks), tasks)
+  }
+
+  /** The Deadlines list: each group's name, with its tasks as `ref title`. */
+  async expectDeadlines(groups: [string, string[]][]): Promise<void> {
+    const shown = this.#page.getByTestId(deadlineGroupsTestIds.group)
+    await expect
+      .poll(() => shown.evaluateAll((elements) => elements.map((group) => group.dataset["group"])))
+      .toEqual(groups.map(([name]) => name))
+    for (const [name, tasks] of groups)
+      await this.#expectRows(
+        this.#page.locator(`[data-testid="${deadlineGroupsTestIds.group}"][data-group="${name}"]`),
+        tasks
+      )
   }
 
   async expectHighlights(title: string, highlights: string): Promise<void> {

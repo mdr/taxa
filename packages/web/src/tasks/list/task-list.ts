@@ -9,7 +9,8 @@ export enum ListType {
   TODAY = "TODAY",
   SOON = "SOON",
   SOMEDAY = "SOMEDAY",
-  TAG = "TAG"
+  TAG = "TAG",
+  DEADLINES = "DEADLINES"
 }
 
 interface InboxList {
@@ -39,7 +40,12 @@ interface TagList {
   name: string
 }
 
-export type TaskList = InboxList | DomainList | InProgressList | WhenList | TagList
+/** Everything you can see with a due date, soonest first, across the Inbox and every domain. */
+interface DeadlinesList {
+  type: ListType.DEADLINES
+}
+
+export type TaskList = InboxList | DomainList | InProgressList | WhenList | TagList | DeadlinesList
 
 export const listQuery = (list: TaskList): ListTasksQuery => {
   switch (list.type) {
@@ -57,6 +63,8 @@ export const listQuery = (list: TaskList): ListTasksQuery => {
       return { when: When.SOMEDAY }
     case ListType.TAG:
       return { tag: list.name }
+    case ListType.DEADLINES:
+      return { due: "true" }
   }
 }
 

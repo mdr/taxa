@@ -81,6 +81,21 @@ export class Sidebar extends PageObject {
     return page
   }
 
+  async openDeadlines(): Promise<TaskListPage> {
+    await this.#page.getByTestId(sidebarTestIds.deadlines).click()
+    const page = new TaskListPage(this.#page)
+    await page.expectHeading("Deadlines")
+    return page
+  }
+
+  /** How many deadlines are overdue or due within the week, as the sidebar shows, and whether it says some are overdue. */
+  async expectDeadlinesCount(count: number, overdue = false): Promise<void> {
+    const shown = this.#page.getByTestId(sidebarTestIds.deadlinesCount)
+    if (count === 0) return expect(shown).toHaveCount(0)
+    await expect(shown).toHaveText(String(count))
+    await expect(shown).toHaveAttribute("data-overdue", String(overdue))
+  }
+
   async openInProgress(): Promise<TaskListPage> {
     await this.#page.getByTestId(sidebarTestIds.inProgress).click()
     return new TaskListPage(this.#page)

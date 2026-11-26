@@ -17,7 +17,16 @@ test("adding tasks and moving between lists from the keyboard", async ({ taxa })
 
   // G shows the keys that can come next; Escape or a click elsewhere cancels it.
   const going = await work.keyboard.startGoingTo()
-  await going.expectOffered(["T Today", "S Soon", "I Inbox", "P In progress", "N Session", "M Someday", "B Bin"])
+  await going.expectOffered([
+    "T Today",
+    "S Soon",
+    "D Deadlines",
+    "I Inbox",
+    "P In progress",
+    "N Session",
+    "M Someday",
+    "B Bin"
+  ])
   await going.expectAccessible()
   await going.cancel()
   await going.expectGone()
@@ -68,6 +77,7 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Redo what was undone ⌘⇧Z",
     "Today G then T",
     "Soon G then S",
+    "Deadlines G then D",
     "Inbox G then I",
     "In progress G then P",
     "Session G then N",
