@@ -6,6 +6,8 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ## Unreleased
 
+## 0.7.0 (2026-11-26)
+
 ### New
 
 - The sidebar says which version of Taxa you're using, such as "Taxa 0.6.0"; hover over it for the exact build.
