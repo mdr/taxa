@@ -120,3 +120,19 @@ export const cut = (text: string, room: number): string => {
     .join("")
     .trimEnd()}…`
 }
+
+/** Plain text wrapped at word breaks to fit `width`, each line after the first starting with `indent`. */
+export const wrap = (text: string, width: number | undefined, indent = ""): string => {
+  if (width === undefined) return text
+  const lines: string[] = []
+  let line = ""
+  for (const word of text.split(" ")) {
+    const next = line === "" ? word : `${line} ${word}`
+    if (line !== "" && shownLength(next) > width - indent.length) {
+      lines.push(line)
+      line = word
+    } else line = next
+  }
+  lines.push(line)
+  return lines.join(`\n${indent}`)
+}

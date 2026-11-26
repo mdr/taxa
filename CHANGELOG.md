@@ -8,7 +8,7 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ### New
 
-- **`taxa` in colour.** In a terminal, `taxa list` groups tasks under In progress, Waiting, Today, Tomorrow, Later and Someday, with a mark for each one's status, overdue in red, due today in amber, urgent and high marked, and lines cut to fit the window. A task's ref is a link to it in the web app, in terminals that support links. Changes say what they did with the task's mark and colour, and errors are in red with what to try next. Agents, pipes and scripts get the plain text they always have; `--color auto|always|never`, `NO_COLOR` and `FORCE_COLOR` choose otherwise.
+- **`taxa` in colour.** In a terminal, `taxa list` groups tasks under In progress, Waiting, Today, Tomorrow, Later and Someday, with a mark for each one's status, overdue in red, due today in amber, urgent and high marked, and lines cut to fit the window. A task's ref is a link to it in the web app, in terminals that support links. `taxa show` puts the title first, its status, domain, priority and tags on one line under it, when it's planned and due on the next, the checklist as a progress bar and ticks, the notes drawn from their Markdown, and the latest comment. Changes say what they did with the task's mark and colour, and errors are in red with what to try next. Agents, pipes and scripts get the plain text they always have; `--color auto|always|never`, `NO_COLOR` and `FORCE_COLOR` choose otherwise.
 
 ## 0.7.0 (2026-11-26)
 

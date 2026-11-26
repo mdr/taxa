@@ -410,7 +410,8 @@ the Zod schemas in `shared`.
   for its sessions. That labels agents' changes honestly; it isn't a
   boundary, since an agent could pick the person's identity.
 - **`taxa` reads well for both.** Printing to a terminal, it's for a
-  person: tasks under headings (In progress, Today, Tomorrow, Later…),
+  person: tasks under headings (In progress, Today, Tomorrow, Later…), a
+  task's facts on a line under its title with its checklist as a bar,
   status marks, colour for what needs attention, refs as links to the web
   app, and lines cut to the terminal's width. Printing to a pipe, as
   agents' tools do, its output is plain text whose layout doesn't change,

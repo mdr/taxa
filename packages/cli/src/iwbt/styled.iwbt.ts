@@ -71,3 +71,29 @@ describe("taxa for a person at a terminal", () => {
     expect(stderr).toContain("--color is auto, always or never")
   })
 })
+
+describe("taxa show for a person at a terminal", () => {
+  const it = useInProcessServer()
+
+  it("shows the title, its facts on a line, and the checklist, and pipes get the old layout", async ({ server }) => {
+    const matt = await server.user("Matt")
+    await matt.addDomain("Home", "H")
+    await matt.addTask("Give to charity", { domain: "H", inbox: false, checklist: ["Oxfam", "Shelter"] })
+    await taxa(server, matt, ["check", "H-1", "1"])
+
+    const { stdout } = await taxa(server, matt, ["show", "H-1"], AT_A_TERMINAL)
+    expect(read(stdout)).toBe(
+      [
+        "H-1  Give to charity",
+        "◯ open · Home",
+        "",
+        `Checklist  ${"━".repeat(12)}${"─".repeat(12)} 1/2`,
+        "  1 ✓ Oxfam",
+        "  2 ☐ Shelter",
+        ""
+      ].join("\n")
+    )
+    const piped = await taxa(server, matt, ["show", "H-1"])
+    expect(piped.stdout).toContain("Status    open\nDomain    Home\n")
+  })
+})

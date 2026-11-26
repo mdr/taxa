@@ -16,6 +16,7 @@ import {
 import { activityLines } from "../format/activity-format.ts"
 import { taskDetail, taskLines } from "../format/task-format.ts"
 import { taskGroups } from "../format/task-groups.ts"
+import { taskCard } from "../format/task-card.ts"
 import { latestComments } from "../format/comment-format.ts"
 import { recentOccurrences } from "../format/occurrence-format.ts"
 import { readStdinJson, STDIN } from "../input/stdin-json.ts"
@@ -48,23 +49,19 @@ const showTask = async (context: CommandContext, task: Task): Promise<void> => {
     task.repeat ? context.client.occurrences(task.id) : []
   ])
   const shown = linked(context, task)
-  print(
-    context,
-    shown,
-    () =>
-      taskDetail(
-        task,
-        domains.find(({ id }) => id === task.domainId),
-        context.today(),
-        shown.url,
-        {
-          followsOn,
-          ledTo
-        }
-      ) +
-      recentOccurrences(occurrences, context.today()) +
+  print(context, shown, () => {
+    const domain = domains.find(({ id }) => id === task.domainId)
+    const today = context.today()
+    if (context.style.styled) {
+      const card = { today, timeZone: context.io.timeZone, web: context.web, style: context.style }
+      return taskCard(task, domain, { followsOn, ledTo }, comments, card) + recentOccurrences(occurrences, today)
+    }
+    return (
+      taskDetail(task, domain, today, shown.url, { followsOn, ledTo }) +
+      recentOccurrences(occurrences, today) +
       latestComments(comments, task.ref, context.io.timeZone)
-  )
+    )
+  })
 }
 
 /** Says what was added, and where to find it. */
