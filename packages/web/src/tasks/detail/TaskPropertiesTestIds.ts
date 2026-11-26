@@ -8,7 +8,6 @@ export const taskPropertiesTestIds = {
   when: "TaskProperties.when",
   repeat: "TaskProperties.repeat",
   estimate: "TaskProperties.estimate",
-  energy: "TaskProperties.energy",
   inProgressBy: "TaskProperties.inProgressBy",
   waiting: "TaskProperties.waiting",
   cancelledReason: "TaskProperties.cancelledReason"

@@ -7,7 +7,7 @@ import { formatEstimate } from "@taxa/shared/tasks/estimate"
 import type { Task } from "@taxa/shared/tasks/task"
 import { taskHighlights } from "@taxa/shared/tasks/task-highlights"
 import { checklistText } from "./checklist-format.ts"
-import { ENERGY_TEXT, HORIZON_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
+import { HORIZON_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 
 /** One line per task, references lined up. */
 export const taskLines = (tasks: Task[], today: IsoDate): string => {
@@ -65,7 +65,6 @@ export const taskDetail = (
         `${repeatText(task.repeat)}; missed days ${missedDaysOf(task.repeat) === MissedDays.SKIP ? "skipped" : "carried over"}`
     ),
     ...row("Estimate", task.estimateMinutes === undefined ? undefined : formatEstimate(task.estimateMinutes)),
-    ...row("Energy", task.energy && ENERGY_TEXT[task.energy]),
     ...row("Horizon", task.horizon && HORIZON_TEXT[task.horizon]),
     ...row("Tags", task.tags.length > 0 ? task.tags.join(", ") : undefined),
     ...row("Came from", links.followsOn && named(links.followsOn)),

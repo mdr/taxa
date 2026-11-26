@@ -17,6 +17,7 @@ them at the top of its release notes. See `docs/releasing.md`.
 ### Changed
 
 - **The Inbox** is for jotting things down to sort out later. Every task now goes in a domain from the start, with that domain's ref (`H-7`, no more `IN-7`), and waits in your Inbox until you file it. A task added for today, soon or someday, in a domain's list, or while planning is filed straight away. Inbox tasks are seen only by you, and stay out of their domain's list until filed. Your Inbox tasks have moved into your oldest domain, still in the Inbox; their old `IN-` refs still find them.
+- **Energy** is gone for now: no Energy on a task's page, no "Low energy" suggestions when planning, and no `--energy` in the CLI. Any energy already set is kept, unseen, in case it comes back.
 - With only one domain, there's no choosing it: no domain picker when capturing, on a task's page, in the row menu or when adding a follow-on. "Inbox" is no longer offered as a place to move a task to.
 
 - **Might want attention**, below Today, leaves deadlines to the new box above it.

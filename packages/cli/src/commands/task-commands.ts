@@ -186,7 +186,7 @@ const edit: Command = {
 ${TASK_FIELD_HELP}
   --untag NAME          Take a tag off; again for more
   --append-notes TEXT   Add to the end of the notes, keeping what's there (for progress, taxa comment)
-  --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, energy, horizon, follows-on, repeat)
+  --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, horizon, follows-on, repeat)
 ${VERSION_HELP}
 With -, stdin holds {"set": {...}, "clear": [...], "addTags": [...], "removeTags": [...], "appendNotes": "..."},
 as the API's UpdateTaskRequest.`,

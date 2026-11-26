@@ -1,4 +1,3 @@
-import { Energy } from "@taxa/shared/tasks/task"
 import { test } from "../fixtures/taxa-fixture.ts"
 
 test("scheduling a task for a time, and setting and clearing what else it needs", async ({ taxa }) => {
@@ -12,23 +11,18 @@ test("scheduling a task for a time, and setting and clearing what else it needs"
   await detail.expectScheduled("2026-01-06", "Tue 6 Jan · 18:30")
   await detail.pickDue("2026-02-12")
   await detail.expectDue("2026-02-12")
-  await detail.setEnergy(Energy.LOW)
-  await detail.expectEnergy(Energy.LOW)
   await detail.setEstimate("45m")
   await detail.expectEstimate("45m")
   await taxa.expectTask("H-1", {
     scheduled: "2026-01-06",
     scheduledTime: "18:30",
     due: "2026-02-12",
-    energy: Energy.LOW,
     estimateMinutes: 45
   })
 
-  await detail.setEnergy()
-  await detail.expectEnergy()
   await detail.clearEstimate()
   await detail.expectEstimate("")
-  await taxa.expectTask("H-1", { energy: undefined, estimateMinutes: undefined })
+  await taxa.expectTask("H-1", { estimateMinutes: undefined })
 })
 
 test("copying a task's reference", async ({ taxa }) => {

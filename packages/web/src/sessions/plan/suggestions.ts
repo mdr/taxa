@@ -1,10 +1,10 @@
 import { formatDay } from "@taxa/shared/dates/date-format"
 import { addDays, type IsoDate } from "@taxa/shared/dates/plain-date"
 import type { TaskId } from "@taxa/shared/ids"
-import { Energy, Horizon, Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
+import { Horizon, Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { hasTag } from "@taxa/shared/tasks/tags"
 
-/** Why a task's worth planning in: the first that applies of in progress, overdue or due today, meant for today, due soon, priority, soon, low energy, Inbox. */
+/** Why a task's worth planning in: the first that applies of in progress, overdue or due today, meant for today, due soon, priority, soon, Inbox. */
 export const suggestionReason = (task: Task, today: IsoDate): string | undefined => {
   if (task.status === TaskStatus.IN_PROGRESS) return "In progress"
   if (task.due && task.due < today) return "Overdue"
@@ -14,7 +14,6 @@ export const suggestionReason = (task: Task, today: IsoDate): string | undefined
   if (task.priority === Priority.URGENT) return "Urgent"
   if (task.priority === Priority.HIGH) return "High priority"
   if (task.horizon === Horizon.SOON) return "Soon"
-  if (task.energy === Energy.LOW) return "Low energy"
   if (task.inbox) return "Inbox"
   return undefined
 }

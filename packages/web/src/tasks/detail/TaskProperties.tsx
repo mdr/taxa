@@ -3,21 +3,11 @@ import type { Domain } from "@taxa/shared/domains/domain"
 import { actorText } from "@taxa/shared/identity/actor-text"
 import { ClearableField } from "@taxa/shared/tasks/task-requests"
 import { setOrClear as fieldChange } from "../changes/field-change.ts"
-import { Energy, Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
-import { ENERGY_TEXT, PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
+import { Priority, TaskStatus, type Task } from "@taxa/shared/tasks/task"
+import { PRIORITY_TEXT, STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 import { When, whenOf, whenRequest } from "@taxa/shared/tasks/when"
 import { WHEN_ICONS, whenLabel, whenOptions } from "../when/when-choices.tsx"
-import {
-  BatteryFull,
-  BatteryLow,
-  BatteryMedium,
-  CalendarClock,
-  CalendarDays,
-  EyeOff,
-  SkipForward,
-  Zap,
-  type LucideIcon
-} from "lucide-react"
+import { CalendarClock, CalendarDays, EyeOff, SkipForward } from "lucide-react"
 import styles from "./TaskProperties.module.css"
 import { taskPropertiesTestIds } from "./TaskPropertiesTestIds.ts"
 import { ChoiceProperty } from "./properties/ChoiceProperty.tsx"
@@ -32,12 +22,6 @@ import { StatusIcon } from "../StatusIcon.tsx"
 import { capitalised } from "../../ui/capitalised.ts"
 import { TaskChangeType, type TaskChange } from "../changes/task-changes-service.ts"
 import { TagsProperty } from "../../tags/TagsProperty.tsx"
-
-const ENERGY_ICONS: Record<Energy, LucideIcon> = {
-  [Energy.LOW]: BatteryLow,
-  [Energy.MEDIUM]: BatteryMedium,
-  [Energy.HIGH]: BatteryFull
-}
 
 /** What When can choose for a repeating task, which always has a day it's next for. */
 const REPEATING_WHENS: ReadonlySet<string> = new Set([When.TODAY])
@@ -54,7 +38,6 @@ interface TaskPropertiesProps {
 export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) => {
   const today = useToday()
   const setOrClear = (field: ClearableField, value: string | number | undefined) => change(fieldChange(field, value))
-  const EnergyIcon = task.energy ? ENERGY_ICONS[task.energy] : Zap
   const when = whenOf(task, today)
   const WhenIcon = WHEN_ICONS[when]
   const dueTone =
@@ -188,26 +171,6 @@ export const TaskProperties = ({ task, domains, change }: TaskPropertiesProps) =
         testId={taskPropertiesTestIds.estimate}
         shortcut={{ key: "e", description: "Estimate" }}
         onChange={(minutes) => setOrClear(ClearableField.ESTIMATE_MINUTES, minutes)}
-      />
-      <ChoiceProperty
-        label="Energy"
-        testId={taskPropertiesTestIds.energy}
-        value={task.energy ?? ""}
-        empty={task.energy === undefined}
-        trigger={
-          <>
-            <EnergyIcon size={15} aria-hidden />
-            {task.energy ? capitalised(ENERGY_TEXT[task.energy]) : "Energy"}
-          </>
-        }
-        options={[
-          ...Object.values(Energy).map((energy) => {
-            const Icon = ENERGY_ICONS[energy]
-            return { value: energy, label: capitalised(ENERGY_TEXT[energy]), icon: <Icon size={15} aria-hidden /> }
-          }),
-          ...(task.energy ? [{ value: "", label: "Clear", danger: true }] : [])
-        ]}
-        onChoose={(energy) => setOrClear(ClearableField.ENERGY, energy === "" ? undefined : energy)}
       />
       {task.inProgressBy && (
         <p className={styles.note} data-testid={taskPropertiesTestIds.inProgressBy}>

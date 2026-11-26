@@ -3,7 +3,7 @@ import { occurrenceStripTestIds } from "../../src/tasks/detail/OccurrenceStripTe
 import type { When } from "@taxa/shared/tasks/when"
 import { expect, type Locator, type Page } from "@playwright/test"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
-import type { Energy, Priority, TaskStatus } from "@taxa/shared/tasks/task"
+import type { Priority, TaskStatus } from "@taxa/shared/tasks/task"
 import { PageObject } from "./steps.ts"
 import { expectAccessible } from "./accessibility.ts"
 import { Keyboard } from "./Keyboard.ts"
@@ -269,15 +269,6 @@ export class TaskDetailPage extends PageObject {
     const chip = this.#page.getByTestId(taskPropertiesTestIds.when)
     await expect(chip).toHaveAttribute("data-value", when)
     await expect(chip).toContainText(shown)
-  }
-
-  /** Chooses the energy it needs, or with none, clears it. */
-  async setEnergy(energy?: Energy): Promise<void> {
-    await this.#choose(taskPropertiesTestIds.energy, energy ?? "")
-  }
-
-  async expectEnergy(energy?: Energy): Promise<void> {
-    await expect(this.#page.getByTestId(taskPropertiesTestIds.energy)).toHaveAttribute("data-value", energy ?? "")
   }
 
   async expectEstimate(estimate: string): Promise<void> {

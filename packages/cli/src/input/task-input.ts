@@ -2,7 +2,7 @@ import { DATE_INPUT_HELP, parseDateInput } from "@taxa/shared/dates/date-input"
 import { isIsoTime, type IsoDate } from "@taxa/shared/dates/plain-date"
 import { parseEstimate } from "@taxa/shared/tasks/estimate"
 import { ClearableField, type UpdateTaskRequest } from "@taxa/shared/tasks/task-requests"
-import { Energy, Horizon, Priority } from "@taxa/shared/tasks/task"
+import { Horizon, Priority } from "@taxa/shared/tasks/task"
 import { MissedDays, type RepeatRequest } from "@taxa/shared/tasks/repeat"
 import { REPEAT_EXAMPLES, repeatFromPhrase } from "@taxa/shared/tasks/repeat-phrases"
 import { stringOption, UsageError, type OptionValues } from "../command.ts"
@@ -17,7 +17,6 @@ export const TASK_FIELD_OPTIONS = {
   start: { type: "string" },
   priority: { type: "string" },
   estimate: { type: "string" },
-  energy: { type: "string" },
   horizon: { type: "string" },
   "follows-on": { type: "string" },
   tag: { type: "string", multiple: true },
@@ -41,7 +40,6 @@ export const TASK_FIELD_HELP = `  --domain PREFIX       The domain it's in; to a
   --start DATE          Hide it until then
   --priority LEVEL      urgent, high, normal or low
   --estimate TIME       How long it'll take: 30m, 1h, 1h30m
-  --energy LEVEL        low, medium or high
   --horizon WHEN        soon or someday, for a task without a date
   --follows-on TASK     The task it follows on from, by ref or id
   --tag NAME            Tag it; again for more, e.g. --tag "Life Admin" --tag errand
@@ -119,7 +117,6 @@ export const fieldsFrom = (values: OptionValues, today: IsoDate): NonNullable<Up
     scheduledTime: at,
     start: dateOption(values, "start", today),
     priority: optional(stringOption(values, "priority"), (text) => choice(Priority, text, "--priority")),
-    energy: optional(stringOption(values, "energy"), (text) => choice(Energy, text, "--energy")),
     horizon: optional(stringOption(values, "horizon"), (text) => choice(Horizon, text, "--horizon")),
     followsOn: stringOption(values, "follows-on"),
     estimateMinutes: optional(stringOption(values, "estimate"), (text) => {

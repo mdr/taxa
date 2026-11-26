@@ -105,7 +105,7 @@ go by number, still find them wherever they moved.
 | start     | Hidden until then                                                   |
 | horizon   | Soon or someday, for a task with no scheduled day                   |
 | estimate  | Roughly how long it will take                                       |
-| energy    | Low, medium or high                                                 |
+| energy    | Low, medium or high: set aside for now, not shown or set anywhere   |
 | assignee  | A member of the task's domain                                       |
 | delegate  | An agent doing the work, while the assignee stays accountable       |
 
@@ -372,7 +372,7 @@ One small language is used by saved filters, the CLI, the API
 (`?q=`) and agents:
 
 ```
-domain:H status:open due:<=friday energy:low
+domain:H status:open due:<=friday
 tag:errand -tag:waiting-on (priority:urgent or priority:high)
 assignee:me project:"Kitchen renovation" scheduled:today
 ```
