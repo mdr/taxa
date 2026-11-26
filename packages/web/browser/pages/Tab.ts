@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import type { Instant, Ms } from "@taxa/shared/units"
 import { OnboardingPage } from "./OnboardingPage.ts"
 import { PageObject } from "./steps.ts"
+import { SignInPage } from "./SignInPage.ts"
 import { TaskDetailPage } from "./TaskDetailPage.ts"
 import { TaskListPage } from "./TaskListPage.ts"
 
@@ -45,6 +46,12 @@ export class Tab extends PageObject {
     const inbox = new TaskListPage(this.#page)
     await inbox.expectLoaded()
     return inbox
+  }
+
+  /** A page of the app, not signed in: the sign-in page, whatever the path. */
+  async openSignedOut(path: string): Promise<SignInPage> {
+    await this.#page.goto(`${this.#baseUrl}${path}`)
+    return new SignInPage(this.#page)
   }
 
   async openTask(ref: string): Promise<TaskDetailPage> {

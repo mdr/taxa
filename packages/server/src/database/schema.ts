@@ -70,6 +70,23 @@ export const apiKeys = pgTable("api_keys", {
   revokedAt: instant("revoked_at")
 })
 
+/**
+ * A browser signed in as a person, through their identity provider. Its
+ * cookie holds a secret stored only as a hash, as API keys are. It lapses
+ * once unused for a while, and ends when they sign out.
+ */
+export const signIns = pgTable("sign_ins", {
+  id: uuid("id").primaryKey(),
+  userId: userId("user_id")
+    .notNull()
+    .references(() => users.id),
+  secretHash: text("secret_hash").notNull().unique(),
+  createdAt: instant("created_at").notNull(),
+  /** When it was last used, to at most a day: it lapses this long after. */
+  lastUsedAt: instant("last_used_at").notNull(),
+  endedAt: instant("ended_at")
+})
+
 export const domains = pgTable("domains", {
   id: domainId("id").primaryKey(),
   name: text("name").notNull(),

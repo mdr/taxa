@@ -19,7 +19,9 @@ export const ME_PATH = "/api/me"
 
 export const MeSchema = z.object({
   user: UserSchema.extend({ timeZone: TimeZoneSchema }),
-  agent: AgentNameSchema.optional()
+  agent: AgentNameSchema.optional(),
+  /** Calling from a browser signed in through the identity provider: it can sign out. */
+  signedIn: z.literal(true).optional()
 })
 
 export type Me = z.infer<typeof MeSchema>

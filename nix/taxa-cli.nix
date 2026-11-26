@@ -46,7 +46,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     inherit (finalAttrs) pname version src pnpmWorkspaces pnpmInstallFlags;
     inherit pnpm;
     fetcherVersion = 4;
-    hash = "sha256-wnCHu81GJ5PdGQdhKQGAPvCbY6UGou79iGHlcchs4sk=";
+    hash = "sha256-0BugMDHdM3Wd72P5mG8lI1rFzXZKq/MObtO5xK7eXSk=";
   };
 
   nativeBuildInputs = [

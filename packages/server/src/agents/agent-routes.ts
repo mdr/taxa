@@ -68,7 +68,7 @@ const routes = {
 
 export const agentRoutes = (app: TaxaApp, db: Db, log: ServerLogger, clock: Clock): void => {
   app.openapi(routes.me, (context) => {
-    const { user, agent } = context.var.caller
+    const { user, agent, signedIn } = context.var.caller
     return context.json(
       {
         user: {
@@ -76,7 +76,8 @@ export const agentRoutes = (app: TaxaApp, db: Db, log: ServerLogger, clock: Cloc
           name: user.name,
           timeZone: user.timeZone
         },
-        ...(agent && { agent })
+        ...(agent && { agent }),
+        ...(signedIn && { signedIn })
       },
       200
     )

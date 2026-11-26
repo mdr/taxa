@@ -1,0 +1,17 @@
+.signOut {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.signOut:hover {
+  background: var(--hover);
+  color: var(--text);
+}

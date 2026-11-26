@@ -11,6 +11,11 @@ import type { ServerLogger } from "../telemetry/log.ts"
 import { callerUserOf, moveUserTo } from "../users/user-store.ts"
 import type { Caller, CallerUser } from "./caller.ts"
 import { hashSecret } from "./secrets.ts"
+import { getCookie, setCookie } from "hono/cookie"
+import type { Context } from "hono"
+import type { Clock } from "@taxa/shared/clock"
+import type { SignInCookies } from "./sign-in-cookies.ts"
+import { findSignIn, SIGN_IN_LAPSES_MS } from "./sign-in-store.ts"
 
 export interface AuthVariables {
   caller: Caller
@@ -43,21 +48,52 @@ const keptUpToDate = async (db: Db, log: ServerLogger, caller: Caller, sent: str
   return { ...caller, user: await moveUserTo(db, log, caller.user, parsed.data) }
 }
 
+/** Signing in through an identity provider, when it's on. */
+export interface CookieSignIn {
+  cookies: SignInCookies
+  clock: Clock
+}
+
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
+
 /**
- * Works out who is calling, from an API key, or else the development login's
- * person when there is one. `devUser` reads that person fresh each time, so
+ * The person a browser's signed in as, if it is. A request that changes
+ * anything must come from Taxa's own pages, so another site can't make one in
+ * their name. A sign-in in use is kept from lapsing, cookie and all.
+ */
+const signedInCaller = async (
+  context: Context,
+  db: Db,
+  { cookies, clock }: CookieSignIn
+): Promise<Omit<Caller, "agentContext"> | undefined> => {
+  const secret = getCookie(context, cookies.signIn)
+  if (secret === undefined) return undefined
+  const found = await findSignIn(db, secret, clock.now())
+  if (!found) return undefined
+  if (!SAFE_METHODS.has(context.req.method) && !cookies.fromOurPages(context))
+    throw new ProblemError(ProblemType.FORBIDDEN, "Changes can only be made from Taxa's own pages.")
+  if (found.renewed)
+    setCookie(context, cookies.signIn, secret, { ...cookies.attributes, maxAge: SIGN_IN_LAPSES_MS / 1000 })
+  return { user: found.user, agent: undefined, signedIn: true }
+}
+
+/**
+ * Works out who is calling, from an API key, or else the browser's sign-in,
+ * or else the development login's person when there is one. `devUser` reads that person fresh each time, so
  * settings they change apply at once. A person's time zone follows the one
  * their requests say they're in.
  */
 export const authenticate = (
   db: Db,
   log: ServerLogger,
-  devUser: (() => Promise<CallerUser>) | undefined
+  devUser: (() => Promise<CallerUser>) | undefined,
+  signIn?: CookieSignIn
 ): MiddlewareHandler<{ Variables: AuthVariables }> =>
   createMiddleware<{ Variables: AuthVariables }>(async (context, next) => {
     const header = context.req.header("authorization")
     const agentContext = context.req.header(AGENT_CONTEXT_HEADER)?.slice(0, 500) || undefined
     const timeZone = context.req.header(TIME_ZONE_HEADER)
+    const signed = header === undefined && signIn ? await signedInCaller(context, db, signIn) : undefined
     if (header !== undefined) {
       const secret = BEARER.exec(header)?.[1]
       const caller = secret === undefined ? undefined : await callerForKey(db, secret)
@@ -66,6 +102,8 @@ export const authenticate = (
         "caller",
         await keptUpToDate(db, log, { ...caller, agentContext: caller.agent ? agentContext : undefined }, timeZone)
       )
+    } else if (signed) {
+      context.set("caller", await keptUpToDate(db, log, { ...signed, agentContext: undefined }, timeZone))
     } else if (devUser) {
       context.set(
         "caller",

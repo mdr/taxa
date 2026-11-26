@@ -1,24 +1,29 @@
+import { readFileSync } from "node:fs"
 import { serve } from "@hono/node-server"
 import { z } from "zod"
 import { realClock } from "@taxa/shared/clock"
 import { createApp } from "./app.ts"
 import { clearOldBin } from "./tasks/task-purge.ts"
 import { configFrom, type Config } from "./config.ts"
+import { signInFrom, type SignInOptions } from "./auth/sign-in-config.ts"
 import { connectPostgres } from "./database/postgres-database.ts"
 import { createLogger } from "@taxa/shared/telemetry/log"
 import { LOG_CODES, stdoutDestination, type ServerLogCode } from "./telemetry/log.ts"
 
-const readConfig = (): Config => {
+const readConfig = (): { config: Config; signIn: SignInOptions | undefined } => {
   try {
-    return configFrom(process.env)
+    const config = configFrom(process.env)
+    return { config, signIn: signInFrom(config, (path) => readFileSync(path, "utf8")) }
   } catch (error) {
-    if (!(error instanceof z.ZodError)) throw error
-    console.error(`The server's environment isn't right:\n${z.prettifyError(error)}`)
+    const problem =
+      error instanceof z.ZodError ? z.prettifyError(error) : error instanceof Error ? error.message : undefined
+    if (problem === undefined) throw error
+    console.error(`The server's environment isn't right:\n${problem}`)
     process.exit(1)
   }
 }
 
-const config = readConfig()
+const { config, signIn } = readConfig()
 const logger = createLogger<ServerLogCode>(realClock, [stdoutDestination])
 const database = await connectPostgres(config.DATABASE_URL)
 const app = await createApp({
@@ -27,7 +32,8 @@ const app = await createApp({
   build: config.TAXA_BUILD,
   logger,
   devLogin: config.TAXA_DEV_USER ? { name: config.TAXA_DEV_USER, timeZone: config.TAXA_TIME_ZONE } : undefined,
-  webRoot: config.TAXA_WEB_ROOT
+  webRoot: config.TAXA_WEB_ROOT,
+  signIn
 })
 
 serve({ fetch: app.fetch, port: config.PORT, hostname: config.HOST }, ({ address, port }) =>
@@ -36,7 +42,9 @@ serve({ fetch: app.fetch, port: config.PORT, hostname: config.HOST }, ({ address
     port,
     webApp: config.TAXA_WEB_ROOT !== undefined,
     build: config.TAXA_BUILD,
-    devLogin: config.TAXA_DEV_USER !== undefined
+    devLogin: config.TAXA_DEV_USER !== undefined,
+    signInAt: signIn?.issuer.href,
+    publicUrl: signIn?.publicUrl.origin
   })
 )
 

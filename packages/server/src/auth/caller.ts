@@ -11,4 +11,6 @@ export interface Caller {
   user: CallerUser
   agent: { id: AgentId; name: string } | undefined
   agentContext: string | undefined
+  /** Calling from a browser signed in through the identity provider, which can sign out. */
+  signedIn?: true
 }

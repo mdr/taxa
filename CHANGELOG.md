@@ -9,6 +9,7 @@ them at the top of its release notes. See `docs/releasing.md`.
 ### New
 
 - The sidebar says which version of Taxa you're using, such as "Taxa 0.6.0"; hover over it for the exact build.
+- **Signing in with Google.** A server can have people sign in, with Google or any OpenID Connect provider, instead of everyone being one person. Only the people it's told about can, by the email the provider vouches for; someone already in Taxa by that name becomes them, tasks and all. A sign-in lasts until it's unused for 30 days, or **Sign out** at the foot of the sidebar. The CLI and agents keep their API keys. `docs/sign-in.md` says how to set it up, on NixOS (`services.taxa.signIn`) or with environment variables anywhere else.
 
 ## 0.6.0 (2026-11-26)
 

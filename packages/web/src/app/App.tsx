@@ -28,6 +28,8 @@ const SOMEDAY_LIST: TaskList = { type: ListType.SOMEDAY }
 const DEADLINES_LIST: TaskList = { type: ListType.DEADLINES }
 import { useDomains } from "../domains/domain-queries.ts"
 import { Onboarding } from "../onboarding/Onboarding.tsx"
+import { SignInPage } from "../sign-in/SignInPage.tsx"
+import { isSignedOut } from "../sign-in/sign-in.ts"
 import { problemMessage } from "../api/problem-message.ts"
 import { taxaApi } from "../api/taxa-api.ts"
 import { ChangeOrder } from "../tasks/changes/change-order.ts"
@@ -111,7 +113,7 @@ const Pages = () => (
   </Switch>
 )
 
-/** Until there's a domain to put tasks in, choosing some is all there is to do. */
+/** Signing in comes first; then, until there's a domain to put tasks in, choosing some is all there is to do. */
 const Layout = () => {
   const domains = useDomains()
   const [location, navigate] = useLocation()
@@ -129,6 +131,7 @@ const Layout = () => {
   const history = useUndo()
   const undoNotice = useUndoNotice()
   useShortcuts(ShortcutScope.APP, appShortcuts(location, navigate, shortcuts, history))
+  if (isSignedOut(domains.error)) return <SignInPage />
   if (domains.data?.length === 0) {
     return (
       <main className={styles.onboarding}>

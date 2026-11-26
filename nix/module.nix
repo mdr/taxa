@@ -46,11 +46,55 @@ in
       description = "The Postgres database, which the user `taxa` must own: the server migrates it as it starts. The default is the local socket with peer authentication.";
     };
 
+    publicUrl = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      example = "https://taxa.example.com";
+      description = "Where people reach Taxa, through whatever proxy: signing in sends them back here, and changes must come from its pages.";
+    };
+
+    signIn = {
+      enable = lib.mkEnableOption "signing in through an OpenID Connect provider, Google unless `issuer` says otherwise";
+      issuer = mkOption {
+        type = types.str;
+        default = "https://accounts.google.com";
+        description = "The OpenID Connect provider people sign in with.";
+      };
+      clientId = mkOption {
+        type = types.str;
+        description = "Taxa's OAuth client at the provider.";
+      };
+      clientSecretFile = mkOption {
+        # A string, not a path: a path would copy the secret into the world-readable Nix store.
+        type = types.str;
+        example = "/run/secrets/taxa-oidc-client-secret";
+        description = "A file holding that client's secret, outside the Nix store; systemd hands it to Taxa as a credential.";
+      };
+      people = mkOption {
+        type = types.listOf (
+          types.submodule {
+            options = {
+              name = mkOption { type = types.str; };
+              email = mkOption { type = types.str; };
+            };
+          }
+        );
+        default = [ ];
+        example = [
+          {
+            name = "Sam";
+            email = "sam@example.com";
+          }
+        ];
+        description = "Who may sign in, by the email the provider vouches for. Someone already in Taxa by that name, with no email yet (as the single person is), becomes them.";
+      };
+    };
+
     singlePerson = mkOption {
       type = types.nullOr types.str;
       default = null;
       example = "Sam";
-      description = "No sign-in: every browser request is the person of this name, made the first time. Until sign-in exists; anyone who can reach Taxa acts as them.";
+      description = "No sign-in: every browser request is the person of this name, made the first time. Anyone who can reach Taxa acts as them; `signIn` is the alternative.";
     };
 
     dumpBeforeUpgrade = {
@@ -74,6 +118,21 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = lib.optionals cfg.signIn.enable [
+      {
+        assertion = cfg.singlePerson == null;
+        message = "services.taxa: signIn and singlePerson don't go together: singlePerson lets anyone in.";
+      }
+      {
+        assertion = cfg.publicUrl != null;
+        message = "services.taxa.signIn needs publicUrl, where people reach Taxa.";
+      }
+      {
+        assertion = cfg.signIn.people != [ ];
+        message = "services.taxa.signIn needs people, who may sign in.";
+      }
+    ];
+
     users.users.taxa = {
       isSystemUser = true;
       group = "taxa";
@@ -91,11 +150,22 @@ in
         HOST = cfg.host;
         PORT = toString cfg.port;
       }
-      // lib.optionalAttrs (cfg.singlePerson != null) { TAXA_DEV_USER = cfg.singlePerson; };
+      // lib.optionalAttrs (cfg.singlePerson != null) { TAXA_DEV_USER = cfg.singlePerson; }
+      // lib.optionalAttrs (cfg.publicUrl != null) { TAXA_PUBLIC_URL = cfg.publicUrl; }
+      // lib.optionalAttrs cfg.signIn.enable {
+        TAXA_OIDC_ISSUER = cfg.signIn.issuer;
+        TAXA_OIDC_CLIENT_ID = cfg.signIn.clientId;
+        # %d: the unit's credentials directory, where LoadCredential puts the secret.
+        TAXA_OIDC_CLIENT_SECRET_FILE = "%d/oidc-client-secret";
+        TAXA_PEOPLE = lib.concatMapStringsSep ", " (
+          { name, email }: "${name} <${email}>"
+        ) cfg.signIn.people;
+      };
 
       serviceConfig = {
         ExecStartPre = lib.optional cfg.dumpBeforeUpgrade.enable "${lib.getExe dumpBeforeUpgrade} ${cfg.package}";
         ExecStart = lib.getExe cfg.package;
+        LoadCredential = lib.optional cfg.signIn.enable "oidc-client-secret:${cfg.signIn.clientSecretFile}";
         User = "taxa";
         Group = "taxa";
         Restart = "always";

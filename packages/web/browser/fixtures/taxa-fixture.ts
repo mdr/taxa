@@ -113,14 +113,17 @@ export class TestTaxa {
   }
 }
 
-export const test = base.extend<{ taxa: TestTaxa }>({
-  taxa: async ({ browser, baseURL }, use) => {
+/** `signedOut`: a server with no development login, as when people sign in, so a tab isn't anyone. */
+export const test = base.extend<{ signedOut: boolean; taxa: TestTaxa }>({
+  signedOut: [false, { option: true }],
+  taxa: async ({ browser, baseURL, signedOut }, use) => {
     const server = await InProcessServer.start({
       corsOrigins: baseURL ? [new URL(baseURL).origin] : [],
-      devLogin: PERSON
+      devLogin: signedOut ? undefined : PERSON
     })
     try {
-      const taxa = new TestTaxa(server, BrowserUser.of(await server.devLoginUser()), browser)
+      const matt = signedOut ? await server.user(PERSON.name) : await server.devLoginUser()
+      const taxa = new TestTaxa(server, BrowserUser.of(matt), browser)
       await use(taxa)
       await taxa.close()
     } finally {

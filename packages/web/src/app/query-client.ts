@@ -2,6 +2,7 @@ import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query"
 import { TaxaApiError } from "@taxa/shared/api/taxa-client"
 import { appLogger } from "../telemetry/app-telemetry.ts"
 import { LOG_CODES } from "../telemetry/codes.ts"
+import { isSignedOut } from "../sign-in/sign-in.ts"
 
 const requestFailed = (error: Error): void =>
   appLogger.warn(LOG_CODES.api.requestFailed, "a request to the API failed", {
@@ -18,7 +19,8 @@ const kept = import.meta.hot?.data as { queryClient?: QueryClient } | undefined
 export const queryClient: QueryClient =
   kept?.queryClient ??
   new QueryClient({
-    defaultOptions: { queries: { retry: 1 } },
+    // Once more if it failed, unless for not being signed in: that's for the sign-in page, at once.
+    defaultOptions: { queries: { retry: (failures, error) => failures < 1 && !isSignedOut(error) } },
     queryCache: new QueryCache({ onError: requestFailed }),
     mutationCache: new MutationCache({ onError: requestFailed })
   })

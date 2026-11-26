@@ -484,12 +484,32 @@ offline editing from the start, even though it ships in stages.
 ## People and sign-in
 
 - People sign in through OpenID Connect, so any provider will do (Google
-  first), checked against the people Taxa knows by email. There's no
-  sign-up. Sessions use secure, HTTP-only cookies. Sign-in doesn't depend
-  on where Taxa is hosted or how it's reached. Passkeys may come later.
-- Until then, Taxa runs in single-person mode: no sign-in, and everyone
-  is one person (`TAXA_DEV_USER`). That's how local development works,
-  and the home server too while it has one user.
+  first), checked against the people Taxa knows by email: those the server
+  is told may sign in (`TAXA_PEOPLE`), and only when the provider vouches
+  for the email. There's no sign-up. Someone already in Taxa by that name
+  with no email yet, as the single person is, becomes them, so a server
+  moves from single-person mode to sign-in keeping its tasks. Passkeys may
+  come later.
+- Signing in uses the authorization code flow with PKCE, a nonce and
+  state, which the browser carries to the provider and back in a
+  short-lived cookie. The server then sets a `__Host-` cookie: secure,
+  HTTP-only, `SameSite=Lax`, for that host alone. It holds a random secret
+  stored only as a hash (`sign_ins`), as API keys are. A sign-in lapses
+  after 30 days unused, and ends when its person signs out.
+- A request signed in by cookie that changes anything must come from
+  Taxa's own pages, by its `Origin`, so another site can't make one in
+  someone's name.
+- Sign-in doesn't depend on where Taxa is hosted or how it's reached: it
+  might move from the home server, behind Tailscale, to a cloud host such
+  as Fly. Everything it needs is in environment variables (the client's
+  secret either directly or as a file, such as a systemd credential); its
+  addresses come from the configured public URL (`TAXA_PUBLIC_URL`), not
+  from the request, so a proxy in between changes nothing; and its state
+  is in Postgres, so any number of servers can share it.
+- Without sign-in, Taxa runs in single-person mode: no sign-in, and
+  everyone is one person (`TAXA_DEV_USER`). That's how local development
+  works. The two don't go together. `docs/sign-in.md` says how to set up
+  sign-in.
 - Agents and the CLI use API keys (see above).
 
 ## Technology

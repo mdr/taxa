@@ -16,6 +16,7 @@
     "@taxa/shared": "workspace:*",
     "drizzle-orm": "^0.45.4",
     "hono": "^4.8.0",
+    "openid-client": "6.8.9",
     "pg": "^8.16.0",
     "zod": "^4.1.0"
   },

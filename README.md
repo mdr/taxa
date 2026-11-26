@@ -18,9 +18,10 @@ task dev           # starts the local Postgres, then the web app on
 taxa health        # the CLI; the dev shell puts bin/ on the PATH
 ```
 
-There's no sign-in yet: `task dev` runs the server with a development
-login, so the web app, and `taxa` without an API key, act as one
-person (`TAXA_DEV_USER` names them). The API is described at
+`task dev` runs the server with a development login, rather than sign-in,
+so the web app, and `taxa` without an API key, act as one person
+(`TAXA_DEV_USER` names them). `docs/sign-in.md` says how to have people
+sign in with Google instead. The API is described at
 http://localhost:8787/api/openapi.json.
 
 `taxa --help` lists the commands. To act as an agent rather than as

@@ -29,7 +29,8 @@ export default defineConfig({
     strictPort: true,
     open: false,
     proxy: {
-      "/api": { target: `http://localhost:${serverPort}` }
+      "/api": { target: `http://localhost:${serverPort}` },
+      "/auth": { target: `http://localhost:${serverPort}` }
     }
   },
   css: { transformer: "lightningcss" }

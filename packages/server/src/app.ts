@@ -18,7 +18,10 @@ import { tagRoutes } from "./tags/tag-routes.ts"
 import { sessionRoutes } from "./sessions/session-routes.ts"
 import { dayPlanRoutes } from "./days/day-plan-routes.ts"
 import { LOG_CODES, type ServerLogger } from "./telemetry/log.ts"
-import { ensureUserNamed, userById } from "./users/user-store.ts"
+import { ensurePeople, ensureUserNamed, userById } from "./users/user-store.ts"
+import type { SignInOptions } from "./auth/sign-in-config.ts"
+import { signInCookies } from "./auth/sign-in-cookies.ts"
+import { signInRoutes } from "./auth/sign-in-routes.ts"
 
 export const OPENAPI_PATH = "/api/openapi.json"
 
@@ -40,6 +43,8 @@ export interface AppOptions {
   devLogin?: DevLogin
   /** The built web app's folder, to serve beside the API. */
   webRoot?: string
+  /** People sign in through an identity provider. */
+  signIn?: SignInOptions
 }
 
 export const createApp = async ({
@@ -49,7 +54,8 @@ export const createApp = async ({
   logger,
   corsOrigins,
   devLogin,
-  webRoot
+  webRoot,
+  signIn
 }: AppOptions): Promise<TaxaApp> => {
   const { db } = database
   const devUserId = devLogin && (await ensureUserNamed(db, logger, devLogin.name, devLogin.timeZone, clock.now())).id
@@ -60,6 +66,7 @@ export const createApp = async ({
         return user
       }
     : undefined
+  if (signIn) await ensurePeople(db, logger, signIn.people, signIn.timeZone, clock.now())
 
   const app = taxaHono()
   if (corsOrigins) {
@@ -71,7 +78,8 @@ export const createApp = async ({
     openapi: "3.1.0",
     info: { title: "Taxa", version: build, description: "Tasks for people and their agents." }
   })
-  app.use("/api/*", authenticate(db, logger, devUser))
+  app.use("/api/*", authenticate(db, logger, devUser, signIn && { cookies: signInCookies(signIn), clock }))
+  if (signIn) signInRoutes(app, db, logger, clock, signIn)
   agentRoutes(app, db, logger, clock)
   domainRoutes(app, db, logger, clock)
   taskRoutes(app, db, logger, clock)

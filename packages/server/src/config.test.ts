@@ -2,13 +2,14 @@ import { describe, expect, it } from "vite-plus/test"
 import { configFrom } from "./config.ts"
 
 describe("configFrom", () => {
-  it("needs a database, and defaults the port and build", () => {
+  it("needs a database, and defaults the port, build and identity provider", () => {
     expect(() => configFrom({})).toThrow()
     expect(configFrom({ DATABASE_URL: "postgres://localhost/taxa" })).toEqual({
       PORT: 8787,
       DATABASE_URL: "postgres://localhost/taxa",
       TAXA_BUILD: "dev",
-      TAXA_TIME_ZONE: "Europe/London"
+      TAXA_TIME_ZONE: "Europe/London",
+      TAXA_OIDC_ISSUER: "https://accounts.google.com"
     })
   })
 

@@ -20,6 +20,8 @@ import type { ServerLogCode, ServerLogger } from "../telemetry/log.ts"
 import type { CallerUser } from "../auth/caller.ts"
 import { createUser, ensureUserNamed } from "../users/user-store.ts"
 import { pgliteDatabase } from "./pglite-database.ts"
+import type { SignInOptions } from "../auth/sign-in-config.ts"
+import type { TaxaApp } from "../http/taxa-hono.ts"
 import { TestUser } from "./test-user.ts"
 import { timeZone as zoneNamed, type TimeZone } from "@taxa/shared/dates/plain-date"
 
@@ -37,6 +39,8 @@ export interface InProcessOptions {
   devLogin?: DevLogin
   /** The built web app's folder, to serve beside the API. */
   webRoot?: string
+  /** People sign in, given where the server's reached, which is known only once it's listening. */
+  signIn?: (publicUrl: URL) => SignInOptions
 }
 
 const listen = (server: ServerType): Promise<number> =>
@@ -76,23 +80,32 @@ export class InProcessServer {
     startAt = TEST_START,
     corsOrigins,
     devLogin,
-    webRoot
+    webRoot,
+    signIn
   }: InProcessOptions = {}): Promise<InProcessServer> {
     const clock = new FakeClock(startAt)
     const database = await pgliteDatabase()
     const logs: LogRecord[] = []
     const logger = createLogger<ServerLogCode>(clock, [(record) => logs.push(record)])
-    const app = await createApp({
+    // Sign-in needs the server's address, known only once it's listening: the app comes after.
+    const started: { app?: TaxaApp } = {}
+    const server = serve({
+      fetch: (request) => (started.app ? started.app.fetch(request) : new Response(undefined, { status: 503 })),
+      port: 0,
+      hostname: "127.0.0.1"
+    })
+    const port = await listen(server)
+    started.app = await createApp({
       database,
       clock,
       build: "test",
       corsOrigins,
       devLogin,
       webRoot,
-      logger
+      logger,
+      signIn: signIn?.(new URL(`http://127.0.0.1:${port}`))
     })
-    const server = serve({ fetch: app.fetch, port: 0, hostname: "127.0.0.1" })
-    return new InProcessServer(server, database, clock, await listen(server), logs, logger, devLogin)
+    return new InProcessServer(server, database, clock, port, logs, logger, devLogin)
   }
 
   /** A person with an API key of their own, who calls the API as themselves. */

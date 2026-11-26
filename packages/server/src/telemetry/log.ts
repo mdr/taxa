@@ -13,7 +13,14 @@ export const LOG_CODES = {
   },
   user: {
     created: "user.created",
-    movedTimeZone: "user.movedTimeZone"
+    movedTimeZone: "user.movedTimeZone",
+    maySignIn: "user.maySignIn"
+  },
+  signIn: {
+    signedIn: "signIn.signedIn",
+    refused: "signIn.refused",
+    failed: "signIn.failed",
+    signedOut: "signIn.signedOut"
   },
   agent: {
     created: "agent.created"
