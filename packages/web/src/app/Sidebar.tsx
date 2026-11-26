@@ -27,6 +27,7 @@ import { shortLeft } from "../sessions/session-text.ts"
 import { useNow } from "../sessions/use-now.ts"
 import { DEADLINES_PATH, isComingUp } from "../deadlines/deadlines.ts"
 import { useToday } from "../dates/use-today.ts"
+import { BuildVersion } from "./BuildVersion.tsx"
 
 /** Time left on the task under way, or how far over it's run. */
 const SessionLeft = ({ session }: { session: Session }) => {
@@ -306,6 +307,7 @@ export const Sidebar = () => {
         Keyboard shortcuts
         <kbd className={styles.shortcutsKey}>?</kbd>
       </button>
+      <BuildVersion />
     </nav>
   )
 }

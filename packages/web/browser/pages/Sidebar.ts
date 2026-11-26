@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test"
 import { PageObject } from "./steps.ts"
 import { sidebarTestIds } from "../../src/app/SidebarTestIds.ts"
+import { buildVersionTestIds } from "../../src/app/BuildVersionTestIds.ts"
 import { newDomainFormTestIds } from "../../src/domains/NewDomainFormTestIds.ts"
 import { ShortcutsHelp } from "./ShortcutsHelp.ts"
 import { TaskListPage } from "./TaskListPage.ts"
@@ -154,6 +155,13 @@ export class Sidebar extends PageObject {
   /** No time left showing, with no session task under way. */
   async expectNoSessionLeft(): Promise<void> {
     await expect(this.#page.getByTestId(sidebarTestIds.sessionLeft)).toHaveCount(0)
+  }
+
+  /** The version of Taxa at the foot of the sidebar, with the full build on hover. */
+  async expectVersion(release: string, build: string): Promise<void> {
+    const version = this.#page.getByTestId(buildVersionTestIds.version)
+    await expect(version).toHaveText(`Taxa ${release}`)
+    await expect(version).toHaveAttribute("title", `Build ${build}`)
   }
 
   async openShortcuts(): Promise<ShortcutsHelp> {

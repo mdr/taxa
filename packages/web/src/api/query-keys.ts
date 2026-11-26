@@ -3,6 +3,8 @@ import type { ListTasksQuery } from "@taxa/shared/tasks/task-requests"
 export const queryKeys = {
   domains: ["domains"],
   me: ["me"],
+  /** The server's health, and the build it's running. */
+  health: ["health"],
   /** Every list of tasks, whatever its query. */
   allTasks: ["tasks"],
   tasks: (query: ListTasksQuery): unknown[] => ["tasks", query],

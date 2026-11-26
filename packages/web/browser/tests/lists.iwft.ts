@@ -96,3 +96,9 @@ test("a capture the server refuses says why, and keeps what was typed", async ({
   await list.captureExpectingProblem("x".repeat(501), "500")
   await taxa.expectTaskCount(0)
 })
+
+test("the sidebar says which version of Taxa this is", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  const list = await (await taxa.openTab("Matt")).openInbox()
+  await list.sidebar.expectVersion("test", "test")
+})
