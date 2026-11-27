@@ -32,7 +32,8 @@ export interface CommentCache {
 
 enum StepType {
   TASK = "TASK",
-  COMMENT = "COMMENT"
+  COMMENT = "COMMENT",
+  GROUP = "GROUP"
 }
 
 /** A change to a task that can be undone, or redone: the version it brought the task to. */
@@ -54,7 +55,14 @@ interface CommentStep {
   deletes: boolean
 }
 
-type Step = TaskStep | CommentStep
+/** Changes made together, to several tasks at once: undone and redone together. */
+interface GroupStep {
+  type: StepType.GROUP
+  steps: readonly TaskStep[]
+  label: string
+}
+
+type Step = TaskStep | CommentStep | GroupStep
 
 /** A change to a comment, made in turn with the tab's other changes and noted to undo. */
 export interface CommentChange {
@@ -106,6 +114,8 @@ export interface UndoActions extends ChangeHistory {
   dismiss: () => void
   /** Whether the change that brought a task to its version is the last made here, which undo would take back. */
   isLatest: (task: Task) => boolean
+  /** Makes changes to several tasks, noted as one, so one undo takes them all back: `label` says what, as `Moved 3 tasks`. */
+  together: <T>(label: string, make: () => Promise<T>) => Promise<T>
 }
 
 const taskStep = (task: Task, label: string): TaskStep => ({
@@ -145,6 +155,8 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
   readonly #scheduler: Scheduler
   readonly #order: ChangeOrder
   #cancelNotice: (() => void) | undefined
+  /** The changes made so far by changes being made together. */
+  #gathering: TaskStep[] | undefined
 
   constructor(
     api: UndoApi,
@@ -189,7 +201,24 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
     return id === undefined ? this.#order.add(made) : this.#order.change(id, made)
   }
 
+  readonly together = async <T>(label: string, make: () => Promise<T>): Promise<T> => {
+    const gathered: TaskStep[] = []
+    this.#gathering = gathered
+    try {
+      return await make()
+    } finally {
+      this.#gathering = undefined
+      const [only] = gathered
+      if (gathered.length > 1) this.#record({ type: StepType.GROUP, steps: gathered, label })
+      else if (only) this.#record(only)
+    }
+  }
+
   #record(step: Step): void {
+    if (this.#gathering && step.type === StepType.TASK) {
+      this.#gathering.push(step)
+      return
+    }
     // What an undo did is old news once something else changes.
     this.dismiss()
     this.setState({ undoable: [...this.state.undoable, step].slice(-HISTORY), redoable: [] })
@@ -214,6 +243,42 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
       )
       return (await this.#take(step ?? { ...taskStep(task, changedLabel(task)), version }, true))?.task
     })
+
+  /** As #takeTask, for each change in a group, latest first; the group of those taken, and why any weren't. */
+  async #takeGroup(step: GroupStep, undoing: boolean): Promise<{ group: GroupStep | undefined; refused: string[] }> {
+    const taken: TaskStep[] = []
+    const refused: string[] = []
+    for (const each of [...step.steps].reverse()) {
+      try {
+        const { version } = await this.#takeTask(each, undoing)
+        taken.unshift({ ...each, version })
+      } catch (error) {
+        refused.push(problemMessage(error))
+      }
+    }
+    return { group: taken.length > 0 ? { ...step, steps: taken } : undefined, refused }
+  }
+
+  /** Undoes or redoes a group: those that can be, with a notice saying what couldn't. */
+  async #takeAll(step: GroupStep, undoing: boolean): Promise<Taken> {
+    const { undoable, redoable } = this.state
+    const without = (steps: readonly Step[]): Step[] => steps.filter((other) => other !== step)
+    this.setState({ undoable: without(undoable), redoable: without(redoable) })
+    const { group, refused } = await this.#takeGroup(step, undoing)
+    if (group)
+      this.setState(
+        undoing ? { redoable: [...this.state.redoable, group] } : { undoable: [...this.state.undoable, group] }
+      )
+    const done = `${undoing ? "Undid" : "Redid"}: ${step.label}`
+    const [problem] = refused
+    if (problem === undefined) this.#notify({ type: undoing ? NoticeType.UNDONE : NoticeType.REDONE, text: done })
+    else
+      this.#notify({
+        type: NoticeType.REFUSED,
+        text: group ? `${done}, but not ${refused.length} of them: ${problem}` : problem
+      })
+    return { task: undefined }
+  }
 
   #undone(step: Step, taken: Taken | undefined): Undone | undefined {
     return step.type === StepType.TASK && taken?.task
@@ -261,6 +326,7 @@ export class UndoService extends AbstractService<UndoState> implements UndoActio
    * server's never reached, the step stays where it was, to try again.
    */
   async #take(step: Step, undoing: boolean): Promise<Taken | undefined> {
+    if (step.type === StepType.GROUP) return this.#takeAll(step, undoing)
     const without = (steps: readonly Step[]): Step[] => steps.filter((other) => other !== step)
     const { undoable, redoable } = this.state
     this.setState({ undoable: without(undoable), redoable: without(redoable) })

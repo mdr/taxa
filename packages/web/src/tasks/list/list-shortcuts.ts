@@ -22,6 +22,16 @@ export interface ListTaskActions {
   file: (task: Task) => void
   /** Whether there's another domain to move a task to. */
   movable: boolean
+  /** Choosing tasks to change together. */
+  select?: SelectKeys
+}
+
+/** What the list's keys do to choose tasks to change together. */
+interface SelectKeys {
+  selecting: () => boolean
+  toggle: (task: Task) => void
+  toggleAll: () => void
+  stop: () => void
 }
 
 /** The keys that open a highlighted task's menu at what they change: the task page's keys for the same things. */
@@ -40,12 +50,14 @@ const MENU_KEYS: readonly { key: string; description: string; entry: RowMenuEntr
 export const listShortcuts = (
   listed: readonly Task[],
   session: Session,
-  { open, followOn, remove, file, movable }: ListTaskActions,
+  { open, followOn, remove, file, movable, select }: ListTaskActions,
   leave: () => void,
   find: () => void
 ): readonly Shortcut[] => {
   const highlighted = (): Task | undefined => listed.find(({ id }) => id === session.state.highlighted)
   const isHighlighted = (): boolean => highlighted() !== undefined
+  const onControl = (): boolean =>
+    document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLButtonElement
   const anyListed = (): boolean => listed.length > 0
   const move = (step: Step) => (): void =>
     session.moveHighlight(
@@ -117,12 +129,33 @@ export const listShortcuts = (
     { keys: ["f"], ...onHighlighted("Add a follow-on task", followOn) },
     { keys: ["Delete"], ...removing },
     { keys: ["Backspace"], ...removing },
+    ...(select
+      ? [
+          {
+            keys: [" "],
+            ...onHighlighted("Select the task, to change it with others", select.toggle),
+            // On a box or button, Space is its own: it ticks the task, or presses the button.
+            available: () => isHighlighted() && !onControl()
+          },
+          {
+            keys: ["mod+a"],
+            description: "Select every task, or none",
+            group: ShortcutGroup.TASKS,
+            available: () => select.selecting() && anyListed(),
+            run: select.toggleAll
+          }
+        ]
+      : []),
     {
       keys: ["Escape"],
-      description: "Leave the list",
+      description: "Stop selecting, or leave the list",
       group: ShortcutGroup.TASKS,
-      available: () => session.state.highlighted !== undefined,
+      available: () => select?.selecting() === true || session.state.highlighted !== undefined,
       run: () => {
+        if (select?.selecting()) {
+          select.stop()
+          return
+        }
         session.highlight(undefined)
         leave()
       }

@@ -4,6 +4,7 @@ import type { Task } from "@taxa/shared/tasks/task"
 import { When, whenOf } from "@taxa/shared/tasks/when"
 import { ArrowRight, CalendarDays, Circle, Cloud, Sun, type LucideIcon } from "lucide-react"
 import type { Option } from "../../ui/OptionList.tsx"
+import { WHEN_TEXT } from "./when-text.ts"
 
 export const WHEN_ICONS: Record<When, LucideIcon> = {
   [When.TODAY]: Sun,
@@ -11,14 +12,6 @@ export const WHEN_ICONS: Record<When, LucideIcon> = {
   [When.SOON]: ArrowRight,
   [When.ANY_TIME]: Circle,
   [When.SOMEDAY]: Cloud
-}
-
-const WHEN_TEXT: Record<When, string> = {
-  [When.TODAY]: "Today",
-  [When.ON_A_DAY]: "On a day…",
-  [When.SOON]: "Soon",
-  [When.ANY_TIME]: "Any time",
-  [When.SOMEDAY]: "Someday"
 }
 
 const WHEN_DETAIL: Partial<Record<When, string>> = {

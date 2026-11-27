@@ -24,6 +24,8 @@ import { TaskRowMenu } from "./TaskRowMenu.tsx"
 import type { When } from "@taxa/shared/tasks/when"
 import { WhenTag } from "../../when/WhenTag.tsx"
 import { countdown } from "../../../deadlines/deadlines.ts"
+import { SelectBox } from "../../select/SelectBox.tsx"
+import { useSelected, useSelecting, useSelection } from "../../select/selection-service.ts"
 
 /** Statuses a row says, beyond open and the tick of done. */
 const SHOWN_STATUSES: ReadonlySet<TaskStatus> = new Set([
@@ -90,6 +92,11 @@ export const TaskRow = ({
       element.removeEventListener("focusout", left)
     }
   }, [highlight, task.id])
+  const selection = useSelection()
+  const selecting = useSelecting()
+  const selected = useSelected(task.id)
+  /** Shift chooses the tasks between the last one chosen and this, as in a mail app. */
+  const choose = (shift: boolean): void => (shift ? selection.extend(task.id) : selection.toggle(task.id))
   const problem = useTaskProblem(task.id)
   const done = useShownDone(task)
   const celebrate = useCelebrated(task.id)
@@ -101,16 +108,26 @@ export const TaskRow = ({
       data-cancelled={task.status === TaskStatus.CANCELLED}
       data-celebrate={done && celebrate}
       data-highlighted={highlighted}
+      data-selected={selecting && selected}
       data-testid={taskRowTestIds.row}
     >
-      <TickBox
-        checked={done}
-        celebrate={celebrate}
-        priority={task.priority}
-        label={`Done: ${task.title}`}
-        onChange={() => void toggle(task)}
-        testId={taskRowTestIds.done}
-      />
+      {selecting ? (
+        <SelectBox
+          checked={selected}
+          label={`Select: ${task.title}`}
+          onChange={choose}
+          testId={taskRowTestIds.select}
+        />
+      ) : (
+        <TickBox
+          checked={done}
+          celebrate={celebrate}
+          priority={task.priority}
+          label={`Done: ${task.title}`}
+          onChange={() => void toggle(task)}
+          testId={taskRowTestIds.done}
+        />
+      )}
       {renaming ? (
         <RowTitleField
           title={task.title}
@@ -121,6 +138,14 @@ export const TaskRow = ({
         <Link
           href={`/tasks/${task.ref}`}
           className={styles.title}
+          // Before the link's own click, which ignores shift: selecting, a click chooses it; shift-click starts selecting.
+          // ⌘-click still opens it in a new tab.
+          onClickCapture={(event) => {
+            if (!(selecting || event.shiftKey) || event.metaKey || event.ctrlKey) return
+            event.preventDefault()
+            event.stopPropagation()
+            choose(event.shiftKey && selecting)
+          }}
           onClick={() => rememberOpened(task)}
           data-testid={taskRowTestIds.title}
         >
@@ -166,15 +191,17 @@ export const TaskRow = ({
             <TagChip key={name} name={name} />
           ))}
       </span>
-      {onFile && task.inbox && (
+      {onFile && task.inbox && !selecting && (
         <FileButton task={task} testId={taskRowTestIds.file} track="TaskRow.file" onFile={() => onFile(task)} />
       )}
       <span className={styles.ref} data-testid={taskRowTestIds.ref}>
         {task.ref}
       </span>
-      <span className={styles.menu}>
-        <TaskRowMenu task={task} today={today} domains={domains} onDelete={() => onDelete(task)} />
-      </span>
+      {!selecting && (
+        <span className={styles.menu}>
+          <TaskRowMenu task={task} today={today} domains={domains} onDelete={() => onDelete(task)} />
+        </span>
+      )}
       {problem && (
         <span className={styles.problem} role="alert" data-testid={taskRowTestIds.problem}>
           {problem}

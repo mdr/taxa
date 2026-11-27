@@ -35,6 +35,9 @@ import { DeadlineGroups } from "../../deadlines/DeadlineGroups.tsx"
 import type { Domain } from "@taxa/shared/domains/domain"
 import type { IsoDate } from "@taxa/shared/dates/plain-date"
 import { DeadlinesComingUp } from "../../deadlines/DeadlinesComingUp.tsx"
+import { SelectionContext, SelectionService } from "../select/selection-service.ts"
+import { SelectButton, SelectionFooter } from "../select/SelectionFooter.tsx"
+import { useBulkActions } from "../select/use-bulk-actions.ts"
 
 /** Finds tasks in the list as you type; Escape clears it and leaves. */
 const ListSearch = ({
@@ -143,6 +146,11 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
   useEffect(() => {
     lastShown.current = (shown ?? []).map(({ id }) => id)
   })
+  const listed = [...(shown ?? []), ...(completedOpen ? earlierFound : [])]
+  const listedIds = useRef<readonly TaskId[]>([])
+  listedIds.current = listed.map(({ id }) => id)
+  const [selection] = useState(() => new SelectionService(() => listedIds.current))
+  const bulk = useBulkActions(selection, listed, today)
   const [, navigate] = useLocation()
   const { start: startFollowOn } = useFollowOn()
   const openCount = tasks.data?.length ?? 0
@@ -163,7 +171,7 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
   useShortcuts(
     ShortcutScope.PAGE,
     listShortcuts(
-      [...(shown ?? []), ...(completedOpen ? earlierFound : [])],
+      listed,
       session,
       {
         open: (task) => {
@@ -173,7 +181,13 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
         followOn: startFollowOn,
         remove,
         file,
-        movable: (domains.data ?? []).length > 1
+        movable: (domains.data ?? []).length > 1,
+        select: {
+          selecting: () => selection.state.selecting,
+          toggle: (task) => selection.toggle(task.id),
+          toggleAll: selection.toggleAll,
+          stop: selection.stop
+        }
       },
       () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
@@ -183,87 +197,92 @@ export const TaskListPage = ({ list }: { list: TaskList }) => {
   )
   return (
     <ListSessionContext.Provider value={session}>
-      <section className={styles.page} aria-labelledby="list-heading">
-        <header className={styles.header}>
-          <ListIcon list={list} domain={domain} />
-          <h1 id="list-heading" className={styles.heading} data-testid={taskListPageTestIds.heading}>
-            {listHeading(list, domain)}
-          </h1>
-          {openCount > 0 && <span className={styles.count}>{openCount}</span>}
-          <ListSearch value={search} onSearch={session.search} input={searchBox} />
-          {list.type === ListType.TAG && <TagRename name={list.name} />}
-          {/* Empty, Today offers planning as its main action instead. */}
-          {list.type === ListType.TODAY && shown?.length !== 0 && (
-            <Link href={PLAN_TODAY_PATH} className={styles.planToday} data-testid={taskListPageTestIds.planToday}>
-              Plan today
-            </Link>
-          )}
-        </header>
-        {(home || capturesFor !== undefined) && (
-          <QuickCapture domainPrefix={domain?.prefix} when={capturesFor} highlight={session.highlight} />
-        )}
-        {tasks.isError ? (
-          <p className={styles.problem} role="alert" data-testid={taskListPageTestIds.error}>
-            {problemMessage(tasks.error)}
-          </p>
-        ) : found.noMatches ? (
-          <p className={styles.noMatches} data-testid={taskListPageTestIds.noMatches}>
-            {found.noMatches}
-          </p>
-        ) : shown?.length === 0 ? (
-          <div className={styles.empty} data-testid={taskListPageTestIds.empty}>
-            <EmptyList list={list} />
-          </div>
-        ) : (
-          <ShownTasks
-            list={list}
-            tasks={shown ?? []}
-            grouped={list.type === ListType.DEADLINES && !search}
-            today={today}
-            domains={domains.data ?? []}
-            onFile={list.type === ListType.INBOX ? file : undefined}
-            onDelete={remove}
-          />
-        )}
-        {earlierFound.length > 0 && (
-          <div className={styles.completed}>
-            <button
-              type="button"
-              className={styles.toggle}
-              aria-expanded={completedOpen}
-              onClick={() => {
-                if (!completedOpen)
-                  appAnalytics.track(ANALYTICS_CODES.list.completedShown, "showed finished tasks", {
-                    domainPrefix: domain?.prefix
-                  })
-                setShowCompleted(!completedOpen)
-              }}
-              data-testid={taskListPageTestIds.showCompleted}
-              data-track="TaskListPage.showCompleted"
-            >
-              {completedOpen ? <ChevronDown size={15} aria-hidden /> : <ChevronRight size={15} aria-hidden />}
-              {earlierFound.length} finished
-            </button>
-            {completedOpen && (
-              <ul className={styles.tasks} data-testid={taskListPageTestIds.completed}>
-                {earlierFound.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    today={today}
-                    domains={domains.data ?? []}
-                    onFile={list.type === ListType.INBOX ? file : undefined}
-                    onDelete={remove}
-                  />
-                ))}
-              </ul>
+      <SelectionContext.Provider value={selection}>
+        <section className={styles.page} aria-labelledby="list-heading">
+          <header className={styles.header}>
+            <ListIcon list={list} domain={domain} />
+            <h1 id="list-heading" className={styles.heading} data-testid={taskListPageTestIds.heading}>
+              {listHeading(list, domain)}
+            </h1>
+            {openCount > 0 && <span className={styles.count}>{openCount}</span>}
+            <ListSearch value={search} onSearch={session.search} input={searchBox} />
+            {list.type === ListType.TAG && <TagRename name={list.name} />}
+            {listed.length > 0 && <SelectButton />}
+            {/* Empty, Today offers planning as its main action instead. */}
+            {list.type === ListType.TODAY && shown?.length !== 0 && (
+              <Link href={PLAN_TODAY_PATH} className={styles.planToday} data-testid={taskListPageTestIds.planToday}>
+                Plan today
+              </Link>
             )}
-          </div>
-        )}
-        {list.type === ListType.TODAY && !search && <DeadlinesComingUp />}
-        {list.type === ListType.TODAY && !search && <TodayAttention />}
-        {undoable && <UndoToast task={undoable} undoes={undoes} />}
-      </section>
+          </header>
+          {(home || capturesFor !== undefined) && (
+            <QuickCapture domainPrefix={domain?.prefix} when={capturesFor} highlight={session.highlight} />
+          )}
+          {tasks.isError ? (
+            <p className={styles.problem} role="alert" data-testid={taskListPageTestIds.error}>
+              {problemMessage(tasks.error)}
+            </p>
+          ) : found.noMatches ? (
+            <p className={styles.noMatches} data-testid={taskListPageTestIds.noMatches}>
+              {found.noMatches}
+            </p>
+          ) : shown?.length === 0 ? (
+            <div className={styles.empty} data-testid={taskListPageTestIds.empty}>
+              <EmptyList list={list} />
+            </div>
+          ) : (
+            <ShownTasks
+              list={list}
+              tasks={shown ?? []}
+              grouped={list.type === ListType.DEADLINES && !search}
+              today={today}
+              domains={domains.data ?? []}
+              onFile={list.type === ListType.INBOX ? file : undefined}
+              onDelete={remove}
+            />
+          )}
+          {earlierFound.length > 0 && (
+            <div className={styles.completed}>
+              <button
+                type="button"
+                className={styles.toggle}
+                aria-expanded={completedOpen}
+                onClick={() => {
+                  if (!completedOpen)
+                    appAnalytics.track(ANALYTICS_CODES.list.completedShown, "showed finished tasks", {
+                      domainPrefix: domain?.prefix
+                    })
+                  setShowCompleted(!completedOpen)
+                }}
+                data-testid={taskListPageTestIds.showCompleted}
+                data-track="TaskListPage.showCompleted"
+              >
+                {completedOpen ? <ChevronDown size={15} aria-hidden /> : <ChevronRight size={15} aria-hidden />}
+                {earlierFound.length} finished
+              </button>
+              {completedOpen && (
+                <ul className={styles.tasks} data-testid={taskListPageTestIds.completed}>
+                  {earlierFound.map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      today={today}
+                      domains={domains.data ?? []}
+                      onFile={list.type === ListType.INBOX ? file : undefined}
+                      onDelete={remove}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          {list.type === ListType.TODAY && !search && <DeadlinesComingUp />}
+          {list.type === ListType.TODAY && !search && <TodayAttention />}
+          <SelectionFooter listed={listed} today={today} domains={domains.data ?? []} bulk={bulk}>
+            {undoable && <UndoToast task={undoable} undoes={undoes} />}
+          </SelectionFooter>
+        </section>
+      </SelectionContext.Provider>
     </ListSessionContext.Provider>
   )
 }

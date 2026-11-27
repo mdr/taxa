@@ -116,7 +116,34 @@
   background: var(--hover);
 }
 
+.select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.select:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.select[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .noMatches {
   color: var(--muted);
   padding: 0.5rem 0;
+}
+
+.underBar {
+  height: 6rem;
 }

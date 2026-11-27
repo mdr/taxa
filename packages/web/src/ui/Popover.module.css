@@ -63,6 +63,11 @@
   animation: appear 120ms ease-out;
 }
 
+.above {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
 .end {
   left: auto;
   right: 0;

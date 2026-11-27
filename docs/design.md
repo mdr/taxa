@@ -142,6 +142,15 @@ owner's oldest domain, still in the Inbox; `7` and `IN-7` still find them.
   about a week). When that date comes, the task shows up again in Today.
 - **Done** and **cancelled** record when, and cancelled can record why.
 
+**Changing several at once.** On any list, Select (or Space on a task, or
+shift-click) turns each row's done tick into a square box, so choosing
+isn't taken for completing. Click chooses, shift-click a run, ⌘A all, Esc
+stops. A bar at the foot does to them all what a row's menu does to one:
+Done, Status, When, Due, Priority, Move to, Tag, File, Delete. Each task
+is changed as on its own, so one changed elsewhere meanwhile is refused
+alone, its row saying why; the whole is one step to undo. In the CLI, the
+commands that change a task take several refs.
+
 ### Human-friendly IDs
 
 Every task gets a number from one global sequence that's never reused, and

@@ -1,0 +1,93 @@
+.bar {
+  position: fixed;
+  z-index: 15;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-popover);
+  animation: rise 160ms ease-out;
+}
+
+.count {
+  padding: 0 0.5rem 0 0.35rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.9rem;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.danger {
+  color: var(--danger);
+}
+
+.quiet {
+  color: var(--muted);
+}
+
+.divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 0.2rem 0.15rem;
+  background: var(--border);
+}
+
+.report {
+  position: fixed;
+  z-index: 20;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.5rem 0.5rem 0.5rem 0.9rem;
+  border-radius: 10px;
+  background: var(--text);
+  color: var(--background);
+  box-shadow: var(--shadow-popover);
+  font-size: 0.9rem;
+  animation: rise 160ms ease-out;
+}
+
+.undo {
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--background) 18%, transparent);
+  color: inherit;
+  font-weight: 600;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .report {
+    animation: none;
+  }
+}

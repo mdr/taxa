@@ -29,6 +29,7 @@ const KEY_TEXT: Readonly<Record<string, string>> = {
   ArrowLeft: "←",
   ArrowRight: "→",
   Escape: "Esc",
+  " ": "Space",
   Enter: "Enter"
 }
 

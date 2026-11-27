@@ -33,6 +33,8 @@ interface PopoverProps {
   triggerClassName?: string
   /** Line the panel up with the trigger's right edge instead of its left. */
   alignEnd?: boolean
+  /** Open the panel upwards, as for a trigger at the foot of the screen. */
+  above?: boolean
   /** A key that opens it, on the page that shows it. */
   shortcut?: KeyShortcut
   /** Opens it from elsewhere, at one part of its content if `into` says, which `children` is told; again with each new `seq`. */
@@ -53,6 +55,7 @@ export const Popover = ({
   value,
   triggerClassName,
   alignEnd = false,
+  above = false,
   shortcut,
   opening,
   children
@@ -151,7 +154,7 @@ export const Popover = ({
         <div
           ref={panel}
           id={panelId}
-          className={alignEnd ? `${styles.panel} ${styles.end}` : styles.panel}
+          className={[styles.panel, alignEnd ? styles.end : "", above ? styles.above : ""].join(" ").trim()}
           role="dialog"
           aria-label={label}
         >

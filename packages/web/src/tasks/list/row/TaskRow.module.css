@@ -99,6 +99,10 @@
   background: var(--selected);
 }
 
+.row[data-selected="true"] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
 /* ⋯ shows where it's wanted: on the row pointed at, the one the keyboard's on, or while open; always, without a pointer. */
 .menu {
   opacity: 0;

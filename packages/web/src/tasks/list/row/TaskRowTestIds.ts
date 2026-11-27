@@ -1,6 +1,8 @@
 export const taskRowTestIds = {
   row: "TaskRow.row",
   done: "TaskRow.done",
+  /** While selecting: chooses it, to change with others. */
+  select: "TaskRow.select",
   ref: "TaskRow.ref",
   file: "TaskRow.file",
   title: "TaskRow.title",

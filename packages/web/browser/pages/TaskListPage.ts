@@ -14,6 +14,7 @@ import { deadlinesComingUpTestIds } from "../../src/deadlines/DeadlinesComingUpT
 import { deadlineGroupsTestIds } from "../../src/deadlines/DeadlineGroupsTestIds.ts"
 import { taskRowTestIds } from "../../src/tasks/list/row/TaskRowTestIds.ts"
 import { UndoNotice } from "./UndoNotice.ts"
+import { BulkSelection } from "./BulkSelection.ts"
 import { undoToastTestIds } from "../../src/tasks/list/UndoToastTestIds.ts"
 import { optionListTestIds } from "../../src/ui/OptionListTestIds.ts"
 import { tagChipTestIds } from "../../src/tags/TagChipTestIds.ts"
@@ -26,6 +27,8 @@ export class TaskListPage extends PageObject {
   readonly sidebar: Sidebar
   readonly keyboard: Keyboard
   readonly undoNotice: UndoNotice
+  /** Choosing tasks to change together. */
+  readonly bulk: BulkSelection
   /** On Today: what might want planning for it. */
   readonly attention: TodayAttention
   /** On Today: deadlines overdue or due within the week. */
@@ -39,6 +42,7 @@ export class TaskListPage extends PageObject {
     this.deadlines = new TodayAttention(page, deadlinesComingUpTestIds)
     this.keyboard = new Keyboard(page)
     this.undoNotice = new UndoNotice(page)
+    this.bulk = new BulkSelection(page)
   }
 
   #row(title: string): Locator {

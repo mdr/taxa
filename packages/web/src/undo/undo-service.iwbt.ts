@@ -300,4 +300,30 @@ describe("UndoService", () => {
     })
     expect(renamed).toMatchObject({ title: "Fix the kitchen tap", priority: Priority.HIGH })
   })
+
+  it("undoes and redoes changes made together as one, and says if any can't be", async ({ server }) => {
+    const { matt, undo, changes } = await makeUndoService(server)
+    const tasks = [
+      await matt.addTask("Fix the tap", { domain: "H" }),
+      await matt.addTask("Paint the fence", { domain: "H" })
+    ]
+    const high = { type: TaskChangeType.UPDATE, request: { set: { priority: Priority.HIGH } } } as const
+    const priorities = async (): Promise<Priority[]> =>
+      Promise.all(tasks.map(async ({ id }) => (await matt.client.task(id)).priority))
+    await undo.together("2 tasks: high priority", () => Promise.all(tasks.map((task) => changes.change(task, high))))
+    expect(await priorities()).toEqual([Priority.HIGH, Priority.HIGH])
+
+    await undo.undo()
+    expect(await priorities()).toEqual([Priority.NORMAL, Priority.NORMAL])
+    expect(undo.state.notice).toEqual({ type: NoticeType.UNDONE, text: "Undid: 2 tasks: high priority" })
+    await undo.redo()
+    expect(await priorities()).toEqual([Priority.HIGH, Priority.HIGH])
+
+    // Changed elsewhere since, one can't be undone; the other is.
+    await matt.client.updateTask(tasks[1]!.id, { set: { priority: Priority.LOW } })
+    await undo.undo()
+    expect(await priorities()).toEqual([Priority.NORMAL, Priority.LOW])
+    expect(undo.state.notice?.type).toBe(NoticeType.REFUSED)
+    expect(undo.state.notice?.text).toMatch(/^Undid: 2 tasks: high priority, but not 1 of them: /)
+  })
 })

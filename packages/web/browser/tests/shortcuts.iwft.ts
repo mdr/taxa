@@ -100,7 +100,9 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Rename the task R",
     "Add a follow-on task F",
     "Delete the task Delete or Backspace",
-    "Leave the list Esc"
+    "Select the task, to change it with others Space",
+    "Select every task, or none ⌘A",
+    "Stop selecting, or leave the list Esc"
   ])
   await help.expectAccessible()
   await help.setSingleKeys(false)
@@ -112,7 +114,8 @@ test("the list of shortcuts, and turning single-key ones off", async ({ taxa }) 
     "Previous task ↑",
     "Open the task Enter",
     "Delete the task Delete or Backspace",
-    "Leave the list Esc"
+    "Select every task, or none ⌘A",
+    "Stop selecting, or leave the list Esc"
   ])
   await help.closeWithEscape()
 

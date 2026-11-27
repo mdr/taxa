@@ -7,5 +7,7 @@ export const taskListPageTestIds = {
   completed: "TaskListPage.completed",
   search: "TaskListPage.search",
   noMatches: "TaskListPage.noMatches",
-  planToday: "TaskListPage.planToday"
+  planToday: "TaskListPage.planToday",
+  /** Starts or stops choosing tasks to change together. */
+  select: "TaskListPage.select"
 }
