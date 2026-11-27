@@ -29,6 +29,8 @@ interface PopoverProps {
   track: string
   /** On the trigger, for tests and styling: what it shows. */
   value?: string
+  /** Its own look for the trigger, in place of `look`'s. */
+  triggerClassName?: string
   /** Line the panel up with the trigger's right edge instead of its left. */
   alignEnd?: boolean
   /** A key that opens it, on the page that shows it. */
@@ -49,6 +51,7 @@ export const Popover = ({
   testId,
   track,
   value,
+  triggerClassName,
   alignEnd = false,
   shortcut,
   opening,
@@ -127,7 +130,7 @@ export const Popover = ({
       <button
         ref={button}
         type="button"
-        className={LOOK_CLASS[look]}
+        className={triggerClassName ?? LOOK_CLASS[look]}
         aria-label={look === PopoverLook.ICON ? label : undefined}
         aria-haspopup="dialog"
         aria-expanded={open}

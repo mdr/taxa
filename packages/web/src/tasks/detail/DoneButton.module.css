@@ -25,9 +25,18 @@
   transform: scale(0.97);
 }
 
-.done[data-done="true"] {
+.finished {
   background: var(--accent-soft);
   color: color-mix(in srgb, var(--accent) 70%, var(--text));
+}
+
+.finished:hover {
+  background: color-mix(in srgb, var(--accent-soft) 80%, var(--accent));
+}
+
+.chevron {
+  margin-left: -0.15rem;
+  opacity: 0.7;
 }
 
 .check {
@@ -52,11 +61,11 @@
   opacity: 0.7;
 }
 
-.done[data-celebrate="true"] {
+.celebrating {
   animation: pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.done[data-celebrate="true"] .check {
+.celebrating .check {
   animation: draw 280ms 100ms ease-out backwards;
 }
 
@@ -115,8 +124,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .done[data-celebrate="true"],
-  .done[data-celebrate="true"] .check {
+  .celebrating,
+  .celebrating .check {
     animation: none;
   }
 

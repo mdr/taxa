@@ -143,7 +143,7 @@ export const TaskDetailPage = ({ taskRef }: { taskRef: string }) => {
             </span>
           </nav>
           <div className={styles.actions}>
-            <DoneButton task={task} />
+            <DoneButton task={task} change={change} />
             <TaskMenu task={task} change={change} />
           </div>
         </div>

@@ -112,14 +112,21 @@ export class TaskDetailPage extends PageObject {
     await this.#choose(taskPropertiesTestIds.status, status)
   }
 
-  /** Clicks the Done button: marks it done, or takes that back. */
+  /** Clicks the Done button, which marks it done. */
   async markDone(): Promise<void> {
     await this.#page.getByTestId(doneButtonTestIds.done).click()
   }
 
-  /** What the Done button says: `Mark done`, `Done this time`, `Done`. */
+  /** On a done task, chooses from the Done button's menu: `Reopen`, `Not done this time`, `In progress`, `Waiting`. */
+  async changeFromDone(choice: string): Promise<void> {
+    await this.#page.getByTestId(doneButtonTestIds.finished).click()
+    await this.#page.getByTestId(optionListTestIds.option).filter({ hasText: choice }).click()
+  }
+
+  /** What the Done button says: `Mark done`, `Done this time`, or `Done` with a menu. */
   async expectDoneButton(text: string): Promise<void> {
-    await expect(this.#page.getByTestId(doneButtonTestIds.done)).toContainText(text)
+    const button = text === "Done" ? doneButtonTestIds.finished : doneButtonTestIds.done
+    await expect(this.#page.getByTestId(button)).toContainText(text)
   }
 
   async expectStatus(status: TaskStatus): Promise<void> {
