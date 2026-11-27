@@ -6,6 +6,8 @@ them at the top of its release notes. See `docs/releasing.md`.
 
 ## Unreleased
 
+## 0.8.0 (2026-11-27)
+
 ### New
 
 - **Change several tasks at once.** On any list, Select (or Space on a task, or shift-click) gives each row a square box to choose it by; click, shift-click for a run, ⌘A for all. A bar at the foot marks them done, or changes their status, when, due date, priority, domain or tags, files or deletes them, together; Undo, or ⌘Z, takes it all back at once.
