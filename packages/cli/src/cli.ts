@@ -1,5 +1,4 @@
 import { parseArgs, type ParseArgsOptionsConfig } from "node:util"
-import { ProblemType } from "@taxa/shared/api/problem"
 import { TaxaApiError, TaxaClient } from "@taxa/shared/api/taxa-client"
 import { dateIn } from "@taxa/shared/dates/plain-date"
 import { DEFAULT_SERVER, DEFAULT_WEB, ExitCode, type CliIo } from "./cli-io.ts"
@@ -11,6 +10,7 @@ import { COMMENT_COMMANDS } from "./commands/comment-commands.ts"
 import { CHECKLIST_COMMANDS } from "./commands/checklist-commands.ts"
 import { UsageError, type Command } from "./command.ts"
 import { healthCommand } from "./health-command.ts"
+import { reportApiError } from "./report-error.ts"
 import { colorChoiceOf, PLAIN, styleFor, type Style } from "./format/style.ts"
 import { connectionFrom, CredentialsError, parseCredentials, type Connection } from "./credentials/credentials.ts"
 
@@ -71,33 +71,6 @@ you (chmod 600). Without --as, TAXA_API_KEY or TAXA_AS, taxa acts as [default]:
 const commandUsage = ({ name, summary, usage }: Command): string => `${summary}.\n\nUsage: taxa ${name} ${usage}\n`
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error))
-
-const PROBLEM_EXIT: Partial<Record<ProblemType, ExitCode>> = {
-  [ProblemType.VERSION_CONFLICT]: ExitCode.CONFLICT,
-  [ProblemType.NOT_FOUND]: ExitCode.NOT_FOUND,
-  [ProblemType.INVALID_REQUEST]: ExitCode.USAGE
-}
-
-const PROBLEM_HINT: Partial<Record<ProblemType, string>> = {
-  [ProblemType.UNAUTHENTICATED]:
-    "Set TAXA_API_KEY to an API key from taxa add-key, or put it in the credentials file (taxa --help).",
-  [ProblemType.VERSION_CONFLICT]: "Run taxa show to see it as it is now, then try again.",
-  [ProblemType.NOT_FOUND]: "taxa list finds tasks; taxa list --search WORDS, by what they say."
-}
-
-/** What went wrong, and what to try; styled, a cross in red and the hint dimmed. */
-const reportApiError = (error: TaxaApiError, json: boolean, io: CliIo, style: Style): ExitCode => {
-  if (json) io.stdout(`${JSON.stringify(error.problem, undefined, 2)}\n`)
-  const hint = PROBLEM_HINT[error.problem.type]
-  // The not-found hint is new, and only for people: agents' and scripts' output stays as it was.
-  const shownHint =
-    hint !== undefined && (style.styled || error.problem.type !== ProblemType.NOT_FOUND) ? hint : undefined
-  const message = style.styled ? style.red(`✗ ${error.problem.message}`) : error.problem.message
-  io.stderr(
-    `${message}${shownHint === undefined ? "" : `\n${style.styled ? `  ${style.dim(shownHint)}` : shownHint}`}\n`
-  )
-  return PROBLEM_EXIT[error.problem.type] ?? ExitCode.FAILED
-}
 
 const runCommand = async (
   command: Command,

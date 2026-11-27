@@ -1,6 +1,10 @@
 import { When } from "@taxa/shared/tasks/when"
 import { z } from "zod"
-import { CreateTaskRequestSchema, UpdateTaskRequestSchema } from "@taxa/shared/tasks/task-requests"
+import {
+  CreateTaskRequestSchema,
+  UpdateTaskRequestSchema,
+  type UpdateTaskRequest
+} from "@taxa/shared/tasks/task-requests"
 import { TaskStatus, type Task } from "@taxa/shared/tasks/task"
 import { ExitCode } from "../cli-io.ts"
 import {
@@ -17,6 +21,8 @@ import { activityLines } from "../format/activity-format.ts"
 import { taskDetail, taskLines } from "../format/task-format.ts"
 import { taskGroups } from "../format/task-groups.ts"
 import { taskCard } from "../format/task-card.ts"
+import { confirmation } from "../format/confirmation.ts"
+import { eachTask, MANY_HELP, REFS } from "./each-task.ts"
 import { latestComments } from "../format/comment-format.ts"
 import { recentOccurrences } from "../format/occurrence-format.ts"
 import { readStdinJson, STDIN } from "../input/stdin-json.ts"
@@ -187,7 +193,7 @@ const show: Command = {
 const edit: Command = {
   name: "edit",
   summary: "Change a task's fields",
-  usage: `<ref> [options]   or   taxa edit <ref> - < changes.json
+  usage: `<ref>... [options]   or   taxa edit <ref>... - < changes.json
   --title TEXT          A new title
 ${TASK_FIELD_HELP}
   --untag NAME          Take a tag off; again for more
@@ -195,7 +201,8 @@ ${TASK_FIELD_HELP}
   --clear FIELDS        Empty these fields, e.g. due,estimate (due, scheduled, at, start, estimate, horizon, follows-on, repeat)
 ${VERSION_HELP}
 With -, stdin holds {"set": {...}, "clear": [...], "addTags": [...], "removeTags": [...], "appendNotes": "..."},
-as the API's UpdateTaskRequest.`,
+as the API's UpdateTaskRequest.
+${MANY_HELP}`,
   options: {
     ...TASK_FIELD_OPTIONS,
     title: { type: "string" },
@@ -205,38 +212,47 @@ as the API's UpdateTaskRequest.`,
     ...VERSION_OPTION
   },
   run: async (context, values, positionals) => {
-    const [ref, source, ...rest] = positionals
-    if (ref === undefined) throw new UsageError("Say which task.")
-    if (rest.length > 0 || (source !== undefined && source !== STDIN)) {
-      throw new UsageError(`Expected a task, and optionally -, got: ${positionals.join(" ")}`)
-    }
-    const request =
-      source === STDIN
-        ? await readStdinJson(context.io, UpdateTaskRequestSchema, "an update")
-        : {
-            set: {
-              ...fieldsFrom(values, context.today()),
-              ...(stringOption(values, "title") !== undefined && { title: stringOption(values, "title") }),
-              ...(await missedOnly(context, ref, values))
-            },
-            clear: clearedFrom(values),
-            addTags: repeatedOption(values, "tag"),
-            removeTags: repeatedOption(values, "untag"),
-            appendNotes: stringOption(values, "append-notes")
-          }
-    const nothing = (list: readonly unknown[] | undefined): boolean => (list ?? []).length === 0
-    if (
-      Object.keys(request.set).length === 0 &&
-      nothing(request.clear) &&
-      nothing(request.addTags) &&
-      nothing(request.removeTags) &&
-      request.appendNotes === undefined
-    ) {
-      throw new UsageError("Say what to change, e.g. --due friday or --clear due.")
-    }
-    await showTask(context, await context.client.updateTask(ref, request, ifVersion(values)))
-    return ExitCode.OK
+    const fromStdin = positionals.at(-1) === STDIN
+    const refs = fromStdin ? positionals.slice(0, -1) : positionals
+    if (refs.includes(STDIN)) throw new UsageError(`- comes last, after the tasks: ${positionals.join(" ")}`)
+    const typed = fromStdin ? await readStdinJson(context.io, UpdateTaskRequestSchema, "an update") : undefined
+    return eachTask(context, refs, values, async (each, ref, many) => {
+      const updated = await each.client.updateTask(
+        ref,
+        typed ?? (await editRequest(each, ref, values)),
+        ifVersion(values)
+      )
+      if (many) print(each, linked(each, updated), () => confirmation("Edited", updated, each))
+      else await showTask(each, updated)
+      return ExitCode.OK
+    })
   }
+}
+
+/** The change asked for by edit's options, or a usage error if none was. */
+const editRequest = async (context: CommandContext, ref: string, values: OptionValues): Promise<UpdateTaskRequest> => {
+  const request = {
+    set: {
+      ...fieldsFrom(values, context.today()),
+      ...(stringOption(values, "title") !== undefined && { title: stringOption(values, "title") }),
+      ...(await missedOnly(context, ref, values))
+    },
+    clear: clearedFrom(values),
+    addTags: repeatedOption(values, "tag"),
+    removeTags: repeatedOption(values, "untag"),
+    appendNotes: stringOption(values, "append-notes")
+  }
+  const nothing = (list: readonly unknown[] | undefined): boolean => (list ?? []).length === 0
+  if (
+    Object.keys(request.set).length === 0 &&
+    nothing(request.clear) &&
+    nothing(request.addTags) &&
+    nothing(request.removeTags) &&
+    request.appendNotes === undefined
+  ) {
+    throw new UsageError("Say what to change, e.g. --due friday or --clear due.")
+  }
+  return request
 }
 
 /** --missed alone: the task's repeat as it is, but for what becomes of missed days. */
@@ -255,17 +271,21 @@ const missedOnly = async (
 const file: Command = {
   name: "file",
   summary: "File a task: sorted out, out of your Inbox",
-  usage: `<ref> [--domain PREFIX]
+  usage: `${REFS} [--domain PREFIX]
   --domain PREFIX       Move it to this domain as it's filed
 ${VERSION_HELP}
-To put it back in your Inbox, taxa edit <ref> --inbox.`,
+To put it back in your Inbox, taxa edit <ref> --inbox.
+${MANY_HELP}`,
   options: { domain: { type: "string" }, ...VERSION_OPTION },
   run: async (context, values, positionals) => {
-    const ref = oneArgument(positionals, "task")
     const domain = stringOption(values, "domain")
     const request = { set: { inbox: false, ...(domain !== undefined && { domain }) } }
-    await showTask(context, await context.client.updateTask(ref, request, ifVersion(values)))
-    return ExitCode.OK
+    return eachTask(context, positionals, values, async (each, ref, many) => {
+      const filed = await each.client.updateTask(ref, request, ifVersion(values))
+      if (many) print(each, linked(each, filed), () => confirmation("Filed", filed, each))
+      else await showTask(each, filed)
+      return ExitCode.OK
+    })
   }
 }
 

@@ -18,6 +18,7 @@ import {
 } from "../command.ts"
 import { STATUS_TEXT } from "@taxa/shared/tasks/task-text"
 import { ifVersion, VERSION_HELP, VERSION_OPTION } from "../input/version-option.ts"
+import { eachTask, MANY_HELP, REFS } from "./each-task.ts"
 
 const changed = (context: CommandContext, task: Task, verb: string): ExitCode => {
   print(context, linked(context, task), () => confirmation(verb, task, context))
@@ -45,12 +46,13 @@ const statusCommand = ({
 }: StatusCommandSpec): Command => ({
   name,
   summary,
-  usage: `<ref>${usage ? ` ${usage}` : ""}\n${VERSION_HELP}`,
+  usage: `${REFS}${usage ? ` ${usage}` : ""}\n${VERSION_HELP}\n${MANY_HELP}`,
   options: { ...options, ...VERSION_OPTION },
   run: async (context, values, positionals) => {
-    const ref = oneArgument(positionals, "task")
-    const task = await context.client.changeStatus(ref, { status, ...request?.(values, context) }, ifVersion(values))
-    return changed(context, task, verb)
+    const asked = { status, ...request?.(values, context) }
+    return eachTask(context, positionals, values, async (each, ref) =>
+      changed(each, await each.client.changeStatus(ref, asked, ifVersion(values)), verb)
+    )
   }
 })
 
@@ -65,15 +67,16 @@ const followUpFrom = (values: OptionValues, context: CommandContext): string | u
 const deletion = (name: string, summary: string, verb: string, versioned: boolean): Command => ({
   name,
   summary,
-  usage: versioned ? `<ref>\n${VERSION_HELP}` : "<ref>",
+  usage: versioned ? `${REFS}\n${VERSION_HELP}\n${MANY_HELP}` : `${REFS}\n${MANY_HELP}`,
   options: versioned ? VERSION_OPTION : {},
-  run: async (context, values, positionals) => {
-    const ref = oneArgument(positionals, "task")
-    const task = versioned
-      ? await context.client.deleteTask(ref, ifVersion(values))
-      : await context.client.restoreTask(ref)
-    return changed(context, task, verb)
-  }
+  run: async (context, values, positionals) =>
+    eachTask(context, positionals, values, async (each, ref) =>
+      changed(
+        each,
+        versioned ? await each.client.deleteTask(ref, ifVersion(values)) : await each.client.restoreTask(ref),
+        verb
+      )
+    )
 })
 
 /** Does or skips a repeating task's occurrence, for the date it's at, so a retry can't do it twice. */
@@ -98,36 +101,40 @@ const recorded = async (
 const done: Command = {
   name: "done",
   summary: "Mark a task done; a repeating one, done this time",
-  usage: `<ref> [--stop-repeating]
+  usage: `${REFS} [--stop-repeating]
   --stop-repeating      A repeating task: stop it repeating, and mark it done for good
-${VERSION_HELP}`,
+${VERSION_HELP}
+${MANY_HELP}`,
   options: { "stop-repeating": { type: "boolean" }, ...VERSION_OPTION },
-  run: async (context, values, positionals) => {
-    const ref = oneArgument(positionals, "task")
-    const task = await context.client.task(ref)
-    if (task.repeat && values["stop-repeating"] !== true) return recorded(context, task, OccurrenceOutcome.DONE)
-    const stopped = task.repeat
-      ? await context.client.updateTask(ref, { clear: [ClearableField.REPEAT] }, ifVersion(values))
-      : task
-    const finished = await context.client.changeStatus(
-      ref,
-      { status: TaskStatus.DONE },
-      task.repeat ? stopped.version : ifVersion(values)
-    )
-    return changed(context, finished, "Done:")
-  }
+  run: async (context, values, positionals) =>
+    eachTask(context, positionals, values, (each, ref) => doneOne(each, ref, values))
+}
+
+const doneOne = async (context: CommandContext, ref: string, values: OptionValues): Promise<ExitCode> => {
+  const task = await context.client.task(ref)
+  if (task.repeat && values["stop-repeating"] !== true) return recorded(context, task, OccurrenceOutcome.DONE)
+  const stopped = task.repeat
+    ? await context.client.updateTask(ref, { clear: [ClearableField.REPEAT] }, ifVersion(values))
+    : task
+  const finished = await context.client.changeStatus(
+    ref,
+    { status: TaskStatus.DONE },
+    task.repeat ? stopped.version : ifVersion(values)
+  )
+  return changed(context, finished, "Done:")
 }
 
 const skip: Command = {
   name: "skip",
   summary: "Skip a repeating task this time, moving it on to its next date",
-  usage: "<ref>",
+  usage: `${REFS}\n${MANY_HELP}`,
   options: {},
-  run: async (context, _values, positionals) => {
-    const task = await context.client.task(oneArgument(positionals, "task"))
-    if (!task.repeat) throw new UsageError(`${task.ref} doesn't repeat: taxa cancel, to cancel it.`)
-    return recorded(context, task, OccurrenceOutcome.SKIPPED)
-  }
+  run: async (context, values, positionals) =>
+    eachTask(context, positionals, values, async (each, ref) => {
+      const task = await each.client.task(ref)
+      if (!task.repeat) throw new UsageError(`${task.ref} doesn't repeat: taxa cancel, to cancel it.`)
+      return recorded(each, task, OccurrenceOutcome.SKIPPED)
+    })
 }
 
 const undo: Command = {

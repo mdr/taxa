@@ -75,6 +75,13 @@ taxa delete H-142                   # soft: taxa restore brings it back; taxa li
 taxa undo H-142 --version 3         # takes back change 3 from taxa log (find your own there first)
 ```
 
+`done`, `skip`, `start`, `wait`, `cancel`, `reopen`, `delete`, `restore`,
+`file` and `edit` take several refs: `taxa done H-142 H-143 H-150`,
+`taxa edit H-142 H-143 --due fri`. Each is changed in turn and gets its own
+line; one that fails is reported and the rest go ahead, and the exit code
+is the first failure's. With `--json` the results come as one array.
+`--if-version` is for one task only.
+
 Repeating tasks keep one ref for good. `taxa done` on one does it this
 time: it records that occurrence and moves the task on to its next date,
 still open. Don't cancel one (it's refused): skip this time, or stop it
