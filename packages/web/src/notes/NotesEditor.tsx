@@ -1,5 +1,6 @@
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react"
 import { Placeholder } from "@tiptap/extensions"
+import { useRedrawRefs, useTaskRefLinks } from "./use-task-ref-links.ts"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import styles from "./NotesEditor.module.css"
 import prose from "./prose.module.css"
@@ -53,8 +54,9 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
   const [linking, setLinking] = useState<LinkDraft | undefined>()
   // The editor's key handler is set once, so it reaches the editor through this.
   const openLinkForm = useRef<() => void>(() => undefined)
+  const refLinks = useTaskRefLinks({ editing: true, onFollow: () => draft.followedLink() })
   const editor = useEditor({
-    extensions: [...NOTES_EXTENSIONS, Placeholder.configure({ placeholder: PLACEHOLDER })],
+    extensions: [...NOTES_EXTENSIONS, refLinks, Placeholder.configure({ placeholder: PLACEHOLDER })],
     content: notesToDocument(shown.notes),
     shouldRerenderOnTransaction: false,
     editorProps: {
@@ -95,6 +97,7 @@ export const NotesEditor = ({ notes, change }: { notes: string; change: (change:
     onBlur: draft.finishWriting
   })
 
+  useRedrawRefs(editor)
   openLinkForm.current = () => setLinking(linkDraftAt(editor))
   const linkHere = useEditorState({
     editor,

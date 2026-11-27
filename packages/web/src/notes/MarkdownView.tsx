@@ -1,5 +1,6 @@
 import { EditorContent, useEditor } from "@tiptap/react"
 import { notesToDocument, NOTES_EXTENSIONS } from "./notes-markdown.ts"
+import { useRedrawRefs, useTaskRefLinks } from "./use-task-ref-links.ts"
 import prose from "./prose.module.css"
 
 /** Markdown, formatted as notes are, and not editable. */
@@ -12,9 +13,10 @@ export const MarkdownView = ({
   className: string | undefined
   testId: string
 }) => {
+  const refLinks = useTaskRefLinks()
   const editor = useEditor(
     {
-      extensions: NOTES_EXTENSIONS,
+      extensions: [...NOTES_EXTENSIONS, refLinks],
       content: notesToDocument(markdown),
       editable: false,
       editorProps: {
@@ -24,5 +26,6 @@ export const MarkdownView = ({
     },
     [markdown]
   )
+  useRedrawRefs(editor)
   return <EditorContent editor={editor} />
 }

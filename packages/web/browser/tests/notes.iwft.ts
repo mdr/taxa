@@ -72,12 +72,12 @@ test("links in notes, with their own text, added, followed, changed and removed"
   const detail = await (await taxa.openTab("Matt")).openTask("H-1")
 
   await detail.startTypingNotes("Read the ")
-  await detail.openLinkForm("keyboard")
-  await detail.expectLinkForm("", "")
-  await detail.fillLinkForm("manual", "example.com/manual")
+  await detail.links.openLinkForm("keyboard")
+  await detail.links.expectLinkForm("", "")
+  await detail.links.fillLinkForm("manual", "example.com/manual")
   await detail.typeInNotes(" first, then ask on ")
-  await detail.openLinkForm("toolbar")
-  await detail.fillLinkForm(undefined, "forum.example.com")
+  await detail.links.openLinkForm("toolbar")
+  await detail.links.fillLinkForm(undefined, "forum.example.com")
   await detail.typeInNotes(" or [the shop](https://shop.example.com) ")
   await detail.leaveNotes()
   await taxa.expectTask("H-1", {
@@ -85,32 +85,32 @@ test("links in notes, with their own text, added, followed, changed and removed"
       "Read the [manual](https://example.com/manual) first, then ask on https://forum.example.com or [the shop](https://shop.example.com)"
   })
 
-  await detail.clickNotesLink("manual")
-  await detail.expectLinkBar("https://example.com/manual")
+  await detail.links.clickNotesLink("manual")
+  await detail.links.expectLinkBar("https://example.com/manual")
   await detail.expectAccessible()
-  await detail.editLinkFromBar()
-  await detail.expectLinkForm("manual", "https://example.com/manual")
+  await detail.links.editLinkFromBar()
+  await detail.links.expectLinkForm("manual", "https://example.com/manual")
   await detail.expectAccessible()
-  await detail.fillLinkFormWrongly("javascript:alert(1)")
-  await detail.fillLinkForm("fitting guide", "https://example.com/guide")
+  await detail.links.fillLinkFormWrongly("javascript:alert(1)")
+  await detail.links.fillLinkForm("fitting guide", "https://example.com/guide")
   await detail.leaveNotes()
   await taxa.expectTask("H-1", {
     notes:
       "Read the [fitting guide](https://example.com/guide) first, then ask on https://forum.example.com or [the shop](https://shop.example.com)"
   })
 
-  await detail.clickNotesLink("the shop")
-  await detail.expectLinkBar("https://shop.example.com")
-  await detail.removeLinkFromBar()
+  await detail.links.clickNotesLink("the shop")
+  await detail.links.expectLinkBar("https://shop.example.com")
+  await detail.links.removeLinkFromBar()
   await detail.leaveNotes()
   await taxa.expectTask("H-1", {
     notes:
       "Read the [fitting guide](https://example.com/guide) first, then ask on https://forum.example.com or the shop"
   })
 
-  await detail.clickNotesLink("fitting guide")
-  await detail.openLinkForm("keyboard")
-  await detail.cancelLinkFormWithEscape()
+  await detail.links.clickNotesLink("fitting guide")
+  await detail.links.openLinkForm("keyboard")
+  await detail.links.cancelLinkFormWithEscape()
   await detail.leaveNotes()
   await detail.expectNotesMarkdown(
     "Read the [fitting guide](https://example.com/guide) first, then ask on https://forum.example.com or the shop"
@@ -123,9 +123,9 @@ test("a link in notes that opens a file in VS Code, as agents write them", async
   await taxa.matt.addTask("Reply to the council", { domain: "H", notes: `Draft: [the letter](${letter})` })
   const detail = await (await taxa.openTab("Matt")).openTask("H-1")
 
-  await detail.expectNotesLink("the letter", letter)
-  await detail.clickNotesLink("the letter")
-  await detail.expectLinkBar(letter, false)
+  await detail.links.expectNotesLink("the letter", letter)
+  await detail.links.clickNotesLink("the letter")
+  await detail.links.expectLinkBar(letter, false)
 })
 
 test("spelling marked in notes only while writing them", async ({ taxa }) => {
@@ -138,4 +138,18 @@ test("spelling marked in notes only while writing them", async ({ taxa }) => {
   await detail.expectNotesSpellChecked(true)
   await detail.leaveNotes()
   await detail.expectNotesSpellChecked(false)
+})
+
+test("a task's ref in notes or a comment links to it", async ({ taxa }) => {
+  await taxa.matt.addDomain("Home", "H")
+  await taxa.matt.addTask("Fix the tap", { domain: "H", notes: "Washers first: see h-2. Not UTF-8 or `H-2`." })
+  await taxa.matt.addTask("Buy washers", { domain: "H" })
+  const detail = await (await taxa.openTab("Matt")).openTask("H-1")
+
+  await detail.links.openRefInNotes("H-2")
+  await detail.expectTitle("Buy washers")
+  await detail.comments.add("Back to H-1 once they're in")
+  await detail.links.openRefInComment("Back to H-1", "H-1")
+  await detail.expectTitle("Fix the tap")
+  await taxa.expectTask("H-1", { notes: "Washers first: see h-2. Not UTF-8 or `H-2`." })
 })
